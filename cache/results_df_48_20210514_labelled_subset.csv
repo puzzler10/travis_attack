@@ -1,0 +1,265 @@
+﻿idx,premise,orig,para,sim_score,label_true,label_vm_orig,label_vm_para,is_adversarial
+4246,The two farmers are working on a piece of John Deere equipment.,2 Men are making a pool together,Two men are working together.,0.5888347,2,2,0,0
+23223,A little baby with dirty fingers and smudges on her face points to her blue eye.,A baby is playing in the mud.,The child plays in the mud...,0.83441037,1,1,2,1
+23150,A little baby with dirty fingers and smudges on her face points to her blue eye.,A baby points at her green eye.,A baby points out her eye.,0.8740221,2,2,0,0
+23172,A little baby with dirty fingers and smudges on her face points to her blue eye.,A baby points at her green eye.,a person pointing to her eye,0.6270343,2,2,0,0
+6709,A long-beaked bird in mid-flight.,A bird chasing an insect.,Someone has bird and bug,0.45086762,1,1,0,-1
+6714,A long-beaked bird in mid-flight.,A bird chasing an insect.,bird running after bugs,0.60477865,1,1,2,0
+18102,"A man in a blue windbreaker jacket, laying face down on a park bench, with a liquor bottle nestled by one of the bench's legs.",A Black man is passed out on a park bench from drinking.,There is a man on a park bench.,0.57101715,1,1,0,0
+18101,"A man in a blue windbreaker jacket, laying face down on a park bench, with a liquor bottle nestled by one of the bench's legs.",A Black man is passed out on a park bench from drinking.,A man is passing out on a park bench.,0.7668165,1,1,2,0
+2631,A older gentleman finds it humorous that he is getting his picture taken while doing his laundry.,a blond man laughs while doing laundry,He was doing laundry. Affirmative action,0.49961364,1,1,0,-1
+2629,A older gentleman finds it humorous that he is getting his picture taken while doing his laundry.,a blond man laughs while doing laundry,Man laughs while washing clothes,0.7844226,1,1,0,0
+16223,A boy in overalls blows bubbles.,A boy in overalls is playing with bubbles outside.,Someone plays outside and has a bubble system outside,0.5508403,1,1,0,-1
+16218,A boy in overalls blows bubbles.,A boy in overalls is playing with bubbles outside.,Some bubbles were being played by a boy inside,0.5902381,1,1,0,-1
+10125,A barefooted adolescent boy in a yellow shirt reaching the top of a small skateboarding ramp.,a boy is barefooted,This young man has no footwear,0.652338,0,0,2,1
+16244,A boy in overalls blows bubbles.,A boy is blowing bubbles.,A boy is outside.,0.52124673,0,0,1,0
+16269,A boy in overalls blows bubbles.,A boy is blowing bubbles.,Kids play Blowing Bubbles in a field,0.49099278,0,0,2,0
+13188,A boy in red slides down an inflatable ride.,A boy is playing on an inflatable ride.,a kid on an inflatable ride is playing outside,0.78388464,0,0,1,0
+17853,A boy in a baseball cap jumps over a flight of stairs.,A boy jumping through the air.,One of boy jumps into The sky,0.7171563,0,0,2,-1
+13050,A boy looks surly as his father looks at the camera.,a boy looks at his farther,he stares far away,0.47463983,0,0,2,-2
+13200,A boy in red slides down an inflatable ride.,A boy pierces a knife through an inflatable ride.,A boy is on an inflatable ride.,0.6137138,2,2,0,0
+833,"Under a blue sky with white clouds, a child reaches up to touch the propeller of a plane standing parked on a field of grass.",A child is playing with a ball.,A child is playing outside.,0.6768392,2,2,0,1
+832,"Under a blue sky with white clouds, a child reaches up to touch the propeller of a plane standing parked on a field of grass.",A child is playing with a ball.,The child is holding a ball.,0.8514875,2,2,1,0
+12372,A young barefoot girl in a pink dress is jumping outside.,A child is playing.,child play in the playground,0.62830365,0,0,1,0
+772,"Under a blue sky with white clouds, a child reaches up to touch the propeller of a plane standing parked on a field of grass.",A child is reaching to touch the propeller out of curiosity.,The child is looking at the propeller.,0.7766978,1,1,0,0
+5709,A person powerwashing stairs leading down to a pool.,a dog chases a cat,canine runs towards feline,0.47305813,2,2,1,1
+22186,A dog leaps into the air in a grassy field surrounded by trees.,A dog is in a grassy field filled with trees.,A dog is playing in a field.,0.769492,0,0,1,1
+1113,Two men on bicycles competing in a race.,A few people are catching fish.,A few people are outside.,0.6027087,2,2,0,0
+21304,A hispanic fruit market with many different fruits and vegetables in view on a city street with a man passing the store dressed in dark pants and a hoodie.,A fruit market is selling vegetables,fruit and veg markets are selling,0.6528452,0,0,1,1
+4711,A girl swings high in the air.,A girl is gaining momentum to flip off the swing,The girl is swinging on the swing.,0.75742644,1,1,0,0
+4737,A girl swings high in the air.,A girl is gaining momentum to flip off the swing,There is a girl swinging..,0.6503807,1,1,0,0
+4784,A girl swings high in the air.,A girl is laying in the pool,A girl is in water...,0.6622852,2,2,0,1
+4752,A girl swings high in the air.,A girl is laying in the pool,A girl is in the water.,0.7025586,2,2,0,1
+21965,A teenage girl in winter clothes slides down a decline in a red sled.,A girl is on a beach with a blue sled.,a child with a sled on a beach,0.78922623,2,2,1,1
+4843,A girl swings high in the air.,A girl is on a swing,One of her friends are swinging,0.5657125,0,0,1,0
+18531,A young boy is sitting in a green tunnel,A girl is sitting,A girl is not standing.,0.76623046,2,2,0,1
+18544,A young boy is sitting in a green tunnel,A girl is sitting,The girl is not standing.,0.7376427,2,2,0,-1
+12986,A boy looks surly as his father looks at the camera.,a girl looks at her father,a father and daughter,0.59166026,2,2,1,1
+10276,A group of children enjoy their time on the beach.,A group of adults are swimming at the beach.,A group of people are at the beach.,0.7654475,2,2,0,0
+10318,A group of children enjoy their time on the beach.,A group of adults are swimming at the beach.,group in water with ocean,0.63956887,2,2,0,-1
+10290,A group of children enjoy their time on the beach.,A group of adults are swimming at the beach.,A group of people are swimming at the beach.,0.89734286,2,2,1,0
+10273,A group of children enjoy their time on the beach.,A group of adults are swimming at the beach.,People are swimming at the beach.,0.855074,2,2,1,0
+23557,Five people are sitting on horses at a rodeo.,A group of cowboys are sitting on horses.,there a bunch of cowboys sitting down,0.8141543,1,1,0,0
+23532,Five people are sitting on horses at a rodeo.,A group of cowboys are sitting on horses.,A group of people are outside.,0.458373,1,1,0,0
+7160,"Colorfully dressed people walk down the center of the road, with onlookers behind a barricade.",A group of people in a motorcade driving past an audience.,The group of people are in a motorcade.,0.8175727,2,2,0,0
+6197,A group of people prepare hot air balloons for takeoff.,A group of people prepare cars for racing.,A group of people are preparing for a race.,0.7774561,2,2,1,0
+7266,"Colorfully dressed people walk down the center of the road, with onlookers behind a barricade.",A group of people walking past a group of civilian spectators.,A group of people are walking together.,0.6067613,1,1,0,0
+7272,"Colorfully dressed people walk down the center of the road, with onlookers behind a barricade.",A group of people walking past a group of civilian spectators.,A group of people are walking.,0.7196768,1,1,0,0
+11748,A guy waxing a wooden floor with wax.,a guy is waxing,guy gets hair removed,0.42688823,0,0,2,0
+2671,A older gentleman finds it humorous that he is getting his picture taken while doing his laundry.,a guy laughs while doing laundry,There is a guy laughing while doing laundry outside,0.8290345,0,0,1,0
+4099,A pregnant lady singing on stage while holding a flag behind her.,A lady is participating in a talent show.,A lady is participating in a show.,0.78726715,1,1,0,1
+4120,A pregnant lady singing on stage while holding a flag behind her.,A lady is participating in a talent show.,there was an event with lady participating and,0.49036556,1,1,0,-1
+10194,A man waterskies with a life jacket.,A lifeguard races across the water.,A lifeguard is near the water.,0.80598664,1,1,0,1
+12328,A young barefoot girl in a pink dress is jumping outside.,A little girl is playing jump rope.,Kid playjump Rope while little girl plays,0.58323616,1,1,0,-1
+12322,A young barefoot girl in a pink dress is jumping outside.,A little girl is playing jump rope.,the young lady plays jump rope,0.7251557,1,1,0,1
+9422,A man wandering in the desert as the clouds roll in.,A man and a camel wonder in the desert.,There is a man in the desert.,0.63090587,1,1,0,0
+9446,A man wandering in the desert as the clouds roll in.,A man and a camel wonder in the desert.,the guy was with a camel outside,0.640134,1,1,2,1
+20076,A man plays the french horn as his pianist plays the supporting melody on stage.,A man and his pianist are performing their final tribute to Zelda.,A man and a pianist are playing a song.,0.5645373,1,1,0,0
+20065,A man plays the french horn as his pianist plays the supporting melody on stage.,A man and his pianist are performing their final tribute to Zelda.,A man and his pianist are playing music.,0.5891122,1,1,0,0
+8266,A man and a woman are looking at produce on display.,A man and woman are looking at produce.,A man and woman are shopping for food.,0.780578,0,0,1,0
+8609,A man and a woman are talking in a park,A man and woman are talking in the aquarium.,A man and a woman are together.,0.4866663,2,2,0,0
+23321,A couple sitting in white lawn chairs are smiling at the camera.,A man and woman pose for engagement photos.,"While taking photos, two people pose",0.61464673,1,1,0,0
+13735,A man wearing a white shirt is playing the drums.,A man in a band is playing the drums.,A man is playing the drums.,0.92044765,1,1,0,0
+13743,A man wearing a white shirt is playing the drums.,A man in a band is playing the drums.,A person is playing an instrument.,0.7094458,1,1,0,0
+18231,"A man in a blue windbreaker jacket, laying face down on a park bench, with a liquor bottle nestled by one of the bench's legs.",A man is dancing at the club popping bottles.,there's someone popping bottles,0.5865496,2,2,1,0
+16965,"A man in a blue shirt, jumping down a hill in a park.",A man is down a park,A man is walking outside.,0.4453454,0,0,2,-2
+11986,A man uses a projector to give a presentation.,A man is giving a presentation in front of a large crowd.,People are in front of the man who gave the presentation,0.66248393,1,1,0,0
+1561,A senior is waiting at the window of a restaurant that serves sandwiches.,A man is looking to order a grilled cheese sandwich.,There is a man looking for a meal,0.6898541,1,1,0,0
+1570,A senior is waiting at the window of a restaurant that serves sandwiches.,A man is looking to order a grilled cheese sandwich.,People are ordering food. A man is ordering food,0.6207718,1,1,0,-1
+13667,A man wearing a white shirt is playing the drums.,A man is playing a musical instrument.,He's a musician,0.5222632,0,0,1,0
+13710,A man wearing a white shirt is playing the drums.,A man is playing the trumpet with his hands tied behind his back.,a guy with his hands tied is playing an instrument,0.6850928,2,2,0,1
+17961,A man is sitting in on the side of the street with brass pots.,A man is playing with the brass pots,The man is playing with objects.,0.5759826,1,1,0,1
+13383,A man is reading a newspaper in a car dealership.,A man is reading a magazine at the hospital.,He reads the magazine at his place of employment,0.56280726,2,2,1,0
+601,A man in a blue shirt standing in front of a garage-like structure painted with geometric designs.,A man is repainting a garage,There is a man in the garage,0.66212237,1,1,0,0
+606,A man in a blue shirt standing in front of a garage-like structure painted with geometric designs.,A man is repainting a garage,a guy paints,0.3408755,1,1,0,1
+18044,A man is sitting in on the side of the street with brass pots.,A man is sitting.,person resting,0.37129673,0,0,1,0
+18004,A man is sitting in on the side of the street with brass pots.,A man is sitting.,A man is relaxing.,0.68095845,0,0,1,0
+16903,"A man in a blue shirt, jumping down a hill in a park.",A man is sleeping.,The man is sleepy.,0.84989256,2,2,1,0
+14131,A man in a black shirt is smiling at a woman in a black shirt what a tattoo and a eye brow ring.,A man is smiling at his wife.,A man and a woman are smiling.,0.7254045,1,1,0,1
+3686,A man in a white t-shirt takes a picture in the middle of the street with two public buses in the background.,A man is taking photos while on tour in nyc,A man is taking photos.. and,0.5797396,1,1,0,0
+12004,A man uses a projector to give a presentation.,A man is using a projector to watch television.,A person is using a projector.,0.7433109,2,2,0,0
+1526,A senior is waiting at the window of a restaurant that serves sandwiches.,A man is waiting in line for the bus.,the line was long,0.39076757,2,2,1,0
+3553,A man in a white t-shirt takes a picture in the middle of the street with two public buses in the background.,A man is wearing a black shirt,A man is wearing clothes.,0.4862853,2,2,0,0
+687,A man in a blue shirt standing in front of a garage-like structure painted with geometric designs.,A man is wearing a black shirt,A man has a shirt on.,0.51628333,2,2,0,0
+700,A man in a blue shirt standing in front of a garage-like structure painted with geometric designs.,A man is wearing a black shirt,a guy in a shirt,0.43557137,2,2,0,0
+21636,A man jumping sideways in the ocean.,A man jumps in the ocean.,man in the ocean with a jump rope,0.756331,0,0,1,0
+2448,A man in a black shirt is playing golf outside.,A man plays on a golf course to relax.,A man is on a golf course.,0.8125421,1,1,0,0
+2468,A man in a black shirt is playing golf outside.,A man plays on a golf course to relax.,A man is playing a golf game.,0.7409899,1,1,0,0
+374,A man selling donuts to a customer during a world exhibition event held in the city of Angeles,A man selling donuts to a customer during a world exhibition event while people wait in line behind him.,the customer was waiting in line behind the man who wasselling doughnuts to him,0.57243425,1,1,2,0
+403,A man selling donuts to a customer during a world exhibition event held in the city of Angeles,A man selling donuts to a customer.,A man sells doughnuts.,0.7139305,0,0,2,1
+400,A man selling donuts to a customer during a world exhibition event held in the city of Angeles,A man selling donuts to a customer.,The man is selling doughnuts.,0.7280186,0,0,2,1
+13505,A carefully balanced male stands on one foot near a clean ocean beach area.,A man stands on one foot with his wife near the beach.,A man and woman stand near the beach.,0.741144,1,1,2,1
+13504,A carefully balanced male stands on one foot near a clean ocean beach area.,A man stands on one foot with his wife near the beach.,A man and woman stand on one foot near the beach.,0.84808683,1,1,2,1
+19442,People dressed in costumes walking down a street.,A naked man walking down the street.,A man is walking outside.,0.6520114,2,2,1,0
+11350,A nun uses her camera to take a photo of an interesting site.,A nun on her knees praying by a statue.,The nun is on her knees.,0.8102879,2,2,1,0
+8733,A man and a woman are talking in a park,A pair of people are talking outdoors.,2 guys talked in the outdoor,0.67299104,0,0,2,0
+3494,People wearing red shirts are standing in a large pool of water as it splashes over and around them.,A person in a shirt,the guy was in the top,0.35051912,0,0,2,-1
+8963,Number 916 is hoping that he is going to win the race.,A person is betting that he will win  the race.,A person is betting on a race...,0.8280718,1,1,0,1
+5714,A person rides his bicycle in the sand beside the ocean.,A person is falling off his bike.,A person is on his bike.,0.75480723,2,2,0,0
+5726,A person rides his bicycle in the sand beside the ocean.,A person is falling off his bike.,The person is riding a bike.,0.67025644,2,2,0,0
+8901,Number 916 is hoping that he is going to win the race.,A person is is playing baseball.,Someone is playing a game.,0.654487,2,2,0,1
+8893,Number 916 is hoping that he is going to win the race.,A person is is playing baseball.,A person is playing an sport.,0.64911795,2,2,0,1
+5762,A person rides his bicycle in the sand beside the ocean.,A person is on a boat.,A person is on the water.,0.8111366,2,2,0,1
+15731,"A restaurant front line, with a warmer in the front and a person in a red Coca Cola shirt cooking.",A person is wearing a Coca Cola shirt.,people wear coke hat,0.33737117,0,0,1,0
+5611,A person powerwashing stairs leading down to a pool.,a person washes stairs,Man doing housework,0.44611606,0,0,1,0
+10846,An older gentleman enjoys a scenic stroll through the countryside.,A pirate boards the spaceship.,someoneboardstheship,0.42466515,2,2,0,-1
+11171,Number 13 kicks a soccer ball towards the goal during children's soccer game.,A player trying to score in a soccer game.,someone playing in the game tries for the ball,0.7724822,0,0,1,0
+22155,A dog leaps into the air in a grassy field surrounded by trees.,A puppy jumps up to catch a ball.,Puppy playing with a ball.,0.7154882,1,1,2,1
+14932,A diver is swimming with a turtle.,A sick turtle is swimming by a diver.,A turtle swims by a diver.,0.8814353,1,1,0,0
+14961,A diver is swimming with a turtle.,A sick turtle is swimming by a diver.,Someone swimming with a turtle,0.74601585,1,1,0,0
+1918,"At an outdoor event in an Asian-themed area, a crowd congregates as one person in a yellow Chinese dragon costume confronts the camera.",A single man is next to a camera,one human in front of,0.35239446,2,2,0,-1
+3516,People wearing red shirts are standing in a large pool of water as it splashes over and around them.,A tall person in a shirt,A person in a shirt.,0.61145777,1,1,0,0
+1721,"Man in a black suit, white shirt and black bowtie playing an instrument with the rest of his symphony surrounding him.",A tall person in a suit,People are standing,0.23517385,1,1,0,1
+15067,A diver is swimming with a turtle.,A turtle has a diver swimming with it.,It was turtle and scuba diver,0.7004851,0,0,1,1
+12898,A couple bows their head as a man in a decorative robe reads from a scroll in Asia with a black late model station wagon in the background.,A white late model station wagon is in the background.,the wagon is white.,0.68525743,2,2,1,0
+19125,Woman wearing a white donkey costume while talking to a man.,A woman is dancing near a fire.,The woman is near a fire.,0.80360776,2,2,1,0
+18256,A woman is using clothespins to hang up laundry outside on a laundry line.,A woman is folding her washed laundry.,A woman is handling her laundry.,0.9090921,2,2,0,0
+7309,A woman is talking on the phone while standing next to a dog.,A woman is sleeping.,The woman is not awake.,0.76484674,2,2,0,1
+7299,A woman is talking on the phone while standing next to a dog.,A woman is sleeping.,A woman is not awake.,0.7761583,2,2,0,1
+23395,A couple sitting in white lawn chairs are smiling at the camera.,A woman is standing alone.,A woman is not with others.,0.55372065,2,2,0,1
+18376,A woman is using clothespins to hang up laundry outside on a laundry line.,A woman is taking care of her laundry.,women laundry by herself,0.64698356,0,0,2,0
+15242,A young boy reaches for and touches the propeller of a vintage aircraft.,A young boy and his friend admire the vintage aircraft.,the boys are looking at the vintage aircraft,0.73721814,1,1,0,0
+2877,An Indian woman is washing and cleaning dirty laundry at a lake and in the background is a kid who appears to have jumped into the lake.,An Indian woman is doing laundry for her son in the lake.,there's a woman washing clothes at an indian lakes,0.7551625,1,1,0,1
+23002,Two players are on a wet field and one is on the ground.,Both people are standing up.,The people are standing tall.,0.69516355,2,2,1,1
+4277,A little boy in a blue shirt holding a toy.,Boy dressed in blue carrying toy to a toybox.,A boy in blue is carrying a toy.,0.86510617,1,1,0,0
+1157,A young boy in a field of flowers carrying a ball,boy leaving baseball game,The boy left the baseball game.,0.88081795,1,1,2,1
+10347,A group of children enjoy their time on the beach.,Children are swimming at the beach.,children at the beach,0.84713644,1,1,0,0
+7710,5 women sitting around a table doing some crafts.,Five friends sit at a table.,five humans seated together at a table,0.82526714,1,1,0,0
+7718,5 women sitting around a table doing some crafts.,Five friends sit at a table.,"Some people sit on the tables,",0.65127236,1,1,0,0
+18937,Four young men sit on the floor close to a television that is showing Elmo from Sesame Street.,Four males are sitting indoors because it's raining.,The four males are sitting indoors.,0.7591019,1,1,0,0
+18850,Four young men sit on the floor close to a television that is showing Elmo from Sesame Street.,Four males are sitting indoors.,there aren't many males,0.37526453,0,0,2,0
+20243,A man with a white towel wrapped around the lower part of his face and neck.,He doesn't want hair to land on his neck.,That isnt something he wants his hair to land on,0.69341433,1,1,2,-1
+3767,A shirtless man is singing into a microphone while a woman next to him plays an accordion.,He is playing a saxophone.,He is playing a musical instrument,0.75822335,2,2,0,1
+3762,A shirtless man is singing into a microphone while a woman next to him plays an accordion.,He is playing a saxophone.,A person is playing a musical instrument.,0.6634299,2,2,0,0
+3757,A shirtless man is singing into a microphone while a woman next to him plays an accordion.,He is playing a saxophone.,There is a person playing a musical instrument.,0.66079277,2,2,0,0
+3761,A shirtless man is singing into a microphone while a woman next to him plays an accordion.,He is playing a saxophone.,He plays an instrument.,0.78011477,2,2,0,1
+15424,Indian people dressed in magnificent bright colors conduct a ritual.,Indian people having a ritual for a birthday celebration,People are having a celebration.,0.6164156,1,1,0,1
+15496,Indian people dressed in magnificent bright colors conduct a ritual.,Indian people hunting animals,there will be indian people,0.25970626,2,2,1,0
+1057,Two men on bicycles competing in a race.,Men are riding bicycles on the street.,Men are riding bikes outside.,0.8985786,1,1,0,1
+1103,Two men on bicycles competing in a race.,Men are riding bicycles on the street.,Man biking down an urban thoroughfares,0.4844716,1,1,2,1
+12649,A man is a safety suit walking outside while another man in a dark suit walks into a building.,Men are sitting in the park.,The men are outside,0.57705325,2,2,0,0
+6339,Men stand on steps leading out of a body of water,Men are sitting outside near a golf course.,The men are near the golf course.,0.7735975,2,2,1,0
+6422,Men stand on steps leading out of a body of water,Men are standing by a docked boat.,people by boat.,0.5926323,1,1,2,1
+6429,Men stand on steps leading out of a body of water,Men are standing by a docked boat.,Man on docked Boat,0.5615535,1,1,2,0
+6408,Men stand on steps leading out of a body of water,Men are standing by a docked boat.,Men are standing near a boat.,0.8865712,1,1,0,1
+4151,The two farmers are working on a piece of John Deere equipment.,Men are working on John Deere equipment,Some men are working on John Deere equipment.,0.96222615,0,0,1,1
+3092,A group of onlookers glance at a person doing a strange trick on her head.,Onlookers are impressed by the trick.,People are watching a trick.,0.6066941,1,1,0,0
+3100,A group of onlookers glance at a person doing a strange trick on her head.,Onlookers are impressed by the trick.,people watching the trick.,0.57214564,1,1,0,0
+9957,A lot of people walking outside a row of shops with an older man with his hands in his pocket is closer to the camera.,People are looking through the shops for stuff to buy.,People are looking at stuff.,0.7412512,1,1,0,1
+1054,Two men on bicycles competing in a race.,People are riding bikes.,they ride their Bikes,0.6681575,0,0,2,1
+1378,Families waiting in line at an amusement park for their turn to ride.,People are waiting in line at a restaurant.,People are waiting in line.. and,0.8113512,2,2,0,-1
+1423,Families waiting in line at an amusement park for their turn to ride.,People are waiting to see a movie.,They're going to see a movie,0.72613627,2,2,1,1
+8490,People standing in line of a beer and curry line.,People standing in line,Individuals waiting to be seated,0.48456395,0,0,1,0
+20638,Two boys are holding red kites with water in the background.,Persons are involved in outdoor recreation.,"persons playing out doors,",0.43896323,0,0,2,1
+21181,a little girl sitting in a seat.,She is standing on the seat.,She is near the seat.,0.80519134,2,2,0,0
+15569,Two little girls ride an inflatable dinghy down a purple water slide.,Sisters squeal in delight as the go down the slide.,The girls go down the slide.,0.675261,1,1,0,0
+16666,A white dog is chasing a stuffed animal being pulled on a string.,the animal is a puppy,The animal is a baby.,0.61875093,1,1,2,1
+23246,A little baby with dirty fingers and smudges on her face points to her blue eye.,The baby is dirty.,The baby is covered in dirt.,0.79741865,0,0,1,0
+23250,A little baby with dirty fingers and smudges on her face points to her blue eye.,The baby is dirty.,The baby is not well.,0.70323414,0,0,1,0
+4573,A baby at the end of a slip and slide at a party,The baby is wet.,The baby is soaking wet.,0.9240275,0,0,1,0
+6824,A young boy with black hair is holding onto a gun which is secured to a vehicle which is being driven by a young man who is wearing a bright pink shirt.,The bank has just been robbed.,The bank has been broken into.,0.72861713,1,1,2,1
+10043,A barefooted adolescent boy in a yellow shirt reaching the top of a small skateboarding ramp.,the boy is five,The boy is younger than five.,0.77782786,1,1,0,-2
+9999,A barefooted adolescent boy in a yellow shirt reaching the top of a small skateboarding ramp.,the boy is flying a helicopter,The boy is outside.,0.604101,2,2,0,0
+18757,The little boy is jumping into a puddle on the street.,The boy is getting dirty as he plays in the muddy puddles.,a young boy is getting dirty playing outside,0.7776616,1,1,0,1
+8014,A young boy playing in the grass.,The boy is in the sand.,boy playing outside near water and water,0.52927744,2,2,0,0
+7969,A young boy playing in the grass.,The boy is in the sand.,The boy is outside.,0.66879904,2,2,0,0
+8009,A young boy playing in the grass.,The boy is in the sand.,boy playing outside,0.5463016,2,2,0,0
+7872,A young boy playing in the grass.,The boy is playing make believe.,The boy is playing.,0.5897358,1,1,0,0
+19904,A large group of people are gathered outside of a brick building lit with spotlights.,The building is brick.,bricks are used in the Building,0.52280337,0,0,1,1
+19915,A large group of people are gathered outside of a brick building lit with spotlights.,The building is brick.,Its abrick,0.43384007,0,0,1,-1
+19749,"This mother and her daughter and granddaughter are having car trouble, and the poor little girl looks hot out in the heat.",The car that belongs to the family is having issues.,The car that is owned by the family has problems.,0.912835,0,0,1,1
+16322,Two children playing on the floor with toy trains.,The children played on the floor with their new christmas toys.,The children were playing with their toys.,0.78378737,1,1,0,1
+19043,"Dinner and decisions, with the crew.",the crew was celebrating a birthday,the people were having their own birthday,0.57799286,1,1,2,-1
+18390,A dog reaches to catch a ball with its mouth.,The dog is playing with a ball.,The dog is playing outside.,0.7286858,0,0,1,0
+21425,A black and brown dog walks in the shallows of a large body of water.,The dog is wearing a clown suit.,The dog is in a costume.,0.7218852,2,2,1,1
+20806,Dog herding cows,The dogs are trying to get the cows inside a barn.,The animals are trying to get inside the building.,0.778086,1,1,2,1
+20789,Dog herding cows,The dogs are trying to get the cows inside a barn.,The cows are in a barn.,0.7830061,1,1,2,0
+14856,"Three elephants, each carrying a group of people, walking through the water.",The elephants are performing in a circus tent.,The elephants are performing.,0.8253369,2,2,1,1
+12430,Four guys with guns and army gear.,The four guys are in the army.,People who're membersofthearmy,0.16894212,1,1,0,1
+12416,Four guys with guns and army gear.,The four guys are in the army.,"Guys in the army, four of them",0.8358015,1,1,0,1
+12487,Four guys with guns and army gear.,The four guys are playing hopscotch.,The four men are playing a game.,0.67300856,2,2,1,0
+9112,Girl plays with colorful letters on the floor.,The girl is spelling out her favorite words with colored letters.,colored letter spelled words for the girl who is spelling,0.7344876,1,1,0,-1
+14519,kids drawing something on paper,The kids are drawing pictures of animals.,There are kids drawing.,0.7199183,1,1,0,0
+12706,A man poses for a photo in front of a Chinese building by jumping.,The man has experience in taking photos.,the guy takes pictures The guy takes pictures,0.54679507,1,1,0,-1
+2540,A man in a black shirt is playing golf outside.,The man in the black shirt trades Pokemon cards with his girlfriend.,Man in shirt trades pokemon card for girlfriend in black,0.79496276,2,2,1,1
+4655,A baby at the end of a slip and slide at a party,The man is at the end of the slip and slide,"On a slip and slid is where he stands,",0.6912447,2,2,0,0
+20143,A man with a white towel wrapped around the lower part of his face and neck.,The man is covering his neck,People are hiding from the man,0.33473554,0,0,1,0
+10236,A man waterskies with a life jacket.,The man is enjoying the ocean.,The man is by the water.,0.6216527,1,1,0,0
+10230,A man waterskies with a life jacket.,The man is enjoying the ocean.,A man is in the water.,0.69617563,1,1,0,0
+10270,A man waterskies with a life jacket.,The man is enjoying the ocean.,People are near some water,0.35948676,1,1,0,0
+9642,"A white-haired man with a mustache and glasses in a business suit stands outside at a podium marked with the seal of the US House of Representatives, surrounded by many people, with a columned building behind him.",The man is getting ready to speak.,"While preparing, the man gets prepared",0.5009757,1,1,0,-1
+7774,Street performer with bowler hat and high boots performs outside.,The man is performing a magic act.,Someone doing something with Magic Act,0.601574,1,1,0,-1
+7728,Street performer with bowler hat and high boots performs outside.,The man is performing a magic act.,A man is doing magic.,0.9300271,1,1,2,1
+12768,A man poses for a photo in front of a Chinese building by jumping.,The man is prepared for his photo.,The man is about to take a photo.,0.77148825,0,0,1,0
+12772,A man poses for a photo in front of a Chinese building by jumping.,The man is prepared for his photo.,The man is about to get his picture taken.,0.79199,0,0,1,1
+7101,A man in a black shirt is playing a guitar.,The man is wearing a blue shirt.,he has an orange top on,0.26943687,2,2,1,1
+2999,A man in a green jersey and rollerskates stumbles as a man in a black jersey appears to collide with him.,The man stumbles stumbles in rollerskates.,The man fell while rollerskating.,0.7028025,0,0,1,0
+20305,Man walking with tall buildings with reflections behind him.,The man was running through the park.,The man was outside.,0.52884096,2,2,0,0
+11395,A man sits in a chair on the sidewalk in front of a huge display of brightly colored artwork.,The man was watching tv,The man was watching something.,0.6150687,2,2,1,0
+11391,A man sits in a chair on the sidewalk in front of a huge display of brightly colored artwork.,The man was watching tv,The man is watching a show.,0.6074898,2,2,1,1
+2573,A man in a black shirt is playing golf outside.,The man wearing the black shirt plays a game of golf.,THE MAN IS PLAYING A GAMBLE,0.5300681,0,0,1,-1
+20975,Men and women walking down a sidewalk next to a garden.,The men and women are running through the forest.,Many humans were moving around in a forested area,0.585021,2,2,0,1
+8376,People are throwing tomatoes at each other.,The men are covered in tomatoes.,The men are eating food.,0.4469941,1,1,2,0
+8389,People are throwing tomatoes at each other.,The men are covered in tomatoes.,people were covering their eyes with tomato,0.66030926,1,1,0,1
+16026,"Two men are in an electronics workshop, working on computers or equipment.",The men are experts when it comes to electronics.,Experts when it comes to computers and gadgets,0.6160346,1,1,0,1
+9212,Two men are cooking food together on the corner of the street.,The men are making something to eat.,people Making stuff for themselves,0.44266284,0,0,1,0
+15902,"Two men are in an electronics workshop, working on computers or equipment.",The men are unaware of what computers are.,The men aren't sure what computers are.,0.92740345,2,2,1,1
+16585,"Three men in a science lab watch one of them hold a burning object, one man on the side is reaching for the ground.",The men in the science lab are performing a science experiment on fruit flies.,The men are in the science lab.,0.7745729,1,1,0,0
+16593,"Three men in a science lab watch one of them hold a burning object, one man on the side is reaching for the ground.",The men in the science lab are performing a science experiment on fruit flies.,Fruit flies being studied in the laboratory by the men,0.73763317,1,1,2,1
+19805,"This mother and her daughter and granddaughter are having car trouble, and the poor little girl looks hot out in the heat.","The mother, daughter, and granddaughter are out in the middle of the day.",Four individuals in the middle of a day.,0.58469224,1,1,0,0
+17109,Two boys stand in an ocean as the sun sets.,The ocean is calm,The ocean is not very turbulent.,0.7490693,1,1,0,1
+13466,"Two male police officers on patrol, wearing the normal gear and bright green reflective shirts.",The officers have shot an unarmed black man and will not go to prison for it.,The officers will not be going to prison for shooting the man..,0.8174971,2,2,1,-1
+13467,"Two male police officers on patrol, wearing the normal gear and bright green reflective shirts.",The officers have shot an unarmed black man and will not go to prison for it.,A man who was shot by officers will not go to prison for the crime.,0.7289832,2,2,1,0
+13453,"Two male police officers on patrol, wearing the normal gear and bright green reflective shirts.",The officers have shot an unarmed black man and will not go to prison for it.,The officers will not be going to prison for shooting a black man.,0.8796945,2,2,1,1
+19966,A large group of people are gathered outside of a brick building lit with spotlights.,The people are going to a concert.,Everyone else goes somewhere else,0.08100369,1,1,2,-1
+8306,People are throwing tomatoes at each other.,The people are sitting and eating their food.,People are eating.,0.84877604,2,2,0,1
+10506,A group of people sit on benches at a park outside a building.,The people wait for the bus to come.,Humans await an bus.,0.80451983,1,1,2,1
+10592,"A small baby, possibly a newborn is being bathed by a person in blue scrubs wearing protective gloves.",The person bathing the small baby is the mother.,One of the people bathes a small baby,0.6676875,1,1,0,0
+10578,"A small baby, possibly a newborn is being bathed by a person in blue scrubs wearing protective gloves.",The person bathing the small baby is the mother.,The person is taking care of the baby.,0.4903113,1,1,0,0
+10581,"A small baby, possibly a newborn is being bathed by a person in blue scrubs wearing protective gloves.",The person bathing the small baby is the mother.,The person is bathing a small baby.,0.84767145,1,1,0,0
+15652,"A restaurant front line, with a warmer in the front and a person in a red Coca Cola shirt cooking.",The person is cooking a hamburger.,A person is cooking.,0.7699822,1,1,0,0
+15694,"A restaurant front line, with a warmer in the front and a person in a red Coca Cola shirt cooking.",The person is cooking a hamburger.,the man cooks,0.63799053,1,1,0,-1
+22710,A man is sitting outside wearing blue pants.,The person is inside.,There is a person in this picture.,0.54248285,2,2,0,0
+19539,A person in a blue plaid shirt is writing on a chalkboard.,The person is reading a book.,The person is looking at a book.,0.90994805,2,2,1,1
+19550,A person in a blue plaid shirt is writing on a chalkboard.,The person is reading a book.,A person is reading,0.8513488,2,2,0,0
+19670,A person in a blue plaid shirt is writing on a chalkboard.,The person is writing on the chalk board.,a man writes with chalk,0.75641257,0,0,1,1
+19675,A person in a blue plaid shirt is writing on a chalkboard.,The person is writing on the chalk board.,someone wrote a letter with the chalkboard board,0.7520411,0,0,1,0
+6067,A brown a dog and a black dog in the edge of the ocean with a wave under them boats are on the water in the background.,The pets are sleeping on the grass.,The animals are outside.,0.7391123,2,2,0,0
+1300,Families waiting in line at an amusement park for their turn to ride.,The restaurant is very bad.,The restaurant is not very good.,0.9159054,2,2,1,-2
+13857,Three women in dress suits walk by a building.,The suits are gray.,Men's clothing is grey,0.44564188,1,1,2,1
+13868,Three women in dress suits walk by a building.,The suits are gray.,People wearing these grey clothes,0.48392242,1,1,2,1
+20175,A man with a white towel wrapped around the lower part of his face and neck.,The towel is pink and blue striped,The towel has stripes.,0.78539956,2,2,1,1
+9242,Two men are cooking food together on the corner of the street.,The two men are cooking food for the block party.,There are two men cooking food,0.747555,1,1,0,0
+9258,Two men are cooking food together on the corner of the street.,The two men are cooking food for the block party.,two guys cook for a party in the kitchen!,0.72070235,1,1,2,1
+15950,"Two men are in an electronics workshop, working on computers or equipment.",The two men are electronics enthusiasts.,The men are into electronics.,0.84516674,1,1,0,1
+3905,Women and children sitting outside in the shade while a group of younger children sitting inside in the shade.,The woman and kids and sitting down.,The woman is sitting with her kids.,0.8553507,0,0,1,0
+13910,Three women in dress suits walk by a building.,The woman are wearing bikinis.,woman is dressed up,0.23952967,2,2,0,0
+14711,A young woman is singing into a microphone.,The woman is in a band.,The woman is performing.,0.7847366,1,1,0,0
+3941,Women and children sitting outside in the shade while a group of younger children sitting inside in the shade.,The woman is running.,The woman is moving quickly.,0.75682795,2,2,1,1
+3939,Women and children sitting outside in the shade while a group of younger children sitting inside in the shade.,The woman is running.,The woman is outside.,0.6045486,2,2,0,0
+4498,A woman is writing something on a post-it note which is hanging on a bulletin board with a lot of other post-it notes.,The woman is talking on the phone.,Someone on the phone is talking to someone,0.7764293,2,2,1,1
+6774,A young boy with black hair is holding onto a gun which is secured to a vehicle which is being driven by a young man who is wearing a bright pink shirt.,The young boy is completing a heist.,A boy is robbing a store.,0.44516128,1,1,2,1
+14577,kids drawing something on paper,There are kids drawing.,Boys and girls Drawing,0.77477735,0,0,1,0
+9781,A man running a marathon talks to his friend.,There is a man running.,Man running. snatch,0.69175065,0,0,2,-1
+15191,A man with a beard skateboarding and a boy with a blue and black backpack riding a green bike in the background.,There is a man with a gray beard skateboarding.,A man with a beard is skateboarding.,0.9160574,1,1,0,0
+4697,A baby at the end of a slip and slide at a party,There is a party,party,0.6990663,0,0,1,-1
+21077,a man is swimming inside of a pool,there is a person drowning.,There is a person in a body of water.,0.6366822,2,2,0,0
+21096,a man is swimming inside of a pool,there is a person drowning.,A person is in the water.,0.6413951,2,2,0,0
+3233,The middle eastern woman wearing the pink headscarf is walking beside a woman in a purple headscarf.,These two women are friends.,Two women are close to one another.,0.6544995,1,1,0,0
+3256,The middle eastern woman wearing the pink headscarf is walking beside a woman in a purple headscarf.,These two women are friends.,the girls were both close to each other,0.4147387,1,1,0,1
+20993,Men and women walking down a sidewalk next to a garden.,They are admiring the beautiful flowers in the garden.,The people are in a garden.,0.74157304,1,1,0,0
+2881,A man in a green jersey and rollerskates stumbles as a man in a black jersey appears to collide with him.,They are driving cars.,They are driving vehicles.,0.9308646,2,2,0,1
+14063,two people are waiting for a train at a station.,They will both get onto the same train together.,We shall travel together by rail,0.47382516,1,1,0,-1
+22623,Three children dressed in winter clothes are walking through the woods while pushing cargo along.,Three childre are dressed in summer clothes.,The childre are wearing clothes.,0.7180457,2,2,0,0
+20024,A man plays the french horn as his pianist plays the supporting melody on stage.,Three guys are playing the bongos on stage.,The three guys are playing music.,0.7713076,2,2,0,1
+20020,A man plays the french horn as his pianist plays the supporting melody on stage.,Three guys are playing the bongos on stage.,Three guys are playing instruments.,0.80410093,2,2,0,1
+20036,A man plays the french horn as his pianist plays the supporting melody on stage.,Three guys are playing the bongos on stage.,Some guys are playing instruments.,0.7605301,2,2,0,0
+2123,Two doctors perform surgery on patient.,Two doctors are performing surgery on a man.,Two doctors are working on a patient.,0.80869496,1,1,0,0
+2139,Two doctors perform surgery on patient.,Two doctors are performing surgery on a man.,The two doctors are performing surgery,0.8882493,1,1,0,0
+2115,Two doctors perform surgery on patient.,Two doctors are performing surgery on a man.,The doctors are performing surgery.,0.871204,1,1,0,0
+11943,This is the image of two Asian men squatting near a mop-pad.,Two italian girls are squatting.,two italians squatted,0.36255115,2,2,0,1
+19303,A boy and a girl in jackets gaze in a clothing store window.,Two kids are flying on a hovercraft.,The kids are on a toy.,0.59600526,2,2,1,0
+4885,A view of the back of a woman having a beverage.,woman drinks a beer,Lady with beverage in hand,0.62431914,1,1,0,1
+1828,Two women having drinks and smoking cigarettes at the bar.,Women are celebrating at a bar.,A group of women are at a bar.,0.82558763,1,1,0,0
+1840,Two women having drinks and smoking cigarettes at the bar.,Women are celebrating at a bar.,The women are at a bar,0.8125538,1,1,0,0
+6510,A group of young people with instruments are on stage.,Young people are playing water polo.,Young people are playing a sport together,0.6174595,2,2,1,1
