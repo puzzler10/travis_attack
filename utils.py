@@ -2,6 +2,10 @@ import GPUtil
 from threading import Thread
 import time 
 
+
+
+
+############### Misc useful ##############################
 def show_random_elements(dataset, num_examples=10):
     """Print some elements in a nice format so you can take a look at them. Use for a dataset from the `datasets` package.  """
     import datasets
@@ -30,6 +34,43 @@ def round_t(t, dp=2):
     return t.detach().numpy().round(dp)                       
     
     
+################# Data cleaning and prep #############################
+def create_train_valid_test(df, frac_train=0.7, frac_valid=0.15,
+                            temporal=False, date_col=None, shuffle=False,
+                            drop_date=False, drop_other_cols=[]):
+    """ Generates train, validation and test sets for data. Handles data with temporal components. 
+    The test set will have (1 - frac_train - frac_valid) as a fraction of df 
+    
+    df: a Pandas dataframe
+    frac_train: fraction of data to use in training set 
+    frac_valid: fraction of data to use in validation set 
+    temporal: does the data have a temporal aspect? Boolean
+    date_col: the temporal column of df to order by. Required if temporal=True
+    shuffle: shuffle the data in the training test sets (only valid for temporal=False)
+    drop_date: drop the date column in the results or not 
+    drop_other_cols: list with column names to drop 
+    """
+    import numpy as np
+    import pandas as pd 
+    if temporal and shuffle:      print("Shuffle = True is ignored for temporal data")
+    if temporal and not date_col: raise ValueError("Need to pass in a value for date_col if temporal=True")
+    if not temporal and date_col: print("Parameter for date_col ignored if temporal=False")
+    frac_test = 1 - frac_train - frac_valid
+    if temporal:
+        # Sort the dataframe by the date column 
+        inds = np.argsort(df[date_col])
+        df = df.iloc[inds].copy()
+    else: 
+        if shuffle: 
+            inds = np.random.permutation(df.shape[0])
+            if type(df) == pd.DataFrame:   df = df.iloc[inds].copy()
+            else:                          df = df[inds].copy()
+    if drop_date: df.drop(date_col, axis=1, inplace=True)
+    if drop_other_cols: df.drop(drop_other_cols, axis=1, inplace=True)
+    train = df[0:int(df.shape[0] * frac_train)]
+    valid = df[(train.shape[0]):(int(train.shape[0] + (df.shape[0] * frac_valid)))]
+    test  = df[(train.shape[0] + valid.shape[0]):]
+    return (train.copy(), valid.copy(), test.copy())
     
     
     
