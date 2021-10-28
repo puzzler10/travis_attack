@@ -1,2 +1,4 @@
 # travis_attack
-A sample readme 
+
+`/runs` stores tensorflow information 
+

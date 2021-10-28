@@ -1,0 +1,10 @@
+Train paraphrases: ['I like the movie.', "I don't like this movie.", 'I love this apple.', "I don't like apples."]
+Train VM scores [-0.072 -0.032 -0.064 -0.078]
+Train ROUGE scores [0.75  0.667 1.    0.222]
+Train rewards: [0.446 0.479 0.436 0.483]
+Train avg reward: 0.46090303568376434
+Test paraphrases: ['I like the taste of this banana.', "I don't like bananas.", 'I like this film.', "I don't like this film."]
+Test VM scores [-0.28  -0.038  0.033 -0.07 ]
+Test ROUGE scores [0.727 0.364 0.75  0.6  ]
+Test rewards: [0.296 0.486 0.525 0.458]
+Test avg reward: 0.4412973091006279
