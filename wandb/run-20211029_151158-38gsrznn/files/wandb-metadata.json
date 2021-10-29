@@ -1,0 +1,26 @@
+{
+    "os": "Linux-3.10.0-1160.24.1.el7.x86_64-x86_64-with-glibc2.10",
+    "python": "3.8.5",
+    "heartbeatAt": "2021-10-29T04:12:02.160674",
+    "startedAt": "2021-10-29T04:11:58.794182",
+    "docker": null,
+    "gpu": "Quadro RTX 5000",
+    "gpu_count": 1,
+    "cpu_count": 26,
+    "cuda": null,
+    "args": [
+        "-f",
+        "/home/tproth/.local/share/jupyter/runtime/kernel-f9fd539c-990e-40a1-9fe1-603ccf84fcfe.json"
+    ],
+    "state": "running",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": "git@github.com:puzzler10/travis_attack.git",
+        "commit": "ee5529de2fcbb599d175210877754178036aa4be"
+    },
+    "email": "tom.roth@live.com.au",
+    "root": "/data/tproth/travis_attack",
+    "host": "mercury12.ihpc.uts.edu.au",
+    "username": "tproth",
+    "executable": "/home/tproth/Programs/miniconda/envs/nlp_env/bin/python"
+}
