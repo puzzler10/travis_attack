@@ -82,7 +82,9 @@ def plot_grad_flow(named_parameters):
     Usage: Plug this function in Trainer class after loss.backwards() as 
     "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
     from matplotlib.lines import Line2D
+    import numpy as np
     import matplotlib.pyplot as plt 
+    plt.figure()
     ave_grads = []
     max_grads= []
     layers = []
@@ -104,6 +106,7 @@ def plot_grad_flow(named_parameters):
     plt.legend([Line2D([0], [0], color="c", lw=4),
                 Line2D([0], [0], color="b", lw=4),
                 Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+    return plt
 
 
 def print_info_on_generated_text():
