@@ -253,3 +253,23 @@ class Monitor(Thread):
         self.stopped = True
         
 
+def show_gpu(msg):
+    """
+    ref: https://github.com/huggingface/transformers/issues/1742#issue-518262673
+    put in logger.info()
+    """
+    import subprocess
+    def query(field):
+        return(subprocess.check_output(
+            ['nvidia-smi', f'--query-gpu={field}',
+                '--format=csv,nounits,noheader'], 
+            encoding='utf-8'))
+    def to_int(result):
+        return int(result.strip().split('\n')[0])
+    
+    used = to_int(query('memory.used'))
+    total = to_int(query('memory.total'))
+    pct = used/total
+    return f"{msg} {100*pct:2.1f}% ({used} out of {total})" 
+
+
