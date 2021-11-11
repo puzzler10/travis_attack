@@ -1,4 +1,4 @@
 # travis_attack
 
-`/runs` stores tensorflow information 
+`/runs` stores tensorboard information 
 
