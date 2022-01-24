@@ -12,6 +12,8 @@ import textstat
 import difflib as dl
 from itertools import groupby
 from operator import itemgetter
+import plotly.express as px
+
 
 # Init "global" variables for use here 
 nlp = spacy.load("en_core_web_sm")
@@ -121,11 +123,10 @@ def get_text_metrics(text):
     doc = nlp(text)
     # Which tags to keep
     # see  https://universaldependencies.org/docs/u/pos/
-    UPOS_tags = ['ADJ','ADP','ADV','AUX','CONJ','DET','INTJ','NOUN',
-     'NUM','PART','PRON','PROPN','PUNCT','SCONJ',
-     'SYM','VERB','X']
+    UPOS_tags = ['ADJ','ADP','ADV','AUX','DET','NOUN',
+     'NUM','PART','PRON','PROPN','SCONJ','VERB']
     d_POS = defaultdict(lambda: 0)  # d_POS holds parts of speech
-    d['n_nonzero_synsets'] = 0  # fix something weird with datasets.map code?
+  #  d['n_nonzero_synsets'] = 0 
     for token in doc:
         #n_synsets = len(token._.wordnet.synsets())
       #  n_lemmas = len(token._.wordnet.lemmas())
@@ -134,7 +135,7 @@ def get_text_metrics(text):
         #if n_synsets > 0: d['n_nonzero_synsets'] += 1 
         d_POS[token.pos_] += 1
 
-    d['n_tokens'] = max(len(doc), 1)  # handle empty string 
+   # d['n_tokens'] = max(len(doc), 1)  # handle empty string 
 #    d['avg_synsets'] = d['n_total_synsets'] / d['n_tokens']
  #   d['avg_lemmas']  = d['n_total_lemmas']  / d['n_tokens']     
     for tag in UPOS_tags: d['n_upos_tag_' + tag] = d_POS[tag]
@@ -182,7 +183,6 @@ def get_text_pair_metrics(orig, pp):
 
 def get_text_metrics_for_ds(ds, colname, suffix, num_proc):
     """returns a df"""
-    # num_proc=8 seems pretty good - diminishing returns and we may as well leave some CPU for others 
     x = ds.map(get_text_metrics, input_columns = [colname], batched=False, 
                num_proc = num_proc )
     # rename columns
@@ -199,6 +199,7 @@ def get_text_pair_metrics_for_ds(ds, num_proc):
 
 
 def add_text_stats(df, num_proc=min(8, psutil.cpu_count())):
+    # num_proc=8 seems pretty good - diminishing returns and we may as well leave some CPU for others 
     # Go through all original examples, calculate stats, then join back to main df  
     ds_orig = Dataset.from_pandas(df['orig_l'].drop_duplicates().to_frame())
     print("\n#### Calculating text statistics for the original examples. ####\n")
@@ -221,6 +222,54 @@ def add_text_stats(df, num_proc=min(8, psutil.cpu_count())):
     df_pairs = get_text_pair_metrics_for_ds(ds_pairs, num_proc=num_proc)
     df = pd.merge(df, df_pairs, how='left', on=['orig_l','pp_l'])    
     return df 
+
+
+def postprocess_df(df, filter_idx=None): 
+    """set df to one of training_step, train, valid, test
+    filter_idx - for testing (remove later) """
+    df = df.sort_values(by=['idx', "epoch"], axis=0)
+    if filter_idx is not None: 
+        df = df.query("idx <= @filter_idx")  # just for testing purposes
+
+    # Getting weird behaviour with group_by's so binning some of the numeric values
+    for col in ['sts_score','vm_score','reward', 'pp_truelabel_probs']: 
+        df.loc[:, col] = df.loc[:, col].round(5)
+    
+    # Add some custom metrics
+    df = add_number_of_unique_pps_per_idx(df)
+    df = add_number_of_pp_changes_per_idx(df)
+    df = add_epoch_of_first_label_flip(df)
+    df = add_text_stats(df)
+    return df
+
+
+
+
+
+########################## Plotting ####################
+def plot_idx_hist(df_concat, colname, xlabel, cumulative=False): 
+    df1 = df_concat[['data_split','idx', colname]].drop_duplicates()
+    fig = px.histogram(df1, x=colname, color='data_split', marginal="box",
+                       labels={colname: xlabel},cumulative=cumulative, barmode='group', 
+                      histnorm='probability', color_discrete_sequence=px.colors.qualitative.Dark24)
+    fig.update_layout(showlegend=False)
+    fig.update_layout(font_size=8)
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+    fig.update_layout(autosize=True)
+    return fig 
+
+def plot_epoch_line_charts(df_concat, colname): 
+    df1 = df_concat[['data_split','epoch', colname]]
+    df_grp = df1.groupby(['data_split', 'epoch']).agg('mean').reset_index()
+    fig = px.line(df_grp, x="epoch", y=colname, color='data_split', labels={colname: colname + "_avg"},
+                 color_discrete_sequence=px.colors.qualitative.Dark24)
+    fig.update_layout(showlegend=False)
+    fig.update_layout(font_size=8)
+    fig.update_layout(autosize=True)
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+    
+    return fig
+
 
 
 
