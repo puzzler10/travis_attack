@@ -120,54 +120,62 @@ def get_removals_insertions_unchanged_phrases(orig, pp):
 def get_text_metrics(text):    
     d = defaultdict(lambda: 0)
     ### Spacy stuff
-    doc = nlp(text)
+   # doc = nlp(text)
     # Which tags to keep
     # see  https://universaldependencies.org/docs/u/pos/
-    UPOS_tags = ['ADJ','ADP','ADV','AUX','DET','NOUN',
-     'NUM','PART','PRON','PROPN','SCONJ','VERB']
-    d_POS = defaultdict(lambda: 0)  # d_POS holds parts of speech
+#     UPOS_tags = ['ADJ','ADP','ADV','AUX','DET','NOUN',
+#      'PART','PRON','PROPN','SCONJ','VERB']
+#     d_POS = defaultdict(lambda: 0)  # d_POS holds parts of speech
   #  d['n_nonzero_synsets'] = 0 
-    for token in doc:
-        #n_synsets = len(token._.wordnet.synsets())
-      #  n_lemmas = len(token._.wordnet.lemmas())
-       # d['n_total_synsets'] += n_synsets; 
-        #d['n_total_lemmas'] += n_lemmas
-        #if n_synsets > 0: d['n_nonzero_synsets'] += 1 
-        d_POS[token.pos_] += 1
+#     for token in doc:
+#         #n_synsets = len(token._.wordnet.synsets())
+#       #  n_lemmas = len(token._.wordnet.lemmas())
+#        # d['n_total_synsets'] += n_synsets; 
+#         #d['n_total_lemmas'] += n_lemmas
+#         #if n_synsets > 0: d['n_nonzero_synsets'] += 1 
+#         d_POS[token.pos_] += 1
 
    # d['n_tokens'] = max(len(doc), 1)  # handle empty string 
 #    d['avg_synsets'] = d['n_total_synsets'] / d['n_tokens']
  #   d['avg_lemmas']  = d['n_total_lemmas']  / d['n_tokens']     
-    for tag in UPOS_tags: d['n_upos_tag_' + tag] = d_POS[tag]
+#    for tag in UPOS_tags: d['n_upos_tag_' + tag] = d_POS[tag]
 
     ### Lexical statistics
     lex = LexicalRichness(text)    
     d['n_words'] = lex.words
-    d['n_stopwords'] = sum([token.is_stop for token in doc])
-    d['n_named_entities'] = len(doc.ents)
-    d['n_unique_words'] = lex.terms
+    d['n_sentences'] = textstat.sentence_count(text)
+  #  d['n_stopwords'] = sum([token.is_stop for token in doc])
+  #  d['n_named_entities'] = len(doc.ents)
+  #  d['n_unique_words'] = lex.terms
     def get_chartype_count(text, strset=string.ascii_letters):
         return len(list(filter(functools.partial(operator.contains, strset), text))) 
     d['n_punctuation'] = get_chartype_count(text, strset=string.punctuation)
     d['n_digits'] = get_chartype_count(text, strset=string.digits)
     d['n_letters'] = get_chartype_count(text, strset=string.ascii_letters)
     
-    d['MTLD'] = lex.mtld(threshold=0.72) if lex.words > 1 else 0.0 
-    d['HDD'] = lex.hdd(draws=min(lex.words, 30)) if lex.words > 1 else 0.0 
-    d['Maas'] = lex.Maas if lex.words > 1 else 0.0 
-
+   
 
     ### Textstat stuff
-    d['flesch_kincaid_ease']      = textstat.flesch_reading_ease(text)
-    d['SMOG']                     = textstat.smog_index(text)
-    d['gunning_fog']              = textstat.gunning_fog(text)
-    d['difficult_words']          = textstat.difficult_words(text)
-    d['dale_chall']               = textstat.dale_chall_readability_score(text)
-    d['ARI']                      = textstat.automated_readability_index(text)
-    d['coleman_liau']             = textstat.coleman_liau_index(text)
-    d['linsear_write']            = textstat.linsear_write_formula(text)
-    d['readability_consensus']    = textstat.text_standard(text, float_output=True)
+   # d['difficult_words']          = textstat.difficult_words(text)
+   # d['dale_chall']               = textstat.dale_chall_readability_score(text)
+   # d['ARI']                      = textstat.automated_readability_index(text)
+   # d['linsear_write']            = textstat.linsear_write_formula(text)
+   # d['readability_consensus']    = textstat.text_standard(text, float_output=True)
+    
+    ## Paragraph/document metrics
+    #  d['MTLD'] = lex.mtld(threshold=0.72) if lex.words > 1 else 0.0   # usually 100 tokens min 
+    # these two usually not as good as mtld apparently 
+    # d['HDD'] = lex.hdd(draws=min(lex.words, 30)) if lex.words > 1 else 0.0 
+    #d['Maas'] = lex.Maas if lex.words > 1 else 0.0 
+
+    #d['flesch_kincaid_ease']      = textstat.flesch_reading_ease(text)
+    #d['gunning_fog']              = textstat.gunning_fog(text)  # 100 word minimum
+
     #d['avg_sentence_length']      = textstat.avg_sentence_length(text)
+    #d['SMOG']                     = textstat.smog_index(text)  # 30 sentences minimum for this to be relevant
+    #d['coleman_liau']             = textstat.coleman_liau_index(text)  # 100 words minimum, might be dodgy implementation
+
+
     return d
 
 
