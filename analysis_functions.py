@@ -13,6 +13,7 @@ import difflib as dl
 from itertools import groupby
 from operator import itemgetter
 import plotly.express as px
+import editdistance
 
 
 # Init "global" variables for use here 
@@ -56,66 +57,6 @@ def add_epoch_of_first_label_flip(df):
 
 
 ########### Text metrics #############
-def get_added_end_of_sentence_phrase(orig, pp): 
-    """ Might be obselete???"""
-    if len(pp) > len(orig): 
-        rep = pp.replace(orig, "")
-        if rep != pp: return rep 
-    return ""
-
-def get_removals_insertions_unchanged_phrases(orig, pp): 
-    orig_t = [token.text for token in nlp(orig)]
-    pp_t = [token.text for token in nlp(pp)]
-    diff = [x for x in dl.ndiff(orig_t, pp_t)]
-    d = defaultdict(lambda: [])
-    
-    def get_subsequences(sign): 
-        if   sign == "insertions": op = "+"
-        elif sign == "removals":   op = "-"
-        elif sign == "unchanged":  op = " "
-        else: raise Exception("shouldn't get here")
-        idx,words = [],[]
-        for i, o in enumerate(diff): 
-            if o[0] == op: 
-                idx.append(i)
-                words.append(o[2:])
-        # Group words that go together        
-        word_groups = []
-        # bit of a mystery this bit but seems to work. just need 1-1 mapping between data and words 
-        for k, g in groupby(zip(enumerate(idx), words), lambda ix: ix[0][0] - ix[0][1]):
-            word_groups.append(list(map(itemgetter(1), g)))
-            
-        def join_punctuation(seq, characters=set(string.punctuation)):
-            "handle "
-            seq = iter(seq)
-            current = next(seq)
-            for nxt in seq:
-                if nxt in characters:
-                    current += nxt
-                else:
-                    yield current
-                    current = nxt
-            yield current
-
-        phrases = [' '.join(join_punctuation(l)) for l in word_groups]
-        return idx, words, word_groups, phrases
-    
-    insertions_idx,_,_,insertions = get_subsequences("insertions")
-    removals_idx,_,_,removals   = get_subsequences("removals")
-    unchanged_idx,_,_,unchanged = get_subsequences("unchanged")
-    
-    def is_truncation(unchanged_idx, removals_idx):
-        if len(removals_idx) == 0 or len(unchanged_idx) == 0 : return False 
-        if max(unchanged_idx) < max(removals_idx): return True 
-        else: return False
-    
-    return {'removals_idx': removals_idx, 
-            'removals': removals,
-            'is_truncation': is_truncation(unchanged_idx, removals_idx),
-            'insertions_idx': insertions_idx,
-            'insertions': insertions, 
-            'unchanged_idx': unchanged_idx,
-            'unchanged': unchanged}
 
 def get_text_metrics(text):    
     d = defaultdict(lambda: 0)
@@ -178,13 +119,99 @@ def get_text_metrics(text):
 
     return d
 
+def get_rouge_score(ref, pred):
+    return rouge_metric.compute(rouge_types=["rougeL"], predictions=[pred], references=[ref])['rougeL'].mid.fmeasure 
+
+def get_added_end_of_sentence_phrase(orig, pp): 
+    """ Might be obselete???"""
+    if len(pp) > len(orig): 
+        rep = pp.replace(orig, "")
+        if rep != pp: return rep 
+    return ""
+
+def get_token_level_edit_distance(s1, s2): 
+    l1,l2 = [o.text for o in nlp(s1)],[o.text for o in nlp(s2)]
+    return editdistance.eval(l1,l2)
+
+def get_removals_insertions_unchanged_phrases(orig, pp): 
+    orig_t = [token.text for token in nlp(orig)]
+    pp_t = [token.text for token in nlp(pp)]
+    diff = [x for x in dl.ndiff(orig_t, pp_t)]
+    d = defaultdict(lambda: [])
+    
+    def get_subsequences(sign): 
+        if   sign == "insertions": op = "+"
+        elif sign == "removals":   op = "-"
+        elif sign == "unchanged":  op = " "
+        else: raise Exception("shouldn't get here")
+        idx,tokens = [],[]
+        for i, o in enumerate(diff): 
+            if o[0] == op: 
+                idx.append(i)
+                tokens.append(o[2:])
+        # Group tokens that go together        
+        token_groups = []
+        # bit of a mystery this bit but seems to work. just need 1-1 mapping between data and tokens 
+        for k, g in groupby(zip(enumerate(idx), tokens), lambda ix: ix[0][0] - ix[0][1]):
+            token_groups.append(list(map(itemgetter(1), g)))
+            
+        def join_punctuation(seq, characters=set(string.punctuation)):
+            "a generator to join tokens with punctuation not farked. but doesn't work that well."
+            seq = iter(seq)
+            current = next(seq)
+            for nxt in seq:
+                if nxt in characters:
+                    current += nxt
+                else:
+                    yield current
+                    current = nxt
+            yield current
+        # this doesn't work perfectly but it's okay. spacy or transformers might have a better method
+        phrases = [' '.join(join_punctuation(l)) for l in token_groups]
+        return idx, tokens, token_groups, phrases
+    
+    ins_idx,ins_tkns,ins_tkn_grps,ins_phrases = get_subsequences("insertions")
+    rem_idx,rem_tkns,rem_tkn_grps,rem_phrases = get_subsequences("removals")
+    unc_idx,unc_tkns,unc_tkn_grps,unc_phrases = get_subsequences("unchanged")
+    
+    def is_truncation(unc_idx, rem_idx):
+        if len(rem_idx) == 0 or len(unc_idx) == 0: return False 
+        if max(unc_idx) < max(rem_idx):  return True 
+        else:                            return False
+   
+    def any_phrase_capitalised(lower_case_phrases, upper_case_phrases): 
+        """tests if any of the phrases in lower_case_phrases, when capitalised, are present in upper_case_phrases
+        might work better with tkn_groups"""
+        for lc_p in lower_case_phrases: 
+            for uc_p in upper_case_phrases: 
+                if lc_p.capitalize() == uc_p: 
+                    return True 
+        return False 
+
+    
+    return {'removals_idx': rem_idx, 
+            'removals': rem_phrases,
+            'insertions_idx': ins_idx,
+            'insertions': ins_phrases, 
+            'unchanged_idx': unc_idx,
+            'unchanged': unc_phrases, 
+            'n_segments_inserted': len(ins_tkn_grps),
+            'n_segments_removed': len(rem_tkn_grps),
+            'n_tokens_inserted': len(ins_tkns), 
+            'n_tokens_removed': len(rem_tkns),
+            'is_truncation': is_truncation(unc_idx, rem_idx),
+            'any_phrase_capitalised': any_phrase_capitalised(rem_phrases, ins_phrases),
+            'any_phrase_decapitalised': any_phrase_capitalised(ins_phrases, rem_phrases)
+           }
+
+
 
 def get_text_pair_metrics(orig, pp): 
-    def get_rouge_score(ref, pred):
-        return rouge_metric.compute(rouge_types=["rougeL"], predictions=[pred], references=[ref])['rougeL'].mid.fmeasure 
+    
     d = dict()
     d['rouge_score'] = get_rouge_score(ref=orig, pred=pp)
     #d['added_eos_phrase'] = get_added_end_of_sentence_phrase(orig, pp)
+    d['edit_distance_token_level'] = get_token_level_edit_distance(orig, pp)
     d1 = get_removals_insertions_unchanged_phrases(orig, pp)
     d = {**d, **d1}  # merge two dicts
     return d
@@ -410,3 +437,43 @@ def misc_stats():
 
     # Sampling some low sts score examples 
     #display_all(df.query('sts_score < 0.7').sort_values('sts_score').sample(10)[['orig_l','pp_l','sts_score']])
+
+    
+    
+    
+    
+    
+########### TESTS ############
+def test_any_phrase_capitalised():
+    ins1 = ['A']
+    rem1 = ['a']
+
+    ins2 = ['a', "the duck is nice"]
+    rem2= ['A']
+
+    ins3 = ['a']
+    rem3 = ['look at that', 'A']
+
+
+    for ins, rem in zip([ins1,ins2,ins3], [rem1,rem2,rem3]):
+        print("Insertions", ins)
+        print("Removals", rem)
+        print("Any phrase decapitalised", any_phrase_capitalised(ins, rem))
+        print("Any phrase capitalised", any_phrase_capitalised(rem, ins))
+        
+        
+def test_get_token_level_edit_distance(): 
+    s1 = "hello i am tom"
+    s2 = "hello i am mike"
+    s3 = "hello i'm tom "
+    s4 = "hello my name is tom"
+    s5 = "hello, i am tom"
+    s6 = "hello i tom"
+    s7 = "I am tom and don't you fucking forget it"
+
+    print(s1)
+    for s in [s2,s3,s4,s5,s6,s7]:
+        print(s)
+        print (get_token_level_edit_distance(s1, s))        
+        
+        
