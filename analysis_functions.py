@@ -440,7 +440,13 @@ def misc_stats():
 
     
     
-    
+def get_common_additions_and_removals(df_concat): 
+    idx = df_concat[['data_split','orig_l', 'pp_l']].drop_duplicates().index
+    df_unique_pp = df_concat[['data_split','orig_l', 'pp_l','insertions', 'removals']].iloc[idx]
+    def flatten_list(l): return [item for sublist in l for item in sublist] 
+    removals_flat   =  flatten_list(df_unique_pp['removals'].values)
+    insertions_flat =  flatten_list(df_unique_pp['insertions'].values)
+    return pd.value_counts(removals_flat), pd.value_counts(insertions_flat)
     
     
 ########### TESTS ############
