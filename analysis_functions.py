@@ -234,7 +234,6 @@ def get_text_pair_metrics_for_ds(ds, num_proc):
 
 
 def add_text_stats(df, num_proc=min(8, psutil.cpu_count())):
-    # num_proc=8 seems pretty good - diminishing returns and we may as well leave some CPU for others 
     # Go through all original examples, calculate stats, then join back to main df  
     ds_orig = Dataset.from_pandas(df['orig_l'].drop_duplicates().to_frame())
     print("\n#### Calculating text statistics for the original examples. ####\n")
@@ -259,9 +258,10 @@ def add_text_stats(df, num_proc=min(8, psutil.cpu_count())):
     return df 
 
 
-def postprocess_df(df, filter_idx=None): 
+def postprocess_df(df, filter_idx=None, num_proc=min(8, psutil.cpu_count())): 
     """set df to one of training_step, train, valid, test
     filter_idx - for testing (remove later) """
+    # num_proc=8 seems pretty good - diminishing returns and we may as well leave some CPU for others 
     df = df.sort_values(by=['idx', "epoch"], axis=0)
     if filter_idx is not None: 
         df = df.query("idx <= @filter_idx")  # just for testing purposes
@@ -274,7 +274,7 @@ def postprocess_df(df, filter_idx=None):
     df = add_number_of_unique_pps_per_idx(df)
     df = add_number_of_pp_changes_per_idx(df)
     df = add_epoch_of_first_label_flip(df)
-    df = add_text_stats(df)
+    df = add_text_stats(df, num_proc=num_proc)
     return df
 
 
