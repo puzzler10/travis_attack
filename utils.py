@@ -2,8 +2,16 @@ import GPUtil
 from threading import Thread
 import time 
 import torchsnooper
+from timeit import default_timer as timer
 
+######### for timing code #########
+class timecode:
+    def __enter__(self):
+        self.t0 = timer()
+        return self
 
+    def __exit__(self, type, value, traceback):
+        self.t = timer() - self.t0
 
 ############### Misc useful ##############################
 def show_random_elements(dataset, num_examples=10):
