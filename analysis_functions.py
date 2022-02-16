@@ -209,7 +209,8 @@ def get_removals_insertions_unchanged_phrases(orig, pp):
 def get_text_pair_metrics(orig, pp): 
     
     d = dict()
-    d['rouge_score'] = get_rouge_score(ref=orig, pred=pp)
+    # ROUGE score is way too slow and not that useful, so canning it. 
+    #d['rouge_score'] = get_rouge_score(ref=orig, pred=pp)
     #d['added_eos_phrase'] = get_added_end_of_sentence_phrase(orig, pp)
     d['edit_distance_token_level'] = get_token_level_edit_distance(orig, pp)
     d1 = get_removals_insertions_unchanged_phrases(orig, pp)
