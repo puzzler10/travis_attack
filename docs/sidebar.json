@@ -2,6 +2,7 @@
   "travis_attack": {
     "Overview": "/",
     "Utils ": "utils.html",
-    "Title": "logging.html"
+    "Title": "data_cleaning.html",
+    "Logging and diagnostic functions": "logging.html"
   }
 }

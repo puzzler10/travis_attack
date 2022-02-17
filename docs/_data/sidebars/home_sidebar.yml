@@ -14,6 +14,9 @@ entries:
       url: utils.html
     - output: web,pdf
       title: Title
+      url: data_cleaning.html
+    - output: web,pdf
+      title: Logging and diagnostic functions
       url: logging.html
     output: web
     title: travis_attack

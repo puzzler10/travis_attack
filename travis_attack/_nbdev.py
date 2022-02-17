@@ -7,9 +7,15 @@ index = {"timecode": "00_utils.ipynb",
          "dump_tensors": "00_utils.ipynb",
          "Monitor": "00_utils.ipynb",
          "show_gpu": "00_utils.ipynb",
-         "round_t": "00_utils.ipynb"}
+         "round_t": "00_utils.ipynb",
+         "show_random_elements": "10_data_cleaning.ipynb",
+         "plot_grad_flow": "30_logging.ipynb",
+         "print_info_on_generated_text": "30_logging.ipynb",
+         "check_parameters_update": "30_logging.ipynb"}
 
-modules = ["utils.py"]
+modules = ["utils.py",
+           "data.py",
+           "logging.py"]
 
 doc_url = "https://puzzler10.github.io/travis_attack/"
 
