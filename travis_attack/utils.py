@@ -3,6 +3,14 @@
 __all__ = ['timecode', 'print_device_info', 'dump_tensors', 'Monitor', 'show_gpu', 'round_t']
 
 # Cell
+import GPUtil
+import torch
+import time
+import torchsnooper
+from timeit import default_timer as timer
+from threading import Thread
+
+# Cell
 class timecode:
     """This class is used for timing code"""
     def __enter__(self):
