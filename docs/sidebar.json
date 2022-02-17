@@ -1,6 +1,7 @@
 {
   "travis_attack": {
     "Overview": "/",
-    "Title": "training_loop.html"
+    "Utils ": "utils.html",
+    "Title": "logging.html"
   }
 }

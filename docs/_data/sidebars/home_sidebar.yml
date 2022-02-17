@@ -10,8 +10,11 @@ entries:
       title: Overview
       url: /
     - output: web,pdf
+      title: 'Utils '
+      url: utils.html
+    - output: web,pdf
       title: Title
-      url: training_loop.html
+      url: logging.html
     output: web
     title: travis_attack
   output: web
