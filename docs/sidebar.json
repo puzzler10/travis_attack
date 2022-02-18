@@ -2,7 +2,11 @@
   "travis_attack": {
     "Overview": "/",
     "Utils ": "utils.html",
-    "Title": "data_cleaning.html",
-    "Logging and diagnostic functions": "logging.html"
+    "Config": "config.html",
+    "Models": "models.html",
+    "Preparing data": "data.html",
+    "Trainer ": "trainer.html",
+    "Logging and diagnostic functions": "logging.html",
+    "Title": "run.html"
   }
 }

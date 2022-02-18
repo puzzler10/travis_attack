@@ -13,11 +13,23 @@ entries:
       title: 'Utils '
       url: utils.html
     - output: web,pdf
-      title: Title
-      url: data_cleaning.html
+      title: Config
+      url: config.html
+    - output: web,pdf
+      title: Models
+      url: models.html
+    - output: web,pdf
+      title: Preparing data
+      url: data.html
+    - output: web,pdf
+      title: 'Trainer '
+      url: trainer.html
     - output: web,pdf
       title: Logging and diagnostic functions
       url: logging.html
+    - output: web,pdf
+      title: Title
+      url: run.html
     output: web
     title: travis_attack
   output: web
