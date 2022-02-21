@@ -32,25 +32,6 @@ nb_path: "07_models.ipynb"
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
-<span class="o">%</span><span class="k">autoreload</span> 2
-<span class="o">%</span><span class="k">load_ext</span> line_profiler
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
 
 </div>
     {% endraw %}
@@ -66,7 +47,7 @@ nb_path: "07_models.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="prepare_models" class="doc_header"><code>prepare_models</code><a href="https://github.com/puzzler10/travis_attack/tree/main/travis_attack/models.py#L50" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>prepare_models</code>(<strong><code>cfg</code></strong>)</p>
+<h4 id="prepare_models" class="doc_header"><code>prepare_models</code><a href="https://github.com/puzzler10/travis_attack/tree/main/travis_attack/models.py#L49" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>prepare_models</code>(<strong><code>cfg</code></strong>)</p>
 </blockquote>
 <p>Load tokenizers and models for vm, pp, sts.
 Pad the first embedding layer if specified in the config.
@@ -98,7 +79,7 @@ Update config with some model-specific variables.</p>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Externally we only need the <code>prepare_models(cfg)</code> function. This gives all the models and tokenizers needed for the other sections and updates the config.</p>
+<p>Externally we only need the <code>prepare_models(cfg)</code> function. This gives all the models and tokenizers needed for the other sections and also updates + returns the config.</p>
 
 </div>
 </div>
@@ -121,12 +102,6 @@ Update config with some model-specific variables.</p>
 </div>
     {% endraw %}
 
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Export">Export<a class="anchor-link" href="#Export"> </a></h2>
-</div>
-</div>
-</div>
 </div>
  
 

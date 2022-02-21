@@ -3,9 +3,7 @@
 __all__ = ['Config']
 
 # Cell
-from fastcore.test import test_fail
 import torch
-from pprint import pprint
 
 # Cell
 class Config:
@@ -20,7 +18,7 @@ class Config:
         self.pp_name = "eugenesiow/bart-paraphrase"
         self.vm_name = "textattack/distilbert-base-uncased-rotten-tomatoes"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        self.dataset_name = None
+        self.dataset_name = "rotten_tomatoes"
 
         ### Training hyperparameters
         self.seed = 420
@@ -32,7 +30,7 @@ class Config:
         self.zero_grad_with_none = False
         self.pad_token_embeddings = True
         self.embedding_padding_multiple = 8
-        self.padding_multiple = 8
+        self.orig_padding_multiple = 8   # pad input to multiple of this
         self.bucket_by_length = True
         self.shuffle_train = False
         self.remove_misclassified_examples = True
@@ -92,12 +90,37 @@ class Config:
         self.n_layers_frozen = "2"  # counting from the back (doesn't do anything yet)
 
 
-    def rotten_tomatoes_dataset(self):
+        ## Paths
+        self.path_data = "./data/"
+        self.path_checkpoints = "../model_checkpoints/travis_attack/"
+
+        ## Globals
+        self.splits = ['train', 'valid', 'test']
+
+
+        # Adjust config depending on dataset.
+        if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()
+        elif self.dataset_name == "rotten_tomatoes":  self.adjust_config_for_rotten_tomatoes_dataset()
+
+    def adjust_config_for_simple_dataset(self):
+        """Adjust config for the simple dataset."""
+        self.dataset_name = "simple"
+        self.orig_cname = "text"
+        self.label_cname = 'label'
+        self.orig_max_length = 20
+        self.pp['max_length'] = 20
+        self.batch_size_train = 2
+        self.batch_size_eval = 4
+        self.accumulation_steps = 1
+        self.n_train_epochs = 60
+        self.eval_freq = 10
+        return self
+
+    def adjust_config_for_rotten_tomatoes_dataset(self):
         """Adjust config for the rotten_tomatoes dataset."""
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-
         self.orig_max_length = 64
         self.pp['max_length'] = 64
         self.batch_size_train = 32
@@ -105,29 +128,12 @@ class Config:
         self.accumulation_steps = 1
         self.n_train_epochs = 250
         self.eval_freq = 1
-
         return self
-
-    def simple_dataset(self):
-        """Adjust config for the simple dataset."""
-        self.dataset_name = "simple_dataset"
-        self.orig_cname = "text"
-        self.label_cname = 'label'
-
-        self.orig_max_length = 20
-        self.pp['max_length'] = 20
-        self.batch_size_train = 2
-        self.batch_size_eval = 4
-        self.accumulation_steps = 1
-        self.eval_freq = 10
-        self.n_train_epochs = 60
-        return self
-
 
     def small_ds(self):
         """Adjust the config to use a small dataset (for testing purposes).
         Not possible when using the simple dataset. """
-        if self.dataset_name == "simple_dataset":
+        if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
         self.n_shards = 60

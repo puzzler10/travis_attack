@@ -3,9 +3,8 @@
 __all__ = ['prepare_models']
 
 # Cell
-from transformers import (AutoModelForSeq2SeqLM, AutoModelForSequenceClassification, AutoTokenizer)
-import torch
 import numpy as np
+from transformers import (AutoModelForSeq2SeqLM, AutoModelForSequenceClassification, AutoTokenizer)
 from sentence_transformers import SentenceTransformer
 from types import MethodType
 from undecorated import undecorated

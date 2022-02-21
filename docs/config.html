@@ -32,32 +32,13 @@ nb_path: "03_config.ipynb"
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
-<span class="o">%</span><span class="k">autoreload</span> 2
-<span class="o">%</span><span class="k">load_ext</span> line_profiler
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
 
 </div>
     {% endraw %}
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Here we define hyperparameters and config variables. We store them all in a class <code>config</code>.</p>
+<p>Here we define a class <a href="/travis_attack/config.html#Config"><code>Config</code></a> to hold hyperparameters and global variables.</p>
 <p>Design from <a href="https://github.com/cswinter/DeepCodeCraft/blob/master/hyper_params.py">https://github.com/cswinter/DeepCodeCraft/blob/master/hyper_params.py</a></p>
 
 </div>
@@ -74,7 +55,7 @@ nb_path: "03_config.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="Config" class="doc_header"><code>class</code> <code>Config</code><a href="https://github.com/puzzler10/travis_attack/tree/main/travis_attack/config.py#L11" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>Config</code>()</p>
+<h2 id="Config" class="doc_header"><code>class</code> <code>Config</code><a href="https://github.com/puzzler10/travis_attack/tree/main/travis_attack/config.py#L9" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>Config</code>()</p>
 </blockquote>
 
 </div>
@@ -108,8 +89,8 @@ nb_path: "03_config.ipynb"
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Usage is pretty straightforward. First initialise the config object and then initialise the dataset by chaining. All hyperparameters and variables are stored as attributes in the class.</p>
-<p>Currently you can use the <code>simple</code> dataset:</p>
+<p>The easiest way is to edit the variables in the config object as you please and then initialise the config object. This will first initialise a set of default values as specified in <code>__init__()</code>. Next it calls the methods <code>adjust_config_for_simple_dataset()</code> or <code>adjust_config_for_rotten_tomatoes_dataset()</code> to overwrite some of these defaults with dataset-specific variables.</p>
+<p>Once ready, call <code>cfg = Config()</code> and access values as attributes of <code>cfg</code>. For example:</p>
 
 </div>
 </div>
@@ -121,7 +102,7 @@ nb_path: "03_config.ipynb"
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">simple_dataset</span><span class="p">()</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dataset name: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of train epochs: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">n_train_epochs</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Batch size for train?: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">batch_size_train</span><span class="p">)</span>
@@ -138,7 +119,52 @@ nb_path: "03_config.ipynb"
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Dataset name:  simple_dataset
+<pre>Dataset name:  rotten_tomatoes
+Number of train epochs:  250
+Batch size for train?:  32
+Max paraphrase length?:  64
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>You can also manually specify which dataset to use by calling the <code>adjust_config_...</code> functions yourself. This is useful for writing test cases.</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">adjust_config_for_simple_dataset</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dataset name: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of train epochs: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">n_train_epochs</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Batch size for train?: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">batch_size_train</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Max paraphrase length?: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">pp</span><span class="p">[</span><span class="s1">&#39;max_length&#39;</span><span class="p">])</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Dataset name:  simple
 Number of train epochs:  60
 Batch size for train?:  2
 Max paraphrase length?:  20
@@ -152,13 +178,6 @@ Max paraphrase length?:  20
 </div>
     {% endraw %}
 
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>or the <code>rotten_tomatoes</code> dataset</p>
-
-</div>
-</div>
-</div>
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
@@ -166,7 +185,7 @@ Max paraphrase length?:  20
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">rotten_tomatoes_dataset</span><span class="p">()</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">adjust_config_for_rotten_tomatoes_dataset</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dataset name: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of train epochs: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">n_train_epochs</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Batch size for train?: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">batch_size_train</span><span class="p">)</span>
@@ -211,7 +230,8 @@ Max paraphrase length?:  64
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pprint</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="n">cfg</span><span class="p">))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+<span class="n">pprint</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="n">cfg</span><span class="p">))</span>
 </pre></div>
 
     </div>
@@ -248,8 +268,10 @@ Max paraphrase length?:  64
  &#39;normalise_rewards&#39;: False,
  &#39;orig_cname&#39;: &#39;text&#39;,
  &#39;orig_max_length&#39;: 64,
+ &#39;orig_padding_multiple&#39;: 8,
  &#39;pad_token_embeddings&#39;: True,
- &#39;padding_multiple&#39;: 8,
+ &#39;path_checkpoints&#39;: &#39;../model_checkpoints/travis_attack/&#39;,
+ &#39;path_data&#39;: &#39;./data/&#39;,
  &#39;pin_memory&#39;: True,
  &#39;pp&#39;: {&#39;diversity_penalty&#39;: 0.0,
         &#39;length_penalty&#39;: 1,
@@ -269,6 +291,7 @@ Max paraphrase length?:  64
  &#39;seed&#39;: 420,
  &#39;shard_contiguous&#39;: None,
  &#39;shuffle_train&#39;: False,
+ &#39;splits&#39;: [&#39;train&#39;, &#39;valid&#39;, &#39;test&#39;],
  &#39;sts_name&#39;: &#39;sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2&#39;,
  &#39;use_fp16&#39;: True,
  &#39;use_small_ds&#39;: False,
@@ -312,7 +335,7 @@ Max paraphrase length?:  64
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">rotten_tomatoes_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">small_ds</span><span class="p">()</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">adjust_config_for_rotten_tomatoes_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">small_ds</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dataset name: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of train epochs: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">n_train_epochs</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Batch size for train?: &quot;</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">batch_size_train</span><span class="p">)</span>
@@ -361,7 +384,7 @@ How many shards? 60
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">test_fail</span><span class="p">(</span><span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">simple_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">small_ds</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">test_fail</span><span class="p">(</span><span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">adjust_config_for_simple_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">adjust_config_for_simple_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">small_ds</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -371,12 +394,6 @@ How many shards? 60
 </div>
     {% endraw %}
 
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Export">Export<a class="anchor-link" href="#Export"> </a></h2>
-</div>
-</div>
-</div>
 </div>
  
 

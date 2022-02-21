@@ -3,12 +3,15 @@
 __all__ = ['get_vm_probs']
 
 # Cell
-def get_vm_probs(text, return_predclass=False):
+import torch
+
+# Cell
+def get_vm_probs(text, cfg, vm_tokenizer, vm_model, return_predclass=False):
     """Used in data cleaning and by the reward_fn to get vm_score"""
     if vm_model.training: vm_model.eval()
     with torch.no_grad():
-        tkns = vm_tokenizer(text, truncation=True, padding=True, pad_to_multiple_of=padding_multiple,
-                            return_tensors="pt").to(device)
+        tkns = vm_tokenizer(text, truncation=True, padding=True, pad_to_multiple_of=cfg.orig_padding_multiple,
+                            return_tensors="pt").to(cfg.device)
         logits = vm_model(**tkns).logits
         probs = torch.softmax(logits,1)
         if return_predclass:    return probs, torch.argmax(probs,1)
