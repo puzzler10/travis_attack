@@ -87,20 +87,23 @@ class Config:
         # This makes the reward function more visible
         # copy-paste this from reward function
         self.reward_strategy = "[-0.5 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)]"
-        self.n_layers_frozen = "2"  # counting from the back (doesn't do anything yet)
+        self.unfreeze_last_n_layers = 2  # counting from the back. set to "all" to do no layer freezing.
+        self.run_notes = f"Reward: {self.reward_strategy}\nDataset: {self.dataset_name}"
 
 
-        ## Paths
-        self.path_data = "./data/"
-        self.path_checkpoints = "../model_checkpoints/travis_attack/"
 
         ## Globals
         self.splits = ['train', 'valid', 'test']
+        self.path_data = "./data/"
+        self.path_checkpoints = "../model_checkpoints/travis_attack/"
+
 
 
         # Adjust config depending on dataset.
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()
         elif self.dataset_name == "rotten_tomatoes":  self.adjust_config_for_rotten_tomatoes_dataset()
+
+
 
     def adjust_config_for_simple_dataset(self):
         """Adjust config for the simple dataset."""

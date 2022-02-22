@@ -13,8 +13,8 @@ from .config import Config
 # Cell
 class ProcessedDataset:
     """Class that wraps a raw dataset (e.g. from huggingface datasets) and performs preprocessing on it."""
-    def __init__(self, cfg,  vm_tokenizer, pp_tokenizer, vm_model, sts_model):
-        self._cfg,self._vm_tokenizer,self._pp_tokenizer,self._vm_model,self._sts_model = cfg,vm_tokenizer,pp_tokenizer,vm_model,sts_model
+    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model):
+        self._cfg,self._vm_tokenizer,self._vm_model,self._pp_tokenizer,self._sts_model = cfg,vm_tokenizer,vm_model,pp_tokenizer,sts_model
         if   self._cfg.dataset_name == "simple":          self._prep_dsd_raw_simple()
         elif self._cfg.dataset_name == "rotten_tomatoes": self._prep_dsd_raw_rotten_tomatoes()
         else: raise Exception("cfg.dataset_name must be either 'simple' or 'rotten_tomatoes'")
@@ -75,7 +75,7 @@ class ProcessedDataset:
 
     def _add_vm_orig_score(self, batch):
         """Add the vm score of the orig text"""
-        labels = torch.tensor(batch[cfg.label_cname], device=self._cfg.device)
+        labels = torch.tensor(batch[self._cfg.label_cname], device=self._cfg.device)
         orig_probs,orig_predclass = get_vm_probs(batch[self._cfg.orig_cname], self._cfg, self._vm_tokenizer,
                                                  self._vm_model, return_predclass=True)
         batch['orig_truelabel_probs'] = torch.gather(orig_probs,1, labels[:,None]).squeeze().cpu().tolist()
