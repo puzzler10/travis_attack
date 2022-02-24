@@ -7,7 +7,7 @@ import torch, random, pandas as pd
 from torch.utils.data import DataLoader, RandomSampler
 from datasets import load_dataset, load_from_disk, DatasetDict, ClassLabel
 from IPython.display import display, HTML
-from .trainer import get_vm_probs
+from .models import get_vm_probs
 from .config import Config
 
 # Cell
@@ -46,17 +46,26 @@ class ProcessedDataset:
     def _preprocess_dataset(self):
         """Add columns, tokenize, transform, prepare dataloaders, and do other preprocessing tasks."""
         ##### TODO: why do you need train_eval? how is it different from train?
-        dsd = self.dsd_raw.map(self._add_idx, batched=True, with_indices=True)  # add idx column
-        if self._cfg.use_small_ds: dsd = self._prep_small_ds(dsd)  # do after adding idx so it's consistent across runs
-        dsd = dsd.map(self._add_vm_orig_score, batched=True)  # add VM score
-        if self._cfg.remove_misclassified_examples: dsd = dsd.filter(lambda x: x['orig_vm_predclass'] == x['label'])
-        dsd = dsd.map(self._add_sts_orig_embeddings, batched=True)  # add STS score
-        dsd = dsd.map(self._tokenize_fn,             batched=True)  # tokenize
-        dsd = dsd.map(self._add_n_tokens,            batched=True)  # add n_tokens
-        if self._cfg.bucket_by_length: dsd = dsd.sort("n_tokens", reverse=True)  # sort by n_tokens (high to low), useful for cuda memory caching
-        self.dld_raw = self._get_dataloaders_dict(dsd, collate_fn=self._collate_fn_raw)  # dict of data loaders that serve raw text
-        self.dld_tkn = self._get_dataloaders_dict(dsd, collate_fn=self._collate_fn_tkn)  # dict of data loaders that serve tokenized text
-        self.dsd_tkn = dsd
+        self.dsd_raw = self.dsd_raw.map(self._add_idx, batched=True, with_indices=True)  # add idx column
+        if self._cfg.use_small_ds: self._shard_dsd_raw()  # do after adding idx so it's consistent across runs
+        # add VM score & filter out misclassified examples. (at this point lengths are diff between dsd_raw and dsd_tkn)
+        self.dsd_tkn = self.dsd_raw.map(self._add_vm_orig_score, batched=True)
+        if self._cfg.remove_misclassified_examples:
+            self.dsd_tkn = self.dsd_tkn.filter(lambda x: x['orig_vm_predclass'] == x['label'])
+        self.dsd_tkn = self.dsd_tkn.map(self._add_sts_orig_embeddings, batched=True)  # add STS score
+        self.dsd_tkn = self.dsd_tkn.map(self._tokenize_fn,             batched=True)  # tokenize
+        self.dsd_tkn = self.dsd_tkn.map(self._add_n_tokens,            batched=True)  # add n_tokens
+        if self._cfg.bucket_by_length: self.dsd_tkn = self.dsd_tkn.sort("n_tokens", reverse=True)  # sort by n_tokens (high to low), useful for cuda memory caching
+
+        # filter out rows in dsd_raw that aren't in dsd_tkn
+        for s in self._cfg.splits:
+            idx_list = self.dsd_tkn[s]['idx']
+            self.dsd_raw[s] = self.dsd_raw[s].filter(lambda x: x['idx'] in idx_list)
+        for s in self._cfg.splits: assert len(self.dsd_raw[s]) == len(self.dsd_tkn[s])  # check ds has same number of elements in raw and tkn
+
+        # Prepare dataloaders
+        self.dld_raw = self._get_dataloaders_dict(self.dsd_raw, collate_fn=self._collate_fn_raw)  # dict of data loaders that serve raw text
+        self.dld_tkn = self._get_dataloaders_dict(self.dsd_tkn, collate_fn=self._collate_fn_tkn)  # dict of data loaders that serve tokenized text
 
     def _add_idx(self, batch, idx):
         """Add row numbers"""
@@ -96,7 +105,7 @@ class ProcessedDataset:
     def _collate_fn_raw(self, x):
         """Collate function used by the DataLoader that serves raw data."""
         d = dict()
-        for k in [cfg.orig_cname, 'idx']: d[k] = [o[k] for o in x]
+        for k in [self._cfg.orig_cname, 'idx']: d[k] = [o[k] for o in x]
         return d
 
     def _get_sampler(self, ds):
@@ -106,11 +115,10 @@ class ProcessedDataset:
         g.manual_seed(seed)
         return RandomSampler(ds, generator=g)
 
-    def _prep_small_ds(self, dsd):
-        """Replaces a datasetdict with a smaller shard of itself."""
-        for k,v in dsd.items():
-            dsd[k] = v.shard(self._cfg.n_shards, 0, contiguous=self._cfg.shard_contiguous)
-        return dsd
+    def _shard_dsd_raw(self):
+        """Replaces dsd_raw with a smaller shard of itself."""
+        for k,v in self.dsd_raw.items():
+            self.dsd_raw[k] = v.shard(self._cfg.n_shards, 0, contiguous=self._cfg.shard_contiguous)
 
     def _get_dataloaders_dict(self, dsd, collate_fn):
         """Prepare a dict of dataloaders for train, valid and test"""

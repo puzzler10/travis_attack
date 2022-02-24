@@ -18,14 +18,13 @@ class Config:
         self.pp_name = "eugenesiow/bart-paraphrase"
         self.vm_name = "textattack/distilbert-base-uncased-rotten-tomatoes"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        self.dataset_name = "rotten_tomatoes"
+        self.dataset_name = "simple"
 
         ### Training hyperparameters
         self.seed = 420
         self.use_fp16 = True
         self.lr = 1e-5
         self.normalise_rewards = False
-        self.metrics = ['loss', 'pp_logp', 'reward', 'vm_score', "sts_score", 'label_flip']
         self.pin_memory = True
         self.zero_grad_with_none = False
         self.pad_token_embeddings = True
@@ -34,6 +33,8 @@ class Config:
         self.bucket_by_length = True
         self.shuffle_train = False
         self.remove_misclassified_examples = True
+        self.unfreeze_last_n_layers = 2  # counting from the back. set to "all" to do no layer freezing.
+
 
 
         ### Paraphrase parameters
@@ -56,9 +57,18 @@ class Config:
         self.save_model_while_training = False
         self.save_model_freq = 10
 
+
+        ### These parameters don't do anything yet
+        self.sampling_strategy = "simple"  # doesn't do anything
+        # This makes the reward function more visible
+        # copy-paste this from reward function
+        self.reward_strategy = "[-0.5 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)]"
+
         ### W&B parameters
         self.wandb = dict(
-            mode = "online",  # set to "disabled" to turn off wandb, "online" to enable it
+            project = "travis_attack",
+            entity = "uts_nlp",
+            mode = "disabled",  # set to "disabled" to turn off wandb, "online" to enable it
             log_grads = False,
             log_grads_freq = 1,  # no effect if wandb_log_grads is False
             plot_examples = False,
@@ -67,9 +77,9 @@ class Config:
             # and seeing what is going on, but slows down training time.
             log_training_step_table = True,
             log_token_entropy=True,
-            log_token_probabilities = True
+            log_token_probabilities = True,
+            run_notes = f"Reward: {self.reward_strategy}\nDataset: {self.dataset_name}"
         )
-
 
         ### Devices and GPU settings
         #### TODO: do you need this with accelerator? does this handle the post-processing analytics too?
@@ -81,29 +91,16 @@ class Config:
         # When using Accelerator
         self.n_wkrs = 0
 
-
-        ### These parameters don't do anything yet
-        self.sampling_strategy = "greedy"  # doesn't do anything
-        # This makes the reward function more visible
-        # copy-paste this from reward function
-        self.reward_strategy = "[-0.5 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)]"
-        self.unfreeze_last_n_layers = 2  # counting from the back. set to "all" to do no layer freezing.
-        self.run_notes = f"Reward: {self.reward_strategy}\nDataset: {self.dataset_name}"
-
-
-
         ## Globals
         self.splits = ['train', 'valid', 'test']
+        self.metrics = ['loss', 'pp_logp', 'reward', 'vm_score', "sts_score", 'label_flip']
         self.path_data = "./data/"
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
-
-
+        self.path_run = None #keep as None; this is automatically filled out by Trainer class
 
         # Adjust config depending on dataset.
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()
         elif self.dataset_name == "rotten_tomatoes":  self.adjust_config_for_rotten_tomatoes_dataset()
-
-
 
     def adjust_config_for_simple_dataset(self):
         """Adjust config for the simple dataset."""
@@ -112,11 +109,11 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 20
         self.pp['max_length'] = 20
-        self.batch_size_train = 2
+        self.batch_size_train = 4
         self.batch_size_eval = 4
         self.accumulation_steps = 1
-        self.n_train_epochs = 60
-        self.eval_freq = 10
+        self.n_train_epochs = 4
+        self.eval_freq = 1
         return self
 
     def adjust_config_for_rotten_tomatoes_dataset(self):
@@ -126,10 +123,10 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 64
         self.pp['max_length'] = 64
-        self.batch_size_train = 32
-        self.batch_size_eval = 128
+        self.batch_size_train = 16
+        self.batch_size_eval = 32
         self.accumulation_steps = 1
-        self.n_train_epochs = 250
+        self.n_train_epochs = 2
         self.eval_freq = 1
         return self
 
@@ -139,6 +136,10 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 60
+        self.n_shards = 40
         self.shard_contiguous = False
         return self
+
+#hide
+from nbdev.export import notebook2script
+notebook2script()
