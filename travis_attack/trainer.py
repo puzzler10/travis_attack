@@ -6,10 +6,10 @@ __all__ = ['Trainer']
 import torch, wandb, gc, numpy as np, pandas as pd,os
 from wandb.data_types import Histogram
 from tqdm.auto import tqdm
-from .utils import timecode, show_gpu
+from .utils import timecode, show_gpu, merge_dicts, unpack_nested_lists_in_df, display_all
 from .tests import check_no_nans_or_infs
 from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids
-from .charts import plot_grad_flow, plot_examples_chart, plot_summary_chart
+from .charts import plot_grad_flow, plot_examples_chart
 
 # Cell
 import torch, numpy as np, pandas as pd, gc,sys, logging, warnings
@@ -38,6 +38,9 @@ class Trainer:
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.accumulation_num,self.global_step = 0,0
+        # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
+        # there will be overlap between them.
+        self.train_batch_d,self.train_batch_time_d,self.wandb_log_d = dict(),dict(),dict()
         #resume_pp_model(f"{path_checkpoints}devout-durian-172_39")
         self._setup_wandb_run()
         self._setup_data_stores()
@@ -61,16 +64,13 @@ class Trainer:
         if not os.path.exists(self._cfg.path_run): os.makedirs(self._cfg.path_run, exist_ok=True)
 
     def _setup_data_stores(self):
-        """Setup dict `self.data_d` to store observations. Setup column names for wandb tables.
-         """
+        """Setup dict `self.data_d` to store observations. Setup column names for wandb tables. """
         # Raw observation data (lists of dicts, later becomes pandas df)
         self.data_d = dict()
         # These have to be in the keys of the output from eval_dl
         self.table_columns = ['idx', 'orig_l',  'truelabel', 'orig_truelabel_probs', 'epoch', 'pp_l',
                      'pp_truelabel_probs', "pp_predclass", "pp_predclass_probs"] + self._cfg.metrics
-        self.summary_table_columns = ['epoch','split'] + [f'{m}_avg' for m in self._cfg.metrics]
-        for key in self._cfg.splits + ['training_summary']:         self.data_d[key]             = []
-        if self._cfg.wandb['log_training_step_table']:              self.data_d['training_step'] = []
+        for split in self._cfg.splits + ['training_step'] + ['training_step1']:   self.data_d[split] = []
 
     def _setup_wandb_examples_plots(self):
         """If we plot a few examples this sets that up."""
@@ -91,6 +91,7 @@ class Trainer:
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
                     self.training_step(data, raw)
                     self.accumulation_num += 1  ; self.global_step += 1 ;  progress_bar.update(1)
+                    self.train_batch_d,self.train_batch_time_d,self.wandb_log_d = dict(),dict(),dict()
 
             wandb.log({'time/train_one_epoch_time': time_train_one_epoch.t,
                        'time/train_one_epoch_thoroughput': len(self.ds.dsd_tkn['train']) / time_train_one_epoch.t,
@@ -114,11 +115,6 @@ class Trainer:
                 with timecode() as time_eval_valid:
                     valid_set_preds = self.eval_dl(dl_tkn=self.ds.dld_tkn['valid'],
                                                    dl_raw=self.ds.dld_raw['valid'])
-
-                # update the tables every epoch and log them
-                with timecode() as time_update_training_summary_table:
-                    self.update_training_summary_table(train_set_preds, split='train')
-                    self.update_training_summary_table(valid_set_preds, split='valid')
                 with timecode() as time_add_eval_preds_to_data_d:
                     self.add_preds_to_data_d(train_set_preds, split='train')
                     self.add_preds_to_data_d(valid_set_preds, split='valid')
@@ -131,7 +127,6 @@ class Trainer:
                 wandb.log({'time/eval_train_time': time_eval_train.t, 'time/eval_valid_time': time_eval_valid.t,
                            'time/eval_train_thoroughput': len(self.ds.dsd_tkn['train']) / time_eval_train.t,
                            'time/eval_valid_thoroughput': len(self.ds.dsd_tkn['valid']) / time_eval_valid.t,
-                           'time/eval_update_training_summary_table': time_update_training_summary_table.t,
                            'time/eval_add_preds_to_data_d': time_add_eval_preds_to_data_d.t,
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
@@ -144,8 +139,6 @@ class Trainer:
         for key in self.data_d.keys():  # splits and sometimes 'training_step' too
             self.data_d[key] = pd.DataFrame(self.data_d[key]) # dict of list of dict -> dict of dataframe
             self.data_d[key].to_csv(f"{self._cfg.path_run}{key}.csv", index=False)
-        # Save training_summary table to csv too
-        pd.DataFrame(self.data_d['training_summary']).to_csv(f"{self._cfg.path_run}training_summary.csv", index=False)
 
         # plot_wandb_charts()  # don't think I need this
         self.add_wandb_run_summary_statistics()
@@ -156,41 +149,89 @@ class Trainer:
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
         recording results, wandb logging.
         """
-        with timecode() as time_generate_pp:
+        with timecode() as self.train_batch_time_d['time_generate_pp']:
             pp_output, pp_l = self.pp_model_forward(data)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
 
         with self.accelerator.autocast():
-            with timecode() as time_loss_fn:
-                if self._cfg.wandb['log_training_step_table']:
-                    results_d = self.loss_fn(data, raw, pp_output, pp_l, return_components=True)
-                    loss_batch = results_d['loss_batch']
-                else:
-                    loss_batch = self.loss_fn(data, raw, pp_output, pp_l, return_components=False)
+            with timecode() as self.train_batch_time_d['time_loss_fn']:
+                results_d = self.loss_fn(data, raw, pp_output, pp_l, return_components=True)
+            loss_batch = results_d['loss_batch'] / self._cfg.accumulation_steps  # Normalize our loss for gradient accumulation
 
-            loss_batch = loss_batch / self._cfg.accumulation_steps  # Normalize our loss for gradient accumulation
-
-        with timecode() as time_backwards:
+        with timecode() as self.train_batch_time_d['time_backwards']:
             self.accelerator.backward(loss_batch)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after backwards pass: '))
         if (self.accumulation_num + 1) % self._cfg.accumulation_steps == 0:
-            with timecode() as time_opt_step:
+            with timecode() as self.train_batch_time_d['time_opt_step']:
                 self.optimizer.step()
             self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
-        if self._cfg.wandb['log_training_step_table']:
-            with timecode() as time_add_to_training_step_table:
-                results_d = self.process_results_d1(results_d, raw)
-                self.add_preds_to_data_d(results_d, split='training_step')
 
-        wandb.log({'time/generate_pp': time_generate_pp.t, 'time/loss_fn': time_loss_fn.t,
-                   'time/backwards_pass': time_backwards.t, 'time/optimizer_step': time_opt_step.t,
-                   'time/add_to_training_step_table': time_add_to_training_step_table.t,
-                   'epoch': self.epoch, 'global_step': self.global_step,'batch_num': self.batch_num,
-                   'orig_length': self.orig_length,'orig_batch_size': self.orig_batch_size,
-                  'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size}
-                  ,commit=False)
+        with timecode() as self.train_batch_time_d['time_add_to_training_step_table']:
+            results_d = self.process_results_d1(results_d, raw)
+            self.add_preds_to_data_d(results_d, split='training_step')
+
+
+        self._prepare_train_batch_d(raw, data, pp_l)
+        self.data_d['training_step1'].append(self.train_batch_d)
+        self._wandb_log_training_step()
+
+    def process_results_d1(self, results_d, raw):
+        """TO DELETE"""
+        ## TODO: do you need this?
+        results_d['epoch'] = self.epoch
+        results_d['idx']   = raw['idx']
+        for k,v in results_d.items():
+            if torch.is_tensor(v):
+                results_d[k] = v.detach().cpu().tolist()
+            elif type(v) == int or type(v) == float:
+                # make into list repeated n times
+                results_d[k] = [v for o in range(self._cfg.batch_size_train)]
+        return results_d
+
+    def add_preds_to_data_d(self, results_d, split):
+        """TO DELETE"""
+        assert split in self.data_d.keys()
+        d1 = results_d
+        d1['epoch'] = [self.epoch for i in range(len(d1['pp_l']))]
+        dcols = [d1[c] for c in self.table_columns]  # filter out loss_batch
+        assert len(set([len(o) for o in dcols])) == 1  # all lists should be of the same length
+        for row in zip(*dcols):
+            d2 = {k:v for k,v in zip(self.table_columns,row)}
+            self.data_d[split].append(d2)
+
+    def _prepare_train_batch_d(self, raw, data, pp_l):
+        # Add basics. (results are already added elsewhere)
+        self.train_batch_d = merge_dicts(self.train_batch_d, { 'idx': raw['idx'],
+            'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
+            'accumulation_num': self.accumulation_num,  "orig_l": raw['text'],
+            "orig_label": data['label'].cpu().tolist(),
+            "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
+            'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
+            "pp_l": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
+        })
+        # Add times
+        for k, v in self.train_batch_time_d.items(): self.train_batch_time_d[k] = v.t  # extract time from timecode object
+        self.train_batch_d = merge_dicts(self.train_batch_d, self.train_batch_time_d)
+
+    def _wandb_log_training_step(self):
+        self.wandb_log_d = merge_dicts(self.wandb_log_d, {
+            'vm_scores_hist':       Histogram(self.train_batch_d['vm_scores']),
+            'vm_scores_mean':       np.mean(  self.train_batch_d['vm_scores']),
+            'sts_scores_hist':      Histogram(self.train_batch_d['sts_scores']),
+            'sts_scores_mean':      np.mean(  self.train_batch_d['sts_scores']),
+            'rewards_hist':         Histogram(self.train_batch_d['rewards']),
+            'rewards_mean':         np.mean(  self.train_batch_d['rewards']),
+            'pp_logp_hist':         Histogram(self.train_batch_d['pp_logp']),
+            'pp_logp_mean':         np.mean(  self.train_batch_d['pp_logp']),
+            'loss_hist'   :         Histogram(self.train_batch_d['loss_examples'])})
+        self.wandb_log_d = merge_dicts(self.wandb_log_d, self.train_batch_d)
+        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss_examples', 'pp_logp',
+                              'rewards', 'sts_scores', 'vm_scores',
+                              'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
+        for k in not_for_wandb_keys:  self.wandb_log_d.pop(k, None)
+        wandb.log(self.wandb_log_d, commit=True)
 
     def pp_model_forward(self, data):
         pp_output, pp_l = self.get_paraphrases(data['input_ids'], data['attention_mask'])
@@ -229,51 +270,43 @@ class Trainer:
                                                  do_sample=False,
                                                  return_dict_in_generate=True,
                                                  output_scores=True,
-                                                    remove_invalid_values=False,
+                                                 remove_invalid_values=False,
                                                  pad_token_id = self.pp_tokenizer.pad_token_id,
                                                  eos_token_id = self.pp_tokenizer.eos_token_id)
         pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
         return pp_output, pp_l
 
     def loss_fn(self, data, raw, pp_output, pp_l, return_components=False):
-        with timecode() as time_reward_fn:
+        with timecode() as self.train_batch_time_d['time_reward_fn']:
             d = self.reward_fn(data, raw, pp_l, return_components=return_components)
 
         if self._cfg.normalise_rewards:
             d['orig_reward'] = copy.deepcopy(d['reward'])
             d['reward'] = (d['reward']-torch.mean(d['reward']))/torch.std(d['reward'])
 
-        with timecode() as time_pp_logp:
+        with timecode() as self.train_batch_time_d['time_pp_logp']:
             d['pp_logp'] = self.get_pp_logp(pp_output)
 
-        with timecode() as time_loss_fn_loss_calc:
+        with timecode() as self.train_batch_time_d['time_loss_fn_loss_calc']:
             d['loss'] = -d['reward'] * d['pp_logp']
             d['loss_batch'] = torch.mean(d['loss'])
             if return_components ==  False: return d['loss_batch']
 
         # remove some items from compgraph
-        with timecode() as time_loss_fn_detach:
+        with timecode() as self.train_batch_time_d['time_loss_fn_detach']:
             d['pp_logp'] = d['pp_logp'].detach()
             d['loss']    = d['loss'].detach()
 
         if self.pp_model.training:
-            pp_logp_cpu = d['pp_logp'].cpu()
-            wandb.log({'epoch': self.epoch, 'global_step': self.global_step,
-                       'time/reward_fn': time_reward_fn.t, 'time/pp_logp': time_pp_logp.t,
-                      'time/loss_fn_loss_calc': time_loss_fn_loss_calc.t,
-                       'time/pp_logp_detach': time_loss_fn_detach.t,
-                       'pp_logp': Histogram(pp_logp_cpu),
-                       'pp_logp_avg': pp_logp_cpu.mean(),
-                       'loss_examples': Histogram(d['loss'].cpu()),
-                       'loss_batch': d['loss_batch'].detach().cpu()
-                      },
-                     commit=False)
+            self.train_batch_d['pp_logp'] = d['pp_logp'].cpu().tolist()
+            self.train_batch_d['loss_examples'] = d['loss'].cpu().tolist()
+            self.train_batch_d['loss_batch'] = d['loss_batch'].detach().cpu().tolist()
         return d
 
     def reward_fn(self, data, raw, pp_l, return_components=False):
-        """orig_l, pp_l are lists of original and paraphrase respectively"""
+        """"""
         # Victim model probability differences between orig and pp
-        with timecode() as time_vm_scores:
+        with timecode() as self.train_batch_time_d['time_vm_scores']:
             pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
             pp_predclass = torch.argmax(pp_probs, axis=1)
             pp_truelabel_probs   = torch.gather(pp_probs, 1, data['label'][:,None]).squeeze()
@@ -281,27 +314,23 @@ class Trainer:
             label_flip = ((pp_predclass != data['label']) * 1)
             vm_scores = (data['orig_truelabel_probs'] - pp_truelabel_probs)
 
-
         # STS scores
-        with timecode() as time_sts_scores:
+        with timecode() as self.train_batch_time_d['time_sts_scores']:
             pp_embeddings  = self.sts_model.encode(pp_l, batch_size=len(raw), convert_to_tensor=True, device=self._cfg.device)
             # This returns a cosine similarity matrix, of which we just want the diagonal
             sts_scores = pytorch_cos_sim(data['orig_sts_embeddings'], pp_embeddings).diagonal()
 
         # Reward calculation
         rewards = torch.tensor([-0.5 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
-
         if self.pp_model.training:
-            rewards_detached = rewards.detach().cpu()
-            label_flip_fraction = label_flip.float().detach().cpu().mean()
-            wandb.log({'epoch': self.epoch, 'global_step': self.global_step,
-                       'time/vm_scores': time_vm_scores.t, 'time/sts_scores': time_sts_scores.t,
-                       'vm_scores': Histogram(vm_scores.detach().cpu()),
-                       'sts_scores': Histogram(sts_scores.detach().cpu()),
-                       'rewards': Histogram(rewards_detached),
-                       'rewards_mean': rewards_detached.mean(),
-                       'label_flip_fraction': label_flip_fraction,
-                      }, commit=False)
+            self.train_batch_d['pp_truelabel_probs'] = pp_truelabel_probs.detach().cpu().tolist()
+            self.train_batch_d['pp_predclass']       = pp_predclass.detach().cpu().tolist()
+            self.train_batch_d['pp_predclass_probs'] = pp_predclass_probs.detach().cpu().tolist()
+            self.train_batch_d['label_flip']         = label_flip.detach().cpu().tolist()
+            self.train_batch_d['label_flip_fraction']= np.mean(self.train_batch_d['label_flip'])
+            self.train_batch_d['rewards']            = rewards.detach().cpu().tolist()
+            self.train_batch_d['vm_scores']          = vm_scores.detach().cpu().tolist()
+            self.train_batch_d['sts_scores']         = sts_scores.detach().cpu().tolist()
 
         ## TODO: with a class we can just keep all these variables in self, refactor? then maybe you can log them
         #  with wandb histogram?
@@ -395,16 +424,13 @@ class Trainer:
 
         if self.pp_model.training:  # don't bother logging or calculate entropy, token_probs in eval mode
             if self._cfg.wandb['log_token_entropy']:
-                with timecode() as time_log_entropy:
-                    ent_d = self._get_entropy_metrics(scores_stacked, attention_mask)
-                ent_d['time/log_entropy'] = time_log_entropy.t
-                wandb.log(ent_d, commit=False)
+                with timecode() as self.train_batch_time_d['time_log_entropy']:
+                    self.wandb_log_d['ent_hist'] = self._get_entropy_hist(scores_stacked, attention_mask)
 
             if self._cfg.wandb['log_token_probabilities']:
-                with timecode() as time_log_token_probabilities:
-                    token_prob_d = self._get_token_probability_metrics(scores_log_softmax, attention_mask, k=3)
-                token_prob_d['time/log_token_probabilities'] = time_log_token_probabilities.t
-                wandb.log(token_prob_d, commit=False)
+                with timecode() as self.train_batch_time_d['time_log_token_probabilities']:
+                    self.wandb_log_d = merge_dicts(self.wandb_log_d,
+                        self._get_token_probability_metrics(scores_log_softmax, attention_mask, k=3))
         return seq_log_prob
 
     def _check_scores_log_softmax_sums(self, scores_log_softmax):
@@ -428,7 +454,7 @@ class Trainer:
                 l.append(scores_log_softmax[i_ex,i_step, i_tkn] == seq_token_log_probs[i_ex,i_step])
         assert all(l)
 
-    def _get_entropy_metrics(self, scores_stacked, attention_mask):
+    def _get_entropy_hist(self, scores_stacked, attention_mask):
         ent = Categorical(logits = scores_stacked).entropy().detach()
         assert ent.shape == attention_mask.shape == torch.Size([self.pp_batch_size, self.pp_length - 1])
         ent = ent * attention_mask  # stop values after eos token from contributing to ent score
@@ -440,17 +466,18 @@ class Trainer:
         assert ent_flat.shape[0] == (torch.sum(att_flat)*1).item()
         # check everything we filter out is zero
         torch.isclose(ent.flatten()[torch.nonzero(~(att_flat > 0))].sum(), torch.tensor(0.), 1e-3)
-        ## TODO: can we use WandB histogram to make this easier?
-        ent_d = dict(
-      #      ent_min             = ent_flat.quantile(0).item(),
-            ent_lower_quartile  = ent_flat.quantile(0.25).item(),
-            ent_median          = ent_flat.median().item(),
-      #      ent_mean            = ent_flat.mean().item(),
-            ent_upper_quartile  = ent_flat.quantile(0.75).item(),
-      #      ent_max             = ent_flat.quantile(1).item(),   # skews the graph
-            epoch=self.epoch, global_step=self.global_step
-        )
-        return ent_d
+        return Histogram(ent_flat.detach().cpu().tolist())
+#         ent_d = dict(
+#       #      ent_min             = ent_flat.quantile(0).item(),
+#             ent_lower_quartile  = ent_flat.quantile(0.25).item(),
+#             ent_median          = ent_flat.median().item(),
+#       #      ent_mean            = ent_flat.mean().item(),
+#             ent_upper_quartile  = ent_flat.quantile(0.75).item(),
+#       #      ent_max             = ent_flat.quantile(1).item(),   # skews the graph
+#             epoch=self.epoch, global_step=self.global_step
+#         )
+#         return ent_d
+        print('tmp')
 
     def _get_token_probability_metrics(self, scores_log_softmax, attention_mask, k=3):
         token_prob_d = dict()
@@ -471,6 +498,7 @@ class Trainer:
         for i in range(k):
             probs = tkn_kmaxprob_mask[:,:, i].flatten()
             probs = probs[probs != 0]
+            token_prob_d[f"rank_{i+1}_histogram"] = Histogram(probs.detach().cpu().tolist())
             token_prob_d[f"rank_{i+1}_token_prob_mean"] = probs.mean().item()
             token_prob_d[f"rank_{i+1}_token_prob_median"] = probs.median().item()
             token_prob_d[f"rank_{i+1}_token_prob_0.25_quantile"] = probs.quantile(0.25).item()
@@ -483,23 +511,8 @@ class Trainer:
             token_prob_d[f"%_of_tokens_above_prob_{p}"] =  (torch.sum(allprobs > p) / allprobs.shape[0]).item()
         token_prob_d[f"%_of_tokens_above_prob_1/vocab_size"] = \
             (torch.sum(allprobs > (1/self._cfg.vocab_size)) / allprobs.shape[0]).item()
-
-        token_prob_d['epoch']       = self.epoch
-        token_prob_d['global_step'] = self.global_step
         return token_prob_d
 
-    def process_results_d1(self, results_d, raw):
-        """Reconfigure results_d so it can be stored easily"""
-        ## TODO: do you need this?
-        results_d['epoch'] = self.epoch
-        results_d['idx']   = raw['idx']
-        for k,v in results_d.items():
-            if torch.is_tensor(v):
-                results_d[k] = v.detach().cpu().tolist()
-            elif type(v) == int or type(v) == float:
-                # make into list repeated n times
-                results_d[k] = [v for o in range(self._cfg.batch_size_train)]
-        return results_d
 
     def process_results_d_for_wandb(self,results_d):
         ## TODO: figure out what to do with this and process_results_d1.
@@ -549,25 +562,7 @@ class Trainer:
         results_d['epoch'] = self.epoch
         return results_d
 
-    def add_preds_to_data_d(self, results_d, split):
-        assert split in self.data_d.keys() or split == "training_summary"
-        d1 = results_d
-        d1['epoch'] = [self.epoch for i in range(len(d1['pp_l']))]
-        dcols = [d1[c] for c in self.table_columns]  # filter out loss_batch
-        assert len(set([len(o) for o in dcols])) == 1  # all lists should be of the same length
-        for row in zip(*dcols):
-            d2 = {k:v for k,v in zip(self.table_columns,row)}
-            self.data_d[split].append(d2)
 
-    def update_training_summary_table(self, results_d, split):
-        d = dict()
-        # key names here have to match those in summary_table_columns
-        ## TODO: either write assert for this or figure out if you need this table (can you plot it instead?)
-        d['epoch'] = self.epoch
-        d['split'] = split
-        for metric in self._cfg.metrics:
-            d[f'{metric}_avg'] = np.mean(results_d[metric])
-        self.data_d['training_summary'].append(d)
 
     def plot_wandb_charts(self):
         ## TODO: rename to indicate it only plots summary and examples charts
@@ -581,27 +576,8 @@ class Trainer:
                     chart = plot_examples_chart(split, table=wandb.Table(dataframe=df), metric=metric)
                     wandb.log({f"individual_examples/{split}_{metric}_vs_epoch_examples": chart}, commit=False)
 
-        ## Summary charts
-        for metric in self._cfg.metrics:
-            df = pd.DataFrame(self.data_d['training_summary'])
-            chart = plot_summary_chart(metric, table=wandb.Table(dataframe=df))
-            wandb.log({f"summary_charts/avg_{metric}_vs_epoch": chart},
-                      commit=True if metric == self._cfg.metrics[len(self._cfg.metrics)-1] else False)
-
     def add_wandb_run_summary_statistics(self):
-        """Compute final performance metrics for the run and log them to the wandb run summary pane. """
-        df_summary = pd.DataFrame(self.data_d['training_summary'])
-        # We calculate the best epoch according to the validation set
-        best_epoch_idx = df_summary.query("split=='valid'")['loss_avg'].idxmin()
-        valid_row = df_summary.iloc[best_epoch_idx]
-        best_epoch = valid_row['epoch'].item()
-        self.run.summary['best_epoch'] = best_epoch
-        # iloc transforms 1row df to series (so it is same as  valid_row)
-        train_row = df_summary.query("split=='train' & epoch==@best_epoch").iloc[0]
-        for metric in self._cfg.metrics:
-            self.run.summary[f"{metric}_avg_train"] = train_row[f"{metric}_avg"].item()
-            self.run.summary[f"{metric}_avg_valid"] = valid_row[f"{metric}_avg"].item()
-
+        """Compute test metrics for the run and log them to the wandb run summary pane. """
         ## Summary statistics of the test set
         # From the last epoch atm because we don't have early stopping
         test_metrics = self.data_d['test'].filter(self._cfg.metrics, axis=1).mean()

@@ -68,14 +68,11 @@ class Config:
         self.wandb = dict(
             project = "travis_attack",
             entity = "uts_nlp",
-            mode = "disabled",  # set to "disabled" to turn off wandb, "online" to enable it
+            mode = "online",  # set to "disabled" to turn off wandb, "online" to enable it
             log_grads = False,
             log_grads_freq = 1,  # no effect if wandb_log_grads is False
             plot_examples = False,
             n_examples_plot = 4,  # number of individual examples to plot curves for
-            # log a table to wandb with the examples and rewards the model sees while training. Useful for debugging
-            # and seeing what is going on, but slows down training time.
-            log_training_step_table = True,
             log_token_entropy=True,
             log_token_probabilities = True,
             run_notes = f"Reward: {self.reward_strategy}\nDataset: {self.dataset_name}"
@@ -139,7 +136,3 @@ class Config:
         self.n_shards = 40
         self.shard_contiguous = False
         return self
-
-#hide
-from nbdev.export import notebook2script
-notebook2script()
