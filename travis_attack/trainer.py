@@ -38,9 +38,7 @@ class Trainer:
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.accumulation_num,self.global_step = 0,0
-        # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
-        # there will be overlap between them.
-        self.train_batch_d,self.train_batch_time_d,self.wandb_log_d = dict(),dict(),dict()
+        self._reset_batch_dicts()
         #resume_pp_model(f"{path_checkpoints}devout-durian-172_39")
         self._setup_wandb_run()
         self._setup_data_stores()
@@ -50,6 +48,11 @@ class Trainer:
         #%lprun -f training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1, use_fp16=use_fp16)
         notebook_launcher(self.training_function, args=(),
                            num_processes=1, use_fp16=self._cfg.use_fp16)
+
+    def _reset_batch_dicts(self):
+          # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
+        # there will be overlap between them.
+        self.batch_d,self.batch_time_d,self.batch_wandb_d = dict(),dict(),dict()
 
     def _setup_wandb_run(self):
         """Init wandb run, set up paths, create dir for model artifacts if needed, """
@@ -70,7 +73,7 @@ class Trainer:
         # These have to be in the keys of the output from eval_dl
         self.table_columns = ['idx', 'orig_l',  'truelabel', 'orig_truelabel_probs', 'epoch', 'pp_l',
                      'pp_truelabel_probs', "pp_predclass", "pp_predclass_probs"] + self._cfg.metrics
-        for split in self._cfg.splits + ['training_step'] + ['training_step1']:   self.data_d[split] = []
+        for split in self._cfg.splits + ['training_step']:   self.data_d[split] = []
 
     def _setup_wandb_examples_plots(self):
         """If we plot a few examples this sets that up."""
@@ -89,9 +92,9 @@ class Trainer:
             if not self.pp_model.training: self.pp_model.train()
             with timecode() as time_train_one_epoch:
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
+                    self._reset_batch_dicts()
                     self.training_step(data, raw)
                     self.accumulation_num += 1  ; self.global_step += 1 ;  progress_bar.update(1)
-                    self.train_batch_d,self.train_batch_time_d,self.wandb_log_d = dict(),dict(),dict()
 
             wandb.log({'time/train_one_epoch_time': time_train_one_epoch.t,
                        'time/train_one_epoch_thoroughput': len(self.ds.dsd_tkn['train']) / time_train_one_epoch.t,
@@ -109,12 +112,10 @@ class Trainer:
             # Evaluation loop
             if self.epoch % self._cfg.eval_freq == 0:
                 with timecode() as time_eval_train:
-                    train_set_preds = self.eval_dl(dl_tkn=self.ds.dld_tkn['train_eval'],
-                                                   dl_raw=self.ds.dld_raw['train_eval'])
+                    train_set_preds = self.eval_dl(split='train') # or train_eval?
 
                 with timecode() as time_eval_valid:
-                    valid_set_preds = self.eval_dl(dl_tkn=self.ds.dld_tkn['valid'],
-                                                   dl_raw=self.ds.dld_raw['valid'])
+                    valid_set_preds = self.eval_dl(split='valid')
                 with timecode() as time_add_eval_preds_to_data_d:
                     self.add_preds_to_data_d(train_set_preds, split='train')
                     self.add_preds_to_data_d(valid_set_preds, split='valid')
@@ -132,12 +133,12 @@ class Trainer:
                            'time/eval_empty_cache': time_eval_empty_cache.t,
                    'epoch': self.epoch}, commit=True)
         # Eval on test set
-        test_set_preds = self.eval_dl(dl_tkn = self.ds.dld_tkn['test'], dl_raw=self.ds.dld_raw['test'])
+        test_set_preds = self.eval_dl(split='test')
         self.add_preds_to_data_d(test_set_preds, split='test')
 
         # Data -> df and save dfs to file
         for key in self.data_d.keys():  # splits and sometimes 'training_step' too
-            self.data_d[key] = pd.DataFrame(self.data_d[key]) # dict of list of dict -> dict of dataframe
+            self.data_d[key] = self._convert_data_d_to_df(key)
             self.data_d[key].to_csv(f"{self._cfg.path_run}{key}.csv", index=False)
 
         # plot_wandb_charts()  # don't think I need this
@@ -149,46 +150,32 @@ class Trainer:
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
         recording results, wandb logging.
         """
-        with timecode() as self.train_batch_time_d['time_generate_pp']:
+        if not self.pp_model.training: self.pp_model.train()
+        if not self.vm_model.training: self.vm_model.train()
+
+        with timecode() as self.batch_time_d['time_generate_pp']:
             pp_output, pp_l = self.pp_model_forward(data)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
 
         with self.accelerator.autocast():
-            with timecode() as self.train_batch_time_d['time_loss_fn']:
-                results_d = self.loss_fn(data, raw, pp_output, pp_l, return_components=True)
+            with timecode() as self.batch_time_d['time_loss_fn']:
+                results_d = self.loss_fn(data, raw, pp_output, pp_l)
             loss_batch = results_d['loss_batch'] / self._cfg.accumulation_steps  # Normalize our loss for gradient accumulation
 
-        with timecode() as self.train_batch_time_d['time_backwards']:
+        with timecode() as self.batch_time_d['time_backwards']:
             self.accelerator.backward(loss_batch)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after backwards pass: '))
         if (self.accumulation_num + 1) % self._cfg.accumulation_steps == 0:
-            with timecode() as self.train_batch_time_d['time_opt_step']:
+            with timecode() as self.batch_time_d['time_opt_step']:
                 self.optimizer.step()
             self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
 
-        with timecode() as self.train_batch_time_d['time_add_to_training_step_table']:
-            results_d = self.process_results_d1(results_d, raw)
-            self.add_preds_to_data_d(results_d, split='training_step')
-
-
         self._prepare_train_batch_d(raw, data, pp_l)
-        self.data_d['training_step1'].append(self.train_batch_d)
-        self._wandb_log_training_step()
+        self.data_d['training_step'].append(self.batch_d)
 
-    def process_results_d1(self, results_d, raw):
-        """TO DELETE"""
-        ## TODO: do you need this?
-        results_d['epoch'] = self.epoch
-        results_d['idx']   = raw['idx']
-        for k,v in results_d.items():
-            if torch.is_tensor(v):
-                results_d[k] = v.detach().cpu().tolist()
-            elif type(v) == int or type(v) == float:
-                # make into list repeated n times
-                results_d[k] = [v for o in range(self._cfg.batch_size_train)]
-        return results_d
+        self._wandb_log_training_step()
 
     def add_preds_to_data_d(self, results_d, split):
         """TO DELETE"""
@@ -201,9 +188,9 @@ class Trainer:
             d2 = {k:v for k,v in zip(self.table_columns,row)}
             self.data_d[split].append(d2)
 
-    def _prepare_train_batch_d(self, raw, data, pp_l):
+    def _add_batch_vars_to_batch_d(self, raw, data, pp_l):
         # Add basics. (results are already added elsewhere)
-        self.train_batch_d = merge_dicts(self.train_batch_d, { 'idx': raw['idx'],
+        self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
             'accumulation_num': self.accumulation_num,  "orig_l": raw['text'],
             "orig_label": data['label'].cpu().tolist(),
@@ -211,27 +198,47 @@ class Trainer:
             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
             "pp_l": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
         })
-        # Add times
-        for k, v in self.train_batch_time_d.items(): self.train_batch_time_d[k] = v.t  # extract time from timecode object
-        self.train_batch_d = merge_dicts(self.train_batch_d, self.train_batch_time_d)
+
+    def _prepare_train_batch_d(self, raw, data, pp_l):
+        self._add_batch_vars_to_batch_d(raw, data, pp_l)
+        # Add times (only for training, not eval)
+        for k, v in self.batch_time_d.items(): self.batch_time_d[k] = v.t  # extract time from timecode object
+        self.batch_d = merge_dicts(self.batch_d, self.batch_time_d)
 
     def _wandb_log_training_step(self):
-        self.wandb_log_d = merge_dicts(self.wandb_log_d, {
-            'vm_scores_hist':       Histogram(self.train_batch_d['vm_scores']),
-            'vm_scores_mean':       np.mean(  self.train_batch_d['vm_scores']),
-            'sts_scores_hist':      Histogram(self.train_batch_d['sts_scores']),
-            'sts_scores_mean':      np.mean(  self.train_batch_d['sts_scores']),
-            'rewards_hist':         Histogram(self.train_batch_d['rewards']),
-            'rewards_mean':         np.mean(  self.train_batch_d['rewards']),
-            'pp_logp_hist':         Histogram(self.train_batch_d['pp_logp']),
-            'pp_logp_mean':         np.mean(  self.train_batch_d['pp_logp']),
-            'loss_hist'   :         Histogram(self.train_batch_d['loss_examples'])})
-        self.wandb_log_d = merge_dicts(self.wandb_log_d, self.train_batch_d)
-        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss_examples', 'pp_logp',
-                              'rewards', 'sts_scores', 'vm_scores',
+        self.batch_wandb_d = merge_dicts(self.batch_wandb_d, {
+            'vm_scores_hist':       Histogram(self.batch_d['vm_score']),
+            'vm_scores_mean':       np.mean(  self.batch_d['vm_score']),
+            'sts_scores_hist':      Histogram(self.batch_d['sts_score']),
+            'sts_scores_mean':      np.mean(  self.batch_d['sts_score']),
+            'rewards_hist':         Histogram(self.batch_d['reward']),
+            'rewards_mean':         np.mean(  self.batch_d['reward']),
+            'pp_logp_hist':         Histogram(self.batch_d['pp_logp']),
+            'pp_logp_mean':         np.mean(  self.batch_d['pp_logp']),
+            'loss_hist'   :         Histogram(self.batch_d['loss'])})
+        self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
+        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp',
+                              'reward', 'sts_score', 'vm_score',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
-        for k in not_for_wandb_keys:  self.wandb_log_d.pop(k, None)
-        wandb.log(self.wandb_log_d, commit=True)
+        for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
+        wandb.log(self.batch_wandb_d, commit=True)
+
+    def _wandb_log_eval_step(self):
+        ### TODO: implement
+        pass
+        wandb.log(self.batch_wandb_d, commit=True)
+
+    def _convert_data_d_to_df(self, data_d_key):
+        df = pd.DataFrame(self.data_d[data_d_key])
+        # check all lists have the same number of elements
+        nonscalar_cols = df.columns[[o == np.dtype('object') for o in df.head(1).dtypes]].tolist()
+        assert (df[nonscalar_cols].applymap(len) == cfg.batch_size_train).all(None)
+        # expand lists and broadcast scalars
+        scalar_cols = df.columns[[o != np.dtype('object') for o in df.head(1).dtypes]].tolist()
+        df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
+        split = 'train' if data_d_key == "training_step" else data_d_key
+        assert df_expanded.shape == (self._cfg.ds_length[split] * cfg.n_train_epochs, df.shape[1])
+        return df_expanded
 
     def pp_model_forward(self, data):
         pp_output, pp_l = self.get_paraphrases(data['input_ids'], data['attention_mask'])
@@ -276,37 +283,34 @@ class Trainer:
         pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
         return pp_output, pp_l
 
-    def loss_fn(self, data, raw, pp_output, pp_l, return_components=False):
-        with timecode() as self.train_batch_time_d['time_reward_fn']:
-            d = self.reward_fn(data, raw, pp_l, return_components=return_components)
+    def loss_fn(self, data, raw, pp_output, pp_l):
+        with timecode() as self.batch_time_d['time_reward_fn']:
+            d = self.reward_fn(data, raw, pp_l)
 
         if self._cfg.normalise_rewards:
             d['orig_reward'] = copy.deepcopy(d['reward'])
             d['reward'] = (d['reward']-torch.mean(d['reward']))/torch.std(d['reward'])
 
-        with timecode() as self.train_batch_time_d['time_pp_logp']:
+        with timecode() as self.batch_time_d['time_pp_logp']:
             d['pp_logp'] = self.get_pp_logp(pp_output)
 
-        with timecode() as self.train_batch_time_d['time_loss_fn_loss_calc']:
+        with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
             d['loss'] = -d['reward'] * d['pp_logp']
             d['loss_batch'] = torch.mean(d['loss'])
-            if return_components ==  False: return d['loss_batch']
 
-        # remove some items from compgraph
-        with timecode() as self.train_batch_time_d['time_loss_fn_detach']:
+        with timecode() as self.batch_time_d['time_loss_fn_detach']:
             d['pp_logp'] = d['pp_logp'].detach()
             d['loss']    = d['loss'].detach()
 
-        if self.pp_model.training:
-            self.train_batch_d['pp_logp'] = d['pp_logp'].cpu().tolist()
-            self.train_batch_d['loss_examples'] = d['loss'].cpu().tolist()
-            self.train_batch_d['loss_batch'] = d['loss_batch'].detach().cpu().tolist()
+        self.batch_d['pp_logp'] = d['pp_logp'].cpu().tolist()
+        self.batch_d['loss'] = d['loss'].cpu().tolist()
+        self.batch_d['loss_batch'] = d['loss_batch'].detach().cpu().tolist()
         return d
 
-    def reward_fn(self, data, raw, pp_l, return_components=False):
+    def reward_fn(self, data, raw, pp_l):
         """"""
         # Victim model probability differences between orig and pp
-        with timecode() as self.train_batch_time_d['time_vm_scores']:
+        with timecode() as self.batch_time_d['time_vm_scores']:
             pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
             pp_predclass = torch.argmax(pp_probs, axis=1)
             pp_truelabel_probs   = torch.gather(pp_probs, 1, data['label'][:,None]).squeeze()
@@ -315,40 +319,38 @@ class Trainer:
             vm_scores = (data['orig_truelabel_probs'] - pp_truelabel_probs)
 
         # STS scores
-        with timecode() as self.train_batch_time_d['time_sts_scores']:
+        with timecode() as self.batch_time_d['time_sts_scores']:
             pp_embeddings  = self.sts_model.encode(pp_l, batch_size=len(raw), convert_to_tensor=True, device=self._cfg.device)
             # This returns a cosine similarity matrix, of which we just want the diagonal
             sts_scores = pytorch_cos_sim(data['orig_sts_embeddings'], pp_embeddings).diagonal()
 
         # Reward calculation
         rewards = torch.tensor([-0.5 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
-        if self.pp_model.training:
-            self.train_batch_d['pp_truelabel_probs'] = pp_truelabel_probs.detach().cpu().tolist()
-            self.train_batch_d['pp_predclass']       = pp_predclass.detach().cpu().tolist()
-            self.train_batch_d['pp_predclass_probs'] = pp_predclass_probs.detach().cpu().tolist()
-            self.train_batch_d['label_flip']         = label_flip.detach().cpu().tolist()
-            self.train_batch_d['label_flip_fraction']= np.mean(self.train_batch_d['label_flip'])
-            self.train_batch_d['rewards']            = rewards.detach().cpu().tolist()
-            self.train_batch_d['vm_scores']          = vm_scores.detach().cpu().tolist()
-            self.train_batch_d['sts_scores']         = sts_scores.detach().cpu().tolist()
+
+        self.batch_d['pp_truelabel_probs']  = pp_truelabel_probs.detach().cpu().tolist()
+        self.batch_d['pp_predclass']        = pp_predclass.detach().cpu().tolist()
+        self.batch_d['pp_predclass_probs']  = pp_predclass_probs.detach().cpu().tolist()
+        self.batch_d['label_flip']          = label_flip.detach().cpu().tolist()
+        self.batch_d['label_flip_fraction'] = np.mean(self.batch_d['label_flip'])
+        self.batch_d['reward']              = rewards.detach().cpu().tolist()
+        self.batch_d['vm_score']            = vm_scores.detach().cpu().tolist()
+        self.batch_d['sts_score']           = sts_scores.detach().cpu().tolist()
 
         ## TODO: with a class we can just keep all these variables in self, refactor? then maybe you can log them
         #  with wandb histogram?
-        if return_components:
-            return {
-                "orig_l": raw['text'],
-                "pp_l": pp_l,
-                "truelabel": data['label'],
-                "orig_truelabel_probs": data['orig_truelabel_probs'],
-                "pp_truelabel_probs":  pp_truelabel_probs,
-                "pp_predclass": pp_predclass,
-                "pp_predclass_probs": pp_predclass_probs,
-                "vm_score": vm_scores,
-                "sts_score": sts_scores,
-                "reward": rewards,
-                "label_flip": label_flip
-            }
-        else:  return {"reward": rewards}
+        return {
+            "orig_l": raw['text'],
+            "pp_l": pp_l,
+            "truelabel": data['label'],
+            "orig_truelabel_probs": data['orig_truelabel_probs'],
+            "pp_truelabel_probs":  pp_truelabel_probs,
+            "pp_predclass": pp_predclass,
+            "pp_predclass_probs": pp_predclass_probs,
+            "vm_score": vm_scores,
+            "sts_score": sts_scores,
+            "reward": rewards,
+            "label_flip": label_flip
+        }
 
     def get_pp_logp(self, pp_output):
         """log(p(pp|orig)) basically.
@@ -424,12 +426,12 @@ class Trainer:
 
         if self.pp_model.training:  # don't bother logging or calculate entropy, token_probs in eval mode
             if self._cfg.wandb['log_token_entropy']:
-                with timecode() as self.train_batch_time_d['time_log_entropy']:
-                    self.wandb_log_d['ent_hist'] = self._get_entropy_hist(scores_stacked, attention_mask)
+                with timecode() as self.batch_time_d['time_log_entropy']:
+                    self.batch_wandb_d['ent_hist'] = self._get_entropy_hist(scores_stacked, attention_mask)
 
             if self._cfg.wandb['log_token_probabilities']:
-                with timecode() as self.train_batch_time_d['time_log_token_probabilities']:
-                    self.wandb_log_d = merge_dicts(self.wandb_log_d,
+                with timecode() as self.batch_time_d['time_log_token_probabilities']:
+                    self.batch_wandb_d = merge_dicts(self.batch_wandb_d,
                         self._get_token_probability_metrics(scores_log_softmax, attention_mask, k=3))
         return seq_log_prob
 
@@ -513,8 +515,41 @@ class Trainer:
             (torch.sum(allprobs > (1/self._cfg.vocab_size)) / allprobs.shape[0]).item()
         return token_prob_d
 
+    def eval_dl(self,split):
+        """Get evaluation metrics for a dataloader"""
+        ### TODO: delete redundant stuff
+        # Put models in eval mode and do the forward pass
+        # Current logic: push all batches together into one big list.
+        self._reset_batch_dicts()
+        if self.pp_model.training: self.pp_model.eval()
+        if self.vm_model.training: self.vm_model.eval()
+        results_d = defaultdict(list)
+        dl_raw = self.ds.dld_raw[split]
+        dl_tkn = self.ds.dld_tkn[split]
+        with torch.no_grad():
+            for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
+                self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
+                for k, v in data.items():
+                    ## TODO: do you need this line?
+                    if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
 
-    def process_results_d_for_wandb(self,results_d):
+                pp_output, pp_l = self.pp_model_forward(data)
+                d = self.loss_fn(data, raw, pp_output, pp_l)
+
+                self._add_batch_vars_to_batch_d(raw, data, pp_l)
+                self.data_d[split].append(self.batch_d)
+
+                self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
+                d['idx'] = raw['idx']
+                for k,v in d.items():
+                    results_d[k].append(v)
+
+        self._wandb_log_eval_step()  # not implemented yet
+        results_d = self.process_results_d_for_wandb(results_d)
+        results_d['epoch'] = self.epoch
+        return results_d
+
+    def process_results_d_for_wandb(self, results_d):
         ## TODO: figure out what to do with this and process_results_d1.
         ## Also rename this. To me it looks like it changes types, shapes, but why?
         # If you convert the summary plots to simple wandb charts, can you get rid of this?
@@ -536,33 +571,6 @@ class Trainer:
             else:
                 raise Exception("shouldn't get here")
         return results_d
-
-    def eval_dl(self, dl_tkn, dl_raw):
-        """Get evaluation metrics for a dataloader"""
-        # Put models in eval mode and do the forward pass
-        # Current logic: push all batches together into one big list.
-        if self.pp_model.training: self.pp_model.eval()
-        if self.vm_model.training: self.vm_model.eval()
-        results_d = defaultdict(list)
-        with torch.no_grad():
-            for eval_batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
-                self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
-                for k, v in data.items():
-                    if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
-
-                pp_output, pp_l = self.pp_model_forward(data)
-                d = self.loss_fn(data, raw, pp_output, pp_l, return_components=True)
-                self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
-                d['idx'] = raw['idx']
-
-                for k,v in d.items():
-                    results_d[k].append(v)
-        del eval_batch_num, data, raw, pp_output, pp_l, d
-        results_d = self.process_results_d_for_wandb(results_d)
-        results_d['epoch'] = self.epoch
-        return results_d
-
-
 
     def plot_wandb_charts(self):
         ## TODO: rename to indicate it only plots summary and examples charts

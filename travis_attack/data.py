@@ -19,6 +19,7 @@ class ProcessedDataset:
         elif self._cfg.dataset_name == "rotten_tomatoes": self._prep_dsd_raw_rotten_tomatoes()
         else: raise Exception("cfg.dataset_name must be either 'simple' or 'rotten_tomatoes'")
         self._preprocess_dataset()
+        self._update_cfg()
 
     def _prep_dsd_raw_simple(self):
         """Load the simple dataset and package it up in a DatasetDict (dsd)
@@ -145,6 +146,12 @@ class ProcessedDataset:
                                     collate_fn=collate_fn,
                                      num_workers=self._cfg.n_wkrs, pin_memory=self._cfg.pin_memory)
         return d
+
+    def _update_cfg(self):
+        self._cfg.ds_length = dict()
+
+        for k in self.dsd_raw.keys():
+            self._cfg.ds_length[k] = len(self.dsd_raw[k])
 
     def show_random_elements(self, ds, num_examples=10):
         """Print some elements in a nice format so you can take a look at them.
