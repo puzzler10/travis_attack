@@ -94,6 +94,8 @@ class Config:
         self.path_data = "./data/"
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
         self.path_run = None #keep as None; this is automatically filled out by Trainer class
+        self.path_data_cache = "/data/tproth/.cache/huggingface/datasets/"
+
 
         # Adjust config depending on dataset.
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()

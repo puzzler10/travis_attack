@@ -3,22 +3,35 @@
 __all__ = ['ProcessedDataset']
 
 # Cell
-import torch, random, pandas as pd
+import torch, random, pandas as pd, os, warnings, shutil
 from torch.utils.data import DataLoader, RandomSampler
 from datasets import load_dataset, load_from_disk, DatasetDict, ClassLabel
 from IPython.display import display, HTML
 from .models import get_vm_probs
 from .config import Config
+from .utils import robust_rmt
 
 # Cell
 class ProcessedDataset:
     """Class that wraps a raw dataset (e.g. from huggingface datasets) and performs preprocessing on it."""
-    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model):
+    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model,
+                 load_processed_from_file=True):
+        """load_processed_from_file: set to true to load completed version from file, false will process the data. """
         self._cfg,self._vm_tokenizer,self._vm_model,self._pp_tokenizer,self._sts_model = cfg,vm_tokenizer,vm_model,pp_tokenizer,sts_model
-        if   self._cfg.dataset_name == "simple":          self._prep_dsd_raw_simple()
-        elif self._cfg.dataset_name == "rotten_tomatoes": self._prep_dsd_raw_rotten_tomatoes()
-        else: raise Exception("cfg.dataset_name must be either 'simple' or 'rotten_tomatoes'")
-        self._preprocess_dataset()
+        shard_suffix = f"_{self._cfg.n_shards}_shards" if self._cfg.use_small_ds else ""
+        self.cache_path_raw = f"{self._cfg.path_data_cache}{self._cfg.dataset_name}_raw{shard_suffix}"
+        self.cache_path_tkn = f"{self._cfg.path_data_cache}{self._cfg.dataset_name}_tkn{shard_suffix}"
+
+        if load_processed_from_file:
+            if os.path.exists(self.cache_path_raw) and os.path.exists(self.cache_path_tkn):
+                self.dsd_raw = load_from_disk(self.cache_path_raw)
+                self.dsd_tkn = load_from_disk(self.cache_path_tkn)
+                self._prep_dataloaders()
+            else:
+                warnings.warn("Cache file not found, so will now process the raw dataset.")
+                self._preprocess_dataset()
+        else:
+            self._preprocess_dataset()
         self._update_cfg()
 
     def _prep_dsd_raw_simple(self):
@@ -26,7 +39,8 @@ class ProcessedDataset:
         with splits for train, valid, test."""
         self.dsd_raw = DatasetDict()
         for s in self._cfg.splits:
-            self.dsd_raw[s] = load_dataset('csv', data_files=f"{self._cfg.path_data}simple_dataset_{s}.csv")['train']
+            self.dsd_raw[s] = load_dataset('csv',
+                data_files=f"{self._cfg.path_data}simple_dataset_{s}.csv", keep_in_memory=False)['train']
 
     def _prep_dsd_raw_rotten_tomatoes(self):
         """Load the rotten tomatoes dataet and package it up in a DatasetDict (dsd)
@@ -47,6 +61,10 @@ class ProcessedDataset:
     def _preprocess_dataset(self):
         """Add columns, tokenize, transform, prepare dataloaders, and do other preprocessing tasks."""
         ##### TODO: why do you need train_eval? how is it different from train?
+        if   self._cfg.dataset_name == "simple":          self._prep_dsd_raw_simple()
+        elif self._cfg.dataset_name == "rotten_tomatoes": self._prep_dsd_raw_rotten_tomatoes()
+        else: raise Exception("cfg.dataset_name must be either 'simple' or 'rotten_tomatoes'")
+
         self.dsd_raw = self.dsd_raw.map(self._add_idx, batched=True, with_indices=True)  # add idx column
         if self._cfg.use_small_ds: self._shard_dsd_raw()  # do after adding idx so it's consistent across runs
         # add VM score & filter out misclassified examples. (at this point lengths are diff between dsd_raw and dsd_tkn)
@@ -64,7 +82,11 @@ class ProcessedDataset:
             self.dsd_raw[s] = self.dsd_raw[s].filter(lambda x: x['idx'] in idx_list)
         for s in self._cfg.splits: assert len(self.dsd_raw[s]) == len(self.dsd_tkn[s])  # check ds has same number of elements in raw and tkn
 
-        # Prepare dataloaders
+        # save to cache
+        self._cache_processed_ds()
+        self._prep_dataloaders()
+
+    def _prep_dataloaders(self):
         self.dld_raw = self._get_dataloaders_dict(self.dsd_raw, collate_fn=self._collate_fn_raw)  # dict of data loaders that serve raw text
         self.dld_tkn = self._get_dataloaders_dict(self.dsd_tkn, collate_fn=self._collate_fn_tkn)  # dict of data loaders that serve tokenized text
 
@@ -152,6 +174,17 @@ class ProcessedDataset:
 
         for k in self.dsd_raw.keys():
             self._cfg.ds_length[k] = len(self.dsd_raw[k])
+
+    def _cache_processed_ds(self):
+        def _reset_dir(path):
+            if os.path.exists(path) and os.path.isdir(path):
+                # sometimes throws errors (i think huggingface writes to cache later)
+                robust_rmtree(path, logger=None, max_retries=6)
+            os.makedirs(path, exist_ok=True)
+        _reset_dir(self.cache_path_raw)
+        _reset_dir(self.cache_path_tkn)
+        self.dsd_raw.save_to_disk(dataset_dict_path = self.cache_path_raw)
+        self.dsd_tkn.save_to_disk(dataset_dict_path = self.cache_path_tkn)
 
     def show_random_elements(self, ds, num_examples=10):
         """Print some elements in a nice format so you can take a look at them.
