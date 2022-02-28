@@ -111,8 +111,8 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.accumulation_steps = 1
-        self.n_train_epochs = 4
-        self.eval_freq = 1
+        self.n_train_epochs = 20
+        self.eval_freq = 4
         return self
 
     def adjust_config_for_rotten_tomatoes_dataset(self):

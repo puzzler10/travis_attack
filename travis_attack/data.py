@@ -3,13 +3,13 @@
 __all__ = ['ProcessedDataset']
 
 # Cell
-import torch, random, pandas as pd, os, warnings, shutil
+import torch, random, pandas as pd, os, warnings, shutil, uuid
 from torch.utils.data import DataLoader, RandomSampler
 from datasets import load_dataset, load_from_disk, DatasetDict, ClassLabel
 from IPython.display import display, HTML
 from .models import get_vm_probs
 from .config import Config
-from .utils import robust_rmt
+from .utils import robust_rmtree
 
 # Cell
 class ProcessedDataset:
@@ -34,21 +34,23 @@ class ProcessedDataset:
             self._preprocess_dataset()
         self._update_cfg()
 
-    def _prep_dsd_raw_simple(self):
+    def _prep_dsd_simple(self):
         """Load the simple dataset and package it up in a DatasetDict (dsd)
         with splits for train, valid, test."""
-        self.dsd_raw = DatasetDict()
+        dsd = DatasetDict()
         for s in self._cfg.splits:
-            self.dsd_raw[s] = load_dataset('csv',
+            dsd[s] = load_dataset('csv',
                 data_files=f"{self._cfg.path_data}simple_dataset_{s}.csv", keep_in_memory=False)['train']
+        return dsd
 
-    def _prep_dsd_raw_rotten_tomatoes(self):
+    def _prep_dsd_rotten_tomatoes(self):
         """Load the rotten tomatoes dataet and package it up in a DatasetDict (dsd)
         with splits for train, valid, test."""
-        self.dsd_raw = load_dataset("rotten_tomatoes")
-        self.dsd_raw['valid'] = self.dsd_raw.pop('validation')  # "valid" is easier than "validation"
+        dsd = load_dataset("rotten_tomatoes")
+        dsd['valid'] = dsd.pop('validation')  # "valid" is easier than "validation"
         # make sure that all datasets have the same number of labels as what the victim model predicts
-        for _,ds in self.dsd_raw.items(): assert ds.features[self._cfg.label_cname].num_classes == self._cfg.vm_num_labels
+        for _,ds in dsd.items(): assert ds.features[self._cfg.label_cname].num_classes == self._cfg.vm_num_labels
+        return dsd
 
     def _prep_dsd_raw_snli(self):
         ## For snli
@@ -61,30 +63,34 @@ class ProcessedDataset:
     def _preprocess_dataset(self):
         """Add columns, tokenize, transform, prepare dataloaders, and do other preprocessing tasks."""
         ##### TODO: why do you need train_eval? how is it different from train?
-        if   self._cfg.dataset_name == "simple":          self._prep_dsd_raw_simple()
-        elif self._cfg.dataset_name == "rotten_tomatoes": self._prep_dsd_raw_rotten_tomatoes()
+        if   self._cfg.dataset_name == "simple":          dsd = self._prep_dsd_simple()
+        elif self._cfg.dataset_name == "rotten_tomatoes": dsd = self._prep_dsd_rotten_tomatoes()
         else: raise Exception("cfg.dataset_name must be either 'simple' or 'rotten_tomatoes'")
 
-        self.dsd_raw = self.dsd_raw.map(self._add_idx, batched=True, with_indices=True)  # add idx column
-        if self._cfg.use_small_ds: self._shard_dsd_raw()  # do after adding idx so it's consistent across runs
-        # add VM score & filter out misclassified examples. (at this point lengths are diff between dsd_raw and dsd_tkn)
-        self.dsd_tkn = self.dsd_raw.map(self._add_vm_orig_score, batched=True)
-        if self._cfg.remove_misclassified_examples:
-            self.dsd_tkn = self.dsd_tkn.filter(lambda x: x['orig_vm_predclass'] == x['label'])
-        self.dsd_tkn = self.dsd_tkn.map(self._add_sts_orig_embeddings, batched=True)  # add STS score
-        self.dsd_tkn = self.dsd_tkn.map(self._tokenize_fn,             batched=True)  # tokenize
-        self.dsd_tkn = self.dsd_tkn.map(self._add_n_tokens,            batched=True)  # add n_tokens
-        if self._cfg.bucket_by_length: self.dsd_tkn = self.dsd_tkn.sort("n_tokens", reverse=True)  # sort by n_tokens (high to low), useful for cuda memory caching
-
-        # filter out rows in dsd_raw that aren't in dsd_tkn
-        for s in self._cfg.splits:
-            idx_list = self.dsd_tkn[s]['idx']
-            self.dsd_raw[s] = self.dsd_raw[s].filter(lambda x: x['idx'] in idx_list)
+        dsd = dsd.map(self._add_idx, batched=True, with_indices=True)  # add idx column
+        if self._cfg.use_small_ds: dsd = self._shard_dsd_raw(dsd)  # do after adding idx so it's consistent across runs
+        # add VM score & filter out misclassified examples.
+        # use a common variable dsd, add all columns, and later filter columns to get dsd_raw and dsd_tkn
+        dsd = dsd.map(self._add_vm_orig_score, batched=True)
+        if self._cfg.remove_misclassified_examples:  dsd = dsd.filter(lambda x: x['orig_vm_predclass'] == x['label'])
+        dsd = dsd.map(self._add_sts_orig_embeddings, batched=True)  # add STS score
+        dsd = dsd.map(self._tokenize_fn,             batched=True)  # tokenize
+        dsd = dsd.map(self._add_n_tokens,            batched=True)  # add n_tokens
+        if self._cfg.bucket_by_length: dsd = dsd.sort("n_tokens", reverse=True)  # sort by n_tokens (high to low), useful for cuda memory caching
+        # Split dsd into dsd_raw and dsd_tkn
+        assert dsd.column_names['train'] == dsd.column_names['valid'] == dsd.column_names['test']
+        self.cnames_dsd_raw = ['idx', 'text', 'label']
+        self.cnames_dsd_tkn = [o for o in dsd.column_names['train'] if o != 'text']
+        self.dsd_raw = dsd.remove_columns([o for o in  dsd['train'].column_names if o not in self.cnames_dsd_raw])
+        self.dsd_tkn = dsd.remove_columns(["text"])
         for s in self._cfg.splits: assert len(self.dsd_raw[s]) == len(self.dsd_tkn[s])  # check ds has same number of elements in raw and tkn
-
-        # save to cache
         self._cache_processed_ds()
         self._prep_dataloaders()
+
+#         # filter out rows in dsd_raw that aren't in dsd_tkn
+#         for s in self._cfg.splits:
+#             idx_list = self.dsd_tkn[s]['idx']
+#             self.dsd_raw[s] = self.dsd_raw[s].filter(lambda x: x['idx'] in idx_list)
 
     def _prep_dataloaders(self):
         self.dld_raw = self._get_dataloaders_dict(self.dsd_raw, collate_fn=self._collate_fn_raw)  # dict of data loaders that serve raw text
@@ -138,10 +144,11 @@ class ProcessedDataset:
         g.manual_seed(seed)
         return RandomSampler(ds, generator=g)
 
-    def _shard_dsd_raw(self):
-        """Replaces dsd_raw with a smaller shard of itself."""
-        for k,v in self.dsd_raw.items():
-            self.dsd_raw[k] = v.shard(self._cfg.n_shards, 0, contiguous=self._cfg.shard_contiguous)
+    def _shard_dsd_raw(self, dsd):
+        """Replaces dsd with a smaller shard of itself."""
+        for k,v in dsd.items():
+            dsd[k] = v.shard(self._cfg.n_shards, 0, contiguous=self._cfg.shard_contiguous)
+            return dsd
 
     def _get_dataloaders_dict(self, dsd, collate_fn):
         """Prepare a dict of dataloaders for train, valid and test"""
@@ -178,8 +185,12 @@ class ProcessedDataset:
     def _cache_processed_ds(self):
         def _reset_dir(path):
             if os.path.exists(path) and os.path.isdir(path):
-                # sometimes throws errors (i think huggingface writes to cache later)
-                robust_rmtree(path, logger=None, max_retries=6)
+                # So deleting the old files sometimes throws errors because of race conditions, I think
+                # so as a workaround we will just move files to old directories and then periodicallly clean them.
+                #                robust_rmtree(path, logger=None, max_retries=6)
+                path_old_files = f"{self._cfg.path_data_cache}old_files/"
+                os.makedirs(path_old_files, exist_ok=True)
+                shutil.move(path, f"{path_old_files}{uuid.uuid4().hex}")
             os.makedirs(path, exist_ok=True)
         _reset_dir(self.cache_path_raw)
         _reset_dir(self.cache_path_tkn)

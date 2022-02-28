@@ -6,7 +6,8 @@ __all__ = ['Trainer']
 import torch, wandb, gc, numpy as np, pandas as pd,os
 from wandb.data_types import Histogram
 from tqdm.auto import tqdm
-from .utils import timecode, show_gpu, merge_dicts, unpack_nested_lists_in_df, display_all
+from .utils import (timecode, show_gpu, merge_dicts, unpack_nested_lists_in_df,
+                                 display_all, append_df_to_csv)
 from .tests import check_no_nans_or_infs
 from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids
 from .charts import plot_grad_flow, plot_examples_chart
@@ -44,9 +45,11 @@ class Trainer:
         self._setup_data_stores()
         if self._cfg.wandb['plot_examples']: self._setup_wandb_examples_plots()
         self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
+
+    def train(self):
         ## TODO: why is num_processes set to 1?
-        #%lprun -f training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1, use_fp16=use_fp16)
-        notebook_launcher(self.training_function, args=(),
+        #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1, use_fp16=use_fp16)
+        notebook_launcher(self._training_function, args=(),
                            num_processes=1, use_fp16=self._cfg.use_fp16)
 
     def _reset_batch_dicts(self):
@@ -80,7 +83,7 @@ class Trainer:
         self.plt_idx_d = dict()
         for split in self._cfg.splits:  self.plt_idx_d[split] = get_examples_plot_idxs(self.ds.dsd[split])
 
-    def training_function(self):
+    def _training_function(self):
         self.logger.debug(show_gpu(f'GPU memory usage after loading models:'))
         progress_bar = tqdm(range(self._cfg.n_train_steps))
         self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
@@ -90,7 +93,7 @@ class Trainer:
             with timecode() as time_train_one_epoch:
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
                     self._reset_batch_dicts()
-                    self.training_step(data, raw)
+                    self._training_step(data, raw)
                     self.accumulation_num += 1  ; self.global_step += 1 ;  progress_bar.update(1)
 
             wandb.log({'time/train_one_epoch_time': time_train_one_epoch.t,
@@ -110,10 +113,12 @@ class Trainer:
             if self.epoch % self._cfg.eval_freq == 0:
                 self.eval_num += 1
                 with timecode() as time_eval_train:
-                    self.eval_dl(split='train') # or train_eval?
+                    self._eval_dl(split='train') # or train_eval?
                 with timecode() as time_eval_valid:
-                    self.eval_dl(split='valid')
-                self.plot_wandb_charts()
+                    self._eval_dl(split='valid')
+                with timecode() as time_eval_compute_metrics:
+                    self._compute_and_log_eval_metrics()
+                self._plot_wandb_charts()
                 with timecode() as time_eval_gc_collect:
                     gc.collect()
                 with timecode() as time_eval_empty_cache:
@@ -123,35 +128,35 @@ class Trainer:
                            'time/eval_valid_thoroughput': len(self.ds.dsd_tkn['valid']) / time_eval_valid.t,
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
-                   'epoch': self.epoch}, commit=True)
+                           'time/eval_compute_metrics': time_eval_compute_metrics.t,
+                           'epoch': self.epoch}, commit=True)
         # Eval on test set
-        self.eval_dl(split='test')
+        self._eval_dl(split='test')
 
         # Data -> df and save dfs to file
-        for key in self.data_d.keys():  # splits and sometimes 'training_step' too
+        for key in ['test']:
             self.data_d[key] = self._convert_data_d_to_df(key)
             self._set_df_colorder(key)
             self.data_d[key].to_csv(f"{self._cfg.path_run}{key}.csv", index=False)
 
-        # plot_wandb_charts()  # don't think I need this
-        self.add_wandb_run_summary_statistics()
+        # _plot_wandb_charts()  # don't think I need this
+        self._add_wandb_run_summary_statistics()
         self.run.finish()
 
-    def training_step(self, data, raw):
+    def _training_step(self, data, raw):
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
         recording results, wandb logging.
         """
         if not self.pp_model.training: self.pp_model.train()
         if not self.vm_model.training: self.vm_model.train()
-
         with timecode() as self.batch_time_d['time_generate_pp']:
-            pp_output, pp_l = self.pp_model_forward(data)
+            pp_output, pp_l = self._pp_model_forward(data)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
 
         with self.accelerator.autocast():
             with timecode() as self.batch_time_d['time_loss_fn']:
-                loss_batch = self.loss_fn(data, raw, pp_output, pp_l)
+                loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
             loss_batch = loss_batch / self._cfg.accumulation_steps  # Normalize our loss for gradient accumulation
 
         with timecode() as self.batch_time_d['time_backwards']:
@@ -218,16 +223,17 @@ class Trainer:
         df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
         # check shape of new dataframe is correct
         if data_d_key == "training_step":
-            df_shape = (self._cfg.ds_length["train"]    * cfg.n_train_epochs, df.shape[1])
-        elif data_d_key in ["train", "valid"]:
-            df_shape = (self._cfg.ds_length[data_d_key] * self.eval_num,      df.shape[1])
-        elif data_d_key == "test":
-            df_shape = (self._cfg.ds_length["test"],                           df.shape[1])
+            if self.epoch == 0:
+                df_shape = (self._cfg.ds_length["train"],                       df.shape[1])
+            else:
+                df_shape = (self._cfg.ds_length["train"] * self._cfg.eval_freq, df.shape[1])
+        elif data_d_key in ["train", "valid", "test"]:
+            df_shape = (self._cfg.ds_length[data_d_key], df.shape[1])
         assert df_expanded.shape == df_shape
         return df_expanded
 
-    def pp_model_forward(self, data):
-        pp_output, pp_l = self.get_paraphrases(data['input_ids'], data['attention_mask'])
+    def _pp_model_forward(self, data):
+        pp_output, pp_l = self._get_paraphrases(data['input_ids'], data['attention_mask'])
         self._assert_start_and_end_tokens_are_correct(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
         self._update_batch_size_and_length_variables( orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
         return pp_output, pp_l
@@ -255,7 +261,7 @@ class Trainer:
         self.pp_batch_size       = pp_ids.shape[0]
         self.pp_length           = pp_ids.shape[1]
 
-    def get_paraphrases(self, orig_ids, attention_mask):
+    def _get_paraphrases(self, orig_ids, attention_mask):
         """Wrapper for generating paraphrases (pp's).  Only greedy search supported at the moment"""
         pp_output = self.pp_model.generate_with_grad(input_ids=orig_ids,
                                                 attention_mask=attention_mask,
@@ -269,12 +275,12 @@ class Trainer:
         pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
         return pp_output, pp_l
 
-    def loss_fn(self, data, raw, pp_output, pp_l):
+    def _loss_fn(self, data, raw, pp_output, pp_l):
         with timecode() as self.batch_time_d['time_reward_fn']:
-            reward = self.reward_fn(data, raw, pp_l)
+            reward = self._reward_fn(data, raw, pp_l)
 
         with timecode() as self.batch_time_d['time_pp_logp']:
-            pp_logp = self.get_pp_logp(pp_output)
+            pp_logp = self._get_pp_logp(pp_output)
 
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
             loss = -reward * pp_logp
@@ -285,7 +291,7 @@ class Trainer:
         self.batch_d['loss_batch'] = loss_batch.detach().cpu().tolist()
         return loss_batch
 
-    def reward_fn(self, data, raw, pp_l):
+    def _reward_fn(self, data, raw, pp_l):
         """"""
         # Victim model probability differences between orig and pp
         with timecode() as self.batch_time_d['time_vm_scores']:
@@ -320,7 +326,7 @@ class Trainer:
 
         return rewards
 
-    def get_pp_logp(self, pp_output):
+    def _get_pp_logp(self, pp_output):
         """log(p(pp|orig)) basically.
         works for greedy search, will need tweaking for other types probably"""
         ### TODO: this looks like logp to me, not plogp. Find out if this is right and if so rename, if not, fix
@@ -452,6 +458,7 @@ class Trainer:
         token_prob_d = dict()
         tkn_kmaxprob, _ = torch.topk(scores_log_softmax, largest=True, k=k, dim=2)
         tkn_kmaxprob = tkn_kmaxprob.detach()
+        tkn_kmaxprob = torch.nan_to_num(tkn_kmaxprob, nan=None, posinf=None, neginf=-10000)
         assert tkn_kmaxprob.shape == torch.Size([self.pp_batch_size, self.pp_length - 1, k])
 
         # % of first prob over 0.9, 0.75, 0.5, 0.3, 0.1
@@ -482,7 +489,7 @@ class Trainer:
             (torch.sum(allprobs > (1/self._cfg.vocab_size)) / allprobs.shape[0]).item()
         return token_prob_d
 
-    def eval_dl(self,split):
+    def _eval_dl(self, split):
         """Get evaluation metrics for a dataloader"""
         ### TODO: delete redundant stuff
         # Put models in eval mode and do the forward pass
@@ -498,14 +505,32 @@ class Trainer:
                 for k, v in data.items():
                     ## TODO: do you need this line?
                     if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
-                pp_output, pp_l = self.pp_model_forward(data)
-                _ = self.loss_fn(data, raw, pp_output, pp_l)
+                pp_output, pp_l = self._pp_model_forward(data)
+                _ = self._loss_fn(data, raw, pp_output, pp_l)
                 self._add_batch_vars_to_batch_d(raw, data, pp_l)
                 self.data_d[split].append(self.batch_d)
                 self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
         self._wandb_log_eval_step()  # not implemented yet
 
-    def plot_wandb_charts(self):
+    def _compute_and_log_eval_metrics(self):
+        wandb_d = dict(epoch=self.epoch)
+        for split in ['training_step', 'train', 'valid']:
+            # data d -> data frame
+            self.data_d[split] = self._convert_data_d_to_df(split)
+            self._set_df_colorder(split)
+            # calc metrics
+            if split=="training_step": set_trace()
+            df = self.data_d[split][['epoch'] + cfg.metrics]
+            if split == "training_step": df = df.query("epoch == @self.epoch")
+            d = df.mean()[cfg.metrics].to_dict()
+            wandb_d = merge_dicts(wandb_d, {f"{k}_{split}": v for k, v in d.items()})
+            # df append to file + empty data_d
+            append_df_to_csv(self.data_d[split], path = f"{self._cfg.path_run}{split}.csv")
+            self.data_d[split] = []
+
+        wandb.log(wandb_d, commit=True)
+
+    def _plot_wandb_charts(self):
         ## TODO: rename to indicate it only plots summary and examples charts
         ## Can you refactor into regular wandb charts?
         if self._cfg.wandb['plot_examples']:
@@ -522,11 +547,14 @@ class Trainer:
         'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score',
         'reward', 'pp_logp','loss','batch_num','global_step','accumulation_num','loss_batch', 'label_flip_fraction',
         'orig_length','orig_batch_size','pp_length','pp_batch_size']
-        colorder_training_step = colorder_eval + [o for o in trainer.data_d['training_step'].columns if 'time_' in o]
-        if data_d_key == "training_step": self.data_d[data_d_key] = self.data_d[data_d_key][colorder_training_step]
-        else:                             self.data_d[data_d_key] = self.data_d[data_d_key][colorder_eval]
 
-    def add_wandb_run_summary_statistics(self):
+        if data_d_key == "training_step":
+            colorder_training_step = colorder_eval + [o for o in self.data_d['training_step'].columns if 'time_' in o]
+            self.data_d[data_d_key] = self.data_d[data_d_key][colorder_training_step]
+        else:
+            self.data_d[data_d_key] = self.data_d[data_d_key][colorder_eval]
+
+    def _add_wandb_run_summary_statistics(self):
         """Compute test metrics for the run and log them to the wandb run summary pane. """
         ## Summary statistics of the test set
         # From the last epoch atm because we don't have early stopping
