@@ -34,11 +34,11 @@ from undecorated import undecorated
 
 # Cell
 class Trainer:
-    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, optimizer, accelerator, ds,
-                logger):
+    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, optimizer,
+                ds, logger, initial_eval=True):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
-        self.accumulation_num,self.global_step,self.eval_num = 0,0,0
+        self.epoch,self.acc_num,self.global_step,self.eval_num = 0,0,0,0
         self._reset_batch_dicts()
         #resume_pp_model(f"{path_checkpoints}devout-durian-172_39")
         self._setup_wandb_run()
@@ -83,18 +83,40 @@ class Trainer:
         self.plt_idx_d = dict()
         for split in self._cfg.splits:  self.plt_idx_d[split] = get_examples_plot_idxs(self.ds.dsd[split])
 
+
+    def _setup_gradient_accumulation_variables(self):
+        self.acc_global_l = self._cfg.dl_batch_sizes['train'] * self._cfg.n_train_epochs
+        self.acc_current_l = self.acc_global_l[0:self.acc_steps]  # for the first run
+
+
+
     def _training_function(self):
+        self.accelerator = Accelerator()
+        self._cfg.device = self.accelerator.device
+        vm_model,pp_model,sts_model,optimizer,ds.dld_tkn['train'] = self.accelerator.prepare(
+            self.vm_model,self.pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'])
+
         self.logger.debug(show_gpu(f'GPU memory usage after loading models:'))
         progress_bar = tqdm(range(self._cfg.n_train_steps))
         self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
-        for self.epoch in range(self._cfg.n_train_epochs):
+
+        # initial eval (at epoch 0)
+        if self.initial_eval:
+            self.logger.info("Launching initial eval run: train")
+            self._eval_dl(split='train')
+            self.logger.info("Launching initial eval run: valid")
+            self._eval_dl(split='valid')
+            self._compute_and_log_eval_metrics()
+
+        for self.epoch in range(1, self._cfg.n_train_epochs+1):
             self.logger.info(f"Now on epoch {self.epoch} of {self._cfg.n_train_epochs}")
             if not self.pp_model.training: self.pp_model.train()
             with timecode() as time_train_one_epoch:
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
                     self._reset_batch_dicts()
                     self._training_step(data, raw)
-                    self.accumulation_num += 1  ; self.global_step += 1 ;  progress_bar.update(1)
+                    self.acc_num = (self.acc_num + 1) % self.acc_steps
+                    ; self.global_step += 1 ;  progress_bar.update(1)
 
             wandb.log({'time/train_one_epoch_time': time_train_one_epoch.t,
                        'time/train_one_epoch_thoroughput': len(self.ds.dsd_tkn['train']) / time_train_one_epoch.t,
@@ -141,6 +163,11 @@ class Trainer:
 
         # _plot_wandb_charts()  # don't think I need this
         self._add_wandb_run_summary_statistics()
+
+        # some debug code to check data frames are working
+        self.df_d = dict()
+        for split in self._cfg.splits+['training_step']:
+            self.df_d[split] = pd.read_csv(f"{self._cfg.path_run}{key}.csv")
         self.run.finish()
 
     def _training_step(self, data, raw):
@@ -152,32 +179,40 @@ class Trainer:
         with timecode() as self.batch_time_d['time_generate_pp']:
             pp_output, pp_l = self._pp_model_forward(data)
 
+
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
 
+        ## TODO: document why autocast is needed
         with self.accelerator.autocast():
             with timecode() as self.batch_time_d['time_loss_fn']:
-                loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
-            loss_batch = loss_batch / self._cfg.accumulation_steps  # Normalize our loss for gradient accumulation
+                loss_batch_sum = self._loss_fn(data, raw, pp_output, pp_l)
+            loss_batch = self._scale_loss(loss_batch_sum)  # for gradient accumulation
+        #    loss_batch = loss_batch / self._cfg.acc_steps
 
         with timecode() as self.batch_time_d['time_backwards']:
             self.accelerator.backward(loss_batch)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after backwards pass: '))
-        if (self.accumulation_num + 1) % self._cfg.accumulation_steps == 0:
+        if (self.acc_num + 1) % self._cfg.acc_steps == 0:
             with timecode() as self.batch_time_d['time_opt_step']:
                 self.optimizer.step()
             self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
+            self.acc_current_l = self.acc_global_l[self.global_step+1:(self.global_step+self.acc_steps+1)]
 
         self._prepare_train_batch_d(raw, data, pp_l)
         self.data_d['training_step'].append(self.batch_d)
 
         self._wandb_log_training_step()
 
+    def _scale_loss(self, loss_batch_sum):
+        """Compute a weighted average of loss for gradient accumulation"""
+        return (loss_batch_sum * self.acc_current_l[self.acc_num] ) / sum(self.acc_current_l)
+
     def _add_batch_vars_to_batch_d(self, raw, data, pp_l):
         # Add basics. (results are already added elsewhere)
         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
-            'accumulation_num': self.accumulation_num,  "orig_l": raw['text'],
+            'accumulation_num': self.acc_num,  "orig_l": raw['text'],
             "orig_label": data['label'].cpu().tolist(),
             "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
@@ -208,16 +243,13 @@ class Trainer:
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
         wandb.log(self.batch_wandb_d, commit=True)
 
-    def _wandb_log_eval_step(self):
-        ### TODO: implement
-        pass
-        wandb.log(self.batch_wandb_d, commit=True)
-
     def _convert_data_d_to_df(self, data_d_key):
         df = pd.DataFrame(self.data_d[data_d_key])
-        # check all lists have the same number of elements
+        # check all lists have the same number of elements in their row
+        # last batch will have different number of elements to the batch size
         nonscalar_cols = df.columns[[o == np.dtype('object') for o in df.head(1).dtypes]].tolist()
-        assert (df[nonscalar_cols].applymap(len) == cfg.batch_size_train).all(None)
+        df_lengths = df[nonscalar_cols].applymap(len)
+        assert df_lengths.eq(df_lengths.iloc[:,0], axis=0).all(None)
         # expand lists and broadcast scalars
         scalar_cols = df.columns[[o != np.dtype('object') for o in df.head(1).dtypes]].tolist()
         df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
@@ -235,7 +267,8 @@ class Trainer:
     def _pp_model_forward(self, data):
         pp_output, pp_l = self._get_paraphrases(data['input_ids'], data['attention_mask'])
         self._assert_start_and_end_tokens_are_correct(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
-        self._update_batch_size_and_length_variables( orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
+        # Keep the below line here because then both training and eval can access it
+        self._update_batch_size_and_length_variables(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
         return pp_output, pp_l
 
     def _assert_start_and_end_tokens_are_correct(self, orig_ids, pp_ids):
@@ -284,7 +317,8 @@ class Trainer:
 
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
             loss = -reward * pp_logp
-            loss_batch = torch.mean(loss)
+            #loss_batch = torch.mean(loss)
+            loss_batch = torch.sum(loss)
 
         self.batch_d['pp_logp']    =    pp_logp.detach().cpu().tolist()
         self.batch_d['loss']       =       loss.detach().cpu().tolist()
@@ -382,7 +416,7 @@ class Trainer:
         attention_mask = self.pp_model._prepare_attention_mask_for_generation(
             seq_without_first_tkn, self.pp_tokenizer.pad_token_id, self.pp_tokenizer.eos_token_id
         )
-        seq_token_log_probs = torch.nan_to_num(seq_token_log_probs, nan=None, posinf=None, neginf=-10000)
+        seq_token_log_probs = torch.nan_to_num(seq_token_log_probs, nan=None, posinf=None, neginf=-20)
         seq_token_log_probs = seq_token_log_probs * attention_mask
         ### TESTS
         assert seq_token_log_probs.shape == attention_mask.shape == seq_token_log_probs.shape
@@ -458,7 +492,7 @@ class Trainer:
         token_prob_d = dict()
         tkn_kmaxprob, _ = torch.topk(scores_log_softmax, largest=True, k=k, dim=2)
         tkn_kmaxprob = tkn_kmaxprob.detach()
-        tkn_kmaxprob = torch.nan_to_num(tkn_kmaxprob, nan=None, posinf=None, neginf=-10000)
+        tkn_kmaxprob = torch.nan_to_num(tkn_kmaxprob, nan=None, posinf=None, neginf=-20)
         assert tkn_kmaxprob.shape == torch.Size([self.pp_batch_size, self.pp_length - 1, k])
 
         # % of first prob over 0.9, 0.75, 0.5, 0.3, 0.1
@@ -491,43 +525,50 @@ class Trainer:
 
     def _eval_dl(self, split):
         """Get evaluation metrics for a dataloader"""
-        ### TODO: delete redundant stuff
         # Put models in eval mode and do the forward pass
         # Current logic: push all batches together into one big list.
         self._reset_batch_dicts()
         if self.pp_model.training: self.pp_model.eval()
         if self.vm_model.training: self.vm_model.eval()
-        dl_raw = self.ds.dld_raw[split]
-        dl_tkn = self.ds.dld_tkn[split]
+        # The "train_eval" dataloader is the same as train but a bigger batch size and explicitly no shuffling
+        dl_key = "train_eval" if split == "train" else split
+        dl_raw = self.ds.dld_raw[dl_key]
+        dl_tkn = self.ds.dld_tkn[dl_key]
         with torch.no_grad():
             for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
+                self.logger.debug("EVAL:", split, "with dl_key", dl_key)
+                self.logger.debug("Eval batch size: ", data['input_ids'].shape[0])
+                self.logger.debug(f"Elements in data_d[{split}]", len(self.data_d[split]))
                 self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
+                assert data['input_ids'].shape[0] == len(raw['text'])
+                self._reset_batch_dicts()
+                assert len(self.batch_d) == len(self.batch_time_d) == len(self.batch_wandb_d) == 0
                 for k, v in data.items():
-                    ## TODO: do you need this line?
+                    # Eval data isn't loaded on GPU by default unlike train data. This is because train dataloader goes
+                    # through accelerator `prepare` function, but eval dataloaders don't. So here we load the data onto GPU
                     if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
                 pp_output, pp_l = self._pp_model_forward(data)
                 _ = self._loss_fn(data, raw, pp_output, pp_l)
                 self._add_batch_vars_to_batch_d(raw, data, pp_l)
                 self.data_d[split].append(self.batch_d)
                 self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
-        self._wandb_log_eval_step()  # not implemented yet
 
     def _compute_and_log_eval_metrics(self):
+        """Calculate eval metrics for each split and log to wandb, then empty data_d"""
         wandb_d = dict(epoch=self.epoch)
-        for split in ['training_step', 'train', 'valid']:
+        eval_splits = ["training_step", 'train', "valid"] if self.epoch != 0 else ['train', 'valid']
+        for split in eval_splits:
             # data d -> data frame
             self.data_d[split] = self._convert_data_d_to_df(split)
             self._set_df_colorder(split)
             # calc metrics
-            if split=="training_step": set_trace()
-            df = self.data_d[split][['epoch'] + cfg.metrics]
+            df = self.data_d[split][['epoch'] + self._cfg.metrics]
             if split == "training_step": df = df.query("epoch == @self.epoch")
-            d = df.mean()[cfg.metrics].to_dict()
+            d = df.mean()[self._cfg.metrics].to_dict()
             wandb_d = merge_dicts(wandb_d, {f"{k}_{split}": v for k, v in d.items()})
             # df append to file + empty data_d
             append_df_to_csv(self.data_d[split], path = f"{self._cfg.path_run}{split}.csv")
             self.data_d[split] = []
-
         wandb.log(wandb_d, commit=True)
 
     def _plot_wandb_charts(self):

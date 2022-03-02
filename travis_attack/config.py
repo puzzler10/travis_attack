@@ -101,6 +101,10 @@ class Config:
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()
         elif self.dataset_name == "rotten_tomatoes":  self.adjust_config_for_rotten_tomatoes_dataset()
 
+        # Checks
+        self._validate_n_epochs()
+
+
     def adjust_config_for_simple_dataset(self):
         """Adjust config for the simple dataset."""
         self.dataset_name = "simple"
@@ -110,9 +114,9 @@ class Config:
         self.pp['max_length'] = 20
         self.batch_size_train = 4
         self.batch_size_eval = 4
-        self.accumulation_steps = 1
-        self.n_train_epochs = 20
-        self.eval_freq = 4
+        self.acc_steps = 1  # gradient accumulation steps
+        self.n_train_epochs = 6
+        self.eval_freq = 2
         return self
 
     def adjust_config_for_rotten_tomatoes_dataset(self):
@@ -123,9 +127,9 @@ class Config:
         self.orig_max_length = 64
         self.pp['max_length'] = 64
         self.batch_size_train = 16
-        self.batch_size_eval = 32
-        self.accumulation_steps = 1
-        self.n_train_epochs = 2
+        self.batch_size_eval = 64
+        self.acc_steps = 1  # gradient accumulation steps
+        self.n_train_epochs = 8
         self.eval_freq = 1
         return self
 
@@ -138,3 +142,7 @@ class Config:
         self.n_shards = 40
         self.shard_contiguous = False
         return self
+
+    def _validate_n_epochs(self):
+        if self.n_train_epochs % self.eval_freq != 0:
+            raise Exception("Set n_train_epochs to a multiple of eval_freq so there are no leftover epochs.")

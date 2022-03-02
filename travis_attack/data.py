@@ -9,7 +9,7 @@ from datasets import load_dataset, load_from_disk, DatasetDict, ClassLabel
 from IPython.display import display, HTML
 from .models import get_vm_probs
 from .config import Config
-from .utils import robust_rmtree
+from .utils import robust_rmtree, timecode
 
 # Cell
 class ProcessedDataset:
@@ -62,13 +62,11 @@ class ProcessedDataset:
 
     def _preprocess_dataset(self):
         """Add columns, tokenize, transform, prepare dataloaders, and do other preprocessing tasks."""
-        ##### TODO: why do you need train_eval? how is it different from train?
         if   self._cfg.dataset_name == "simple":          dsd = self._prep_dsd_simple()
         elif self._cfg.dataset_name == "rotten_tomatoes": dsd = self._prep_dsd_rotten_tomatoes()
         else: raise Exception("cfg.dataset_name must be either 'simple' or 'rotten_tomatoes'")
-
         dsd = dsd.map(self._add_idx, batched=True, with_indices=True)  # add idx column
-        if self._cfg.use_small_ds: dsd = self._shard_dsd_raw(dsd)  # do after adding idx so it's consistent across runs
+        if self._cfg.use_small_ds: dsd = self._shard_dsd(dsd)  # do after adding idx so it's consistent across runs
         # add VM score & filter out misclassified examples.
         # use a common variable dsd, add all columns, and later filter columns to get dsd_raw and dsd_tkn
         dsd = dsd.map(self._add_vm_orig_score, batched=True)
@@ -86,11 +84,6 @@ class ProcessedDataset:
         for s in self._cfg.splits: assert len(self.dsd_raw[s]) == len(self.dsd_tkn[s])  # check ds has same number of elements in raw and tkn
         self._cache_processed_ds()
         self._prep_dataloaders()
-
-#         # filter out rows in dsd_raw that aren't in dsd_tkn
-#         for s in self._cfg.splits:
-#             idx_list = self.dsd_tkn[s]['idx']
-#             self.dsd_raw[s] = self.dsd_raw[s].filter(lambda x: x['idx'] in idx_list)
 
     def _prep_dataloaders(self):
         self.dld_raw = self._get_dataloaders_dict(self.dsd_raw, collate_fn=self._collate_fn_raw)  # dict of data loaders that serve raw text
@@ -125,16 +118,20 @@ class ProcessedDataset:
         return self._pp_tokenizer(batch[self._cfg.orig_cname], truncation=True, max_length=self._cfg.orig_max_length)
 
     def _collate_fn_tkn(self, x):
-        """Collate function used by the DataLoader that serves tokenized data."""
+        """Collate function used by the DataLoader that serves tokenized data.
+        x is a list (with length batch_size) of dicts. Keys should be the same across dicts.
+        I guess an error is raised if not. """
+        # check all keys are the same in the list. the assert is quick (~1e-5 seconds)
+        for o in x: assert set(o) == set(x[0])
         d = dict()
-        for k in ['idx', 'attention_mask', 'input_ids', 'label', 'orig_truelabel_probs', 'orig_sts_embeddings']:
-            d[k] = [o[k] for o in x]
+        for k in x[0].keys():  d[k] = [o[k] for o in x]
         return self._pp_tokenizer.pad(d, pad_to_multiple_of=self._cfg.orig_padding_multiple, return_tensors="pt")
 
     def _collate_fn_raw(self, x):
-        """Collate function used by the DataLoader that serves raw data."""
+        """Collate function used by the DataLoader that serves raw data. x is a list of data."""
         d = dict()
-        for k in [self._cfg.orig_cname, 'idx']: d[k] = [o[k] for o in x]
+        for o in x: assert set(o) == set(x[0])  # check all keys are the same in list
+        for k in x[0].keys(): d[k] = [o[k] for o in x]
         return d
 
     def _get_sampler(self, ds):
@@ -144,11 +141,11 @@ class ProcessedDataset:
         g.manual_seed(seed)
         return RandomSampler(ds, generator=g)
 
-    def _shard_dsd_raw(self, dsd):
+    def _shard_dsd(self, dsd):
         """Replaces dsd with a smaller shard of itself."""
         for k,v in dsd.items():
             dsd[k] = v.shard(self._cfg.n_shards, 0, contiguous=self._cfg.shard_contiguous)
-            return dsd
+        return dsd
 
     def _get_dataloaders_dict(self, dsd, collate_fn):
         """Prepare a dict of dataloaders for train, valid and test"""
@@ -170,17 +167,33 @@ class ProcessedDataset:
                 d[split] =  DataLoader(ds, batch_size=batch_size, shuffle=False, collate_fn=collate_fn,
                                        num_workers=self._cfg.n_wkrs, pin_memory=self._cfg.pin_memory)
 
-        # Add eval dataloader for train
+        # Add eval dataloader for train: same as train but bigger batch size and explicitly no shuffling.
         d['train_eval'] = DataLoader(dsd['train'], batch_size=self._cfg.batch_size_eval, shuffle=False,
                                     collate_fn=collate_fn,
                                      num_workers=self._cfg.n_wkrs, pin_memory=self._cfg.pin_memory)
         return d
 
     def _update_cfg(self):
-        self._cfg.ds_length = dict()
+        self._cfg.ds_length,self._cfg.dl_n_batches,self._cfg.dl_last_batch_size,self._cfg.dl_batch_sizes = dict(),dict(),dict(),dict()
+        def get_dl_batch_sizes(batch_size, dl_n_batches):
+            l = [batch_size for i in range(dl_n_batches - 1)]
+            l.append(self._cfg.dl_last_batch_size[k])
+            return l
 
-        for k in self.dsd_raw.keys():
-            self._cfg.ds_length[k] = len(self.dsd_raw[k])
+        for k,v in self.dsd_raw.items(): self._cfg.ds_length[k] = len(v)   # Dataset lengths
+        for k,v in self.dld_raw.items():
+            self._cfg.dl_n_batches[k] = len(v)   # Dataloader lengths
+            # Dataloader last batch size and list of batch sizes
+            ds_k = "train" if k == "train_eval" else k
+            if k == "train":
+                self._cfg.dl_last_batch_size[k] = self._cfg.ds_length[ds_k] % self._cfg.batch_size_train
+                self._cfg.dl_batch_sizes[k]     = get_dl_batch_sizes(self._cfg.batch_size_train, self._cfg.dl_n_batches[k])
+            else:
+                self._cfg.dl_last_batch_size[k] = self._cfg.ds_length[ds_k] % self._cfg.batch_size_eval
+                self._cfg.dl_batch_sizes[k]     = get_dl_batch_sizes(self._cfg.batch_size_eval, self._cfg.dl_n_batches[k])
+
+        # Total number of training steps
+        self._cfg.n_train_steps = self._cfg.n_train_epochs * self._cfg.dl_n_batches['train']
 
     def _cache_processed_ds(self):
         def _reset_dir(path):
