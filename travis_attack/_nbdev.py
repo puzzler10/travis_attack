@@ -18,6 +18,8 @@ index = {"set_seed": "00_utils.ipynb",
          "robust_rmtree": "00_utils.ipynb",
          "table2df": "00_utils.ipynb",
          "check_no_nans_or_infs": "02_tests.ipynb",
+         "check_parameters_update": "02_tests.ipynb",
+         "print_info_on_generated_text": "02_tests.ipynb",
          "Config": "03_config.ipynb",
          "prepare_models": "07_models.ipynb",
          "pp_model_freeze_layers": "07_models.ipynb",
@@ -28,8 +30,6 @@ index = {"set_seed": "00_utils.ipynb",
          "get_start_end_special_token_ids": "07_models.ipynb",
          "ProcessedDataset": "10_data.ipynb",
          "Trainer": "20_trainer.ipynb",
-         "print_info_on_generated_text": "30_logging.ipynb",
-         "check_parameters_update": "30_logging.ipynb",
          "plot_grad_flow": "35_charts.ipynb",
          "plot_examples_chart": "35_charts.ipynb"}
 
@@ -39,7 +39,7 @@ modules = ["utils.py",
            "models.py",
            "data.py",
            "trainer.py",
-           "logging.py",
+           "insights.py",
            "charts.py"]
 
 doc_url = "https://puzzler10.github.io/travis_attack/"

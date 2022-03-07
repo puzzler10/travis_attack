@@ -115,7 +115,7 @@ class Config:
         self.pp['max_length'] = 20
         self.batch_size_train = 4
         self.batch_size_eval = 4
-        self.acc_steps = 2  # gradient accumulation steps
+        self.acc_steps = 2
         self.n_train_epochs = 6
         self.eval_freq = 2
         return self
@@ -127,9 +127,9 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 64
         self.pp['max_length'] = 64
-        self.batch_size_train = 10
+        self.batch_size_train = 13
         self.batch_size_eval = 64
-        self.acc_steps = 1  # gradient accumulation steps
+        self.acc_steps = 4
         self.n_train_epochs = 3
         self.eval_freq = 1
         return self

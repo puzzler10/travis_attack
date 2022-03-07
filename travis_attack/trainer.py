@@ -10,7 +10,7 @@ from .utils import (timecode, show_gpu, merge_dicts, unpack_nested_lists_in_df,
                                  display_all, append_df_to_csv)
 from .tests import check_no_nans_or_infs
 from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids
-from .charts import plot_grad_flow, plot_examples_chart
+from .charts import plot_grad_flow
 
 # Cell
 import torch, numpy as np, pandas as pd, gc,sys, logging, warnings
@@ -35,20 +35,19 @@ from undecorated import undecorated
 # Cell
 class Trainer:
     def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, optimizer,
-                ds, logger, initial_eval=True):
+                ds, logger, initial_eval=True, log_code=True):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.epoch,self.acc_num,self.global_step,self.eval_num = 0,0,0,0
         self._reset_batch_dicts()
         #resume_pp_model(f"{path_checkpoints}devout-durian-172_39")
-        self._setup_wandb_run()
         self._setup_data_stores()
         self._setup_gradient_accumulation_variables()
-        if self._cfg.wandb['plot_examples']: self._setup_wandb_examples_plots()
         self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
 
     def train(self):
-        ## TODO: why is num_processes set to 1?
+        self._setup_wandb_run()
+        ## we set num_processes=1 because we are running on 1 GPU only and we must specify the argument
         #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1, use_fp16=use_fp16)
         notebook_launcher(self._training_function, args=(),
                            num_processes=1, use_fp16=self._cfg.use_fp16)
@@ -60,15 +59,15 @@ class Trainer:
 
     def _setup_wandb_run(self):
         """Init wandb run, set up paths, create dir for model artifacts if needed, """
-        ## TODO: set notebook name and add in save_code
         self.run = wandb.init(project=self._cfg.wandb['project'], entity=self._cfg.wandb['entity'],
                               config=vars(self._cfg), mode=self._cfg.wandb['mode'],
-                              notes=self._cfg.wandb['run_notes'])
+                              notes=self._cfg.wandb['run_notes'], save_code=True)
         if self._cfg.wandb['log_grads']:
             wandb.watch(self.pp_model, log='gradients', log_freq=self._cfg.wandb['log_grads_freq'])
         self._cfg.run_name,self._cfg.run_id = self.run.name, self.run.id
         self._cfg.path_run = f"{self._cfg.path_checkpoints}{self.run.name}/"
         if not os.path.exists(self._cfg.path_run): os.makedirs(self._cfg.path_run, exist_ok=True)
+        if self.log_code: self.run.log_code(".")
 
     def _setup_data_stores(self):
         """Setup dict `self.data_d` to store observations. Setup column names for wandb tables. """
@@ -76,42 +75,40 @@ class Trainer:
         self.data_d = dict()
         for split in self._cfg.splits + ['training_step']:   self.data_d[split] = []
 
-    def _setup_wandb_examples_plots(self):
-        """If we plot a few examples this sets that up."""
-        def get_examples_plot_idxs(dataset):
-            """Get data indices for the examples plots"""
-            return np.random.choice(dataset['idx'], size=self._cfg.wandb['n_examples_plot'], replace=False).tolist()
-        self.plt_idx_d = dict()
-        for split in self._cfg.splits:  self.plt_idx_d[split] = get_examples_plot_idxs(self.ds.dsd[split])
-
-    @snoop
     def _setup_gradient_accumulation_variables(self):
         """acc_global_l is a list of all batch sizes encountered during training.
-           acc_current_l is a list of the batch sizes in the current accumulation batch. """
+            """
         self.acc_global_l = self._cfg.dl_batch_sizes['train'] * self._cfg.n_train_epochs
         assert len(self.acc_global_l) ==  self._cfg.n_train_steps
         # Check if there will be leftover batches
-        self.acc_leftover_batches =  self._cfg.n_train_steps % self._cfg.acc_steps
-        if self.acc_leftover_batches != 0:
+        self._cfg.acc_leftover_batches =  self._cfg.n_train_steps % self._cfg.acc_steps
+        if self._cfg.acc_leftover_batches != 0:
             msg = f"Config set to do gradient accumulation every {self._cfg.acc_steps} batches, and there are \
-            {self._cfg.n_train_steps} total training steps, so there will be {self.acc_leftover_batches} batches at \
+            {self._cfg.n_train_steps} total training steps, so there will be {self._cfg.acc_leftover_batches} batches at \
             the end that will not be trained on."
             warnings.warn(msg)
-
         self._reset_acc_lists()
 
-    @snoop
     def _reset_acc_lists(self):
-        # call at start and every time you call opt step
-        last_step = (self._cfg.n_train_steps - 1) - self.acc_leftover_batches
+        """call this at start and every time you call opt step"""
+        # acc_current_l is a list of the batch sizes in the current accumulation batch.
+        last_step = (self._cfg.n_train_steps - 1) - self._cfg.acc_leftover_batches
         if self.global_step == 0:   # at start of training
             self.acc_current_l = self.acc_global_l[self.global_step:self._cfg.acc_steps]
             assert len(self.acc_current_l) == self._cfg.acc_steps
         else:
             self.acc_current_l = self.acc_global_l[(self.global_step+1):(self.global_step+self._cfg.acc_steps+1)]
-            if self.global_step == last_step:  assert len(self.acc_current_l) == self.acc_leftover_batches
+            if self.global_step == last_step:  assert len(self.acc_current_l) == self._cfg.acc_leftover_batches
             else:                              assert len(self.acc_current_l) == self._cfg.acc_steps
         self.acc_current_n_examples = sum(self.acc_current_l)
+
+    def _eval_save_log_test_set(self):
+        """Eval on test set, convert to df, save to file, and log to wandb summary"""
+        self._eval_dl(split='test')
+        self.data_d["test"] = self._convert_data_d_to_df("test")
+        self._set_df_colorder("test")
+        self.data_d["test"].to_csv(f"{self._cfg.path_run}test.csv", index=False)
+        self._add_wandb_run_summary_statistics()
 
     def _training_function(self):
         self.accelerator = Accelerator()
@@ -137,9 +134,22 @@ class Trainer:
             with timecode() as time_train_one_epoch:
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
                     self._reset_batch_dicts()
+
+                    print("TRAINING FN",
+                            "epoch", self.epoch,
+                            "batch_num", self.batch_num,
+                            "global_step", self.global_step,
+                            "acc_steps", self._cfg.acc_steps,
+                            "acc_leftover_batches", self._cfg.acc_leftover_batches,
+                            "acc_global_l", self.acc_global_l,
+                            "acc_current_l", self.acc_current_l,
+                            "acc_num", self.acc_num,
+                            "acc_current_n_examples", self.acc_current_n_examples,
+                    )
+
                     self._training_step(data, raw)
+                    if self._batch_for_opt_step(): self._reset_acc_lists()
                     self.acc_num = (self.acc_num + 1) % self._cfg.acc_steps
-                    pp("in training function, updated acc_num to", self.acc_num)
                     self.global_step += 1
                     progress_bar.update(1)
 
@@ -166,7 +176,6 @@ class Trainer:
                     self._eval_dl(split='valid')
                 with timecode() as time_eval_compute_metrics:
                     self._compute_and_log_eval_metrics()
-                self._plot_wandb_charts()
                 with timecode() as time_eval_gc_collect:
                     gc.collect()
                 with timecode() as time_eval_empty_cache:
@@ -178,75 +187,64 @@ class Trainer:
                            'time/eval_empty_cache': time_eval_empty_cache.t,
                            'time/eval_compute_metrics': time_eval_compute_metrics.t,
                            'epoch': self.epoch}, commit=True)
-        # Eval on test set
-        self._eval_dl(split='test')
 
-        # Data -> df and save dfs to file
-        for key in ['test']:
-            self.data_d[key] = self._convert_data_d_to_df(key)
-            self._set_df_colorder(key)
-            self.data_d[key].to_csv(f"{self._cfg.path_run}{key}.csv", index=False)
-
-        # _plot_wandb_charts()  # don't think I need this
-        self._add_wandb_run_summary_statistics()
-
-        # some debug code to check data frames are working
-        self.df_d = dict()
-        for split in self._cfg.splits+['training_step']:
-            self.df_d[split] = pd.read_csv(f"{self._cfg.path_run}{key}.csv")
+        self._eval_save_log_test_set()
         self.run.finish()
 
-    @snoop
     def _training_step(self, data, raw):
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
         recording results, wandb logging.
         """
-        pp("training step start.")
-        pp(self.acc_global_l)
-        pp(self.acc_current_l)
-        pp(self.acc_num)
-        pp(self._cfg.acc_steps)
-
         if not self.pp_model.training: self.pp_model.train()
         if not self.vm_model.training: self.vm_model.train()
         with timecode() as self.batch_time_d['time_generate_pp']:
             pp_output, pp_l = self._pp_model_forward(data)
 
-
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
 
-        ## TODO: document why autocast is needed
+        # autocast is used by accelerate to allow mixed-precision loss functions.
+        # drop it if we deprecate fp16 support (because it isn't supported for models like PEGASUS)
         with self.accelerator.autocast():
             with timecode() as self.batch_time_d['time_loss_fn']:
-                loss_batch_sum = self._loss_fn(data, raw, pp_output, pp_l)
-            loss_batch = self._scale_loss(loss_batch_sum)  # for gradient accumulation
+                loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
 
         with timecode() as self.batch_time_d['time_backwards']:
             self.accelerator.backward(loss_batch)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after backwards pass: '))
-        if (self.acc_num + 1) % self._cfg.acc_steps == 0:
-            with timecode() as self.batch_time_d['time_opt_step']:
+        with timecode() as self.batch_time_d['time_opt_step']:
+            if self._batch_for_opt_step():
+
+                print("OPT STEP    "
+                    "epoch", self.epoch,
+                    "batch_num", self.batch_num,
+                    "global_step", self.global_step,
+                    "acc_steps", self._cfg.acc_steps,
+                    "acc_leftover_batches", self._cfg.acc_leftover_batches,
+                    "acc_global_l", self.acc_global_l,
+                    "acc_current_l", self.acc_current_l,
+                    "acc_num", self.acc_num,
+                    "acc_current_n_examples", self.acc_current_n_examples,
+                    "orig_batch_size", self.orig_batch_size,
+                    "loss", self.batch_d['loss'],
+                    "loss_sum", self.batch_d['loss_sum'],
+                    "loss_batch", self.batch_d['loss_batch'])
+
                 self.optimizer.step()
-            self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
-            self._reset_acc_lists()
+                self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
 
         self._prepare_train_batch_d(raw, data, pp_l)
         self.data_d['training_step'].append(self.batch_d)
         self._wandb_log_training_step()
 
-    @snoop
-    def _scale_loss(self, loss_batch_sum):
-        """Compute a weighted average of loss for gradient accumulation"""
-        pp(self.acc_current_n_examples)
-        pp(loss_batch_sum)
-        return loss_batch_sum / self.acc_current_n_examples
+    def _batch_for_opt_step(self): return self.acc_num == (self._cfg.acc_steps - 1)
 
     def _add_batch_vars_to_batch_d(self, raw, data, pp_l):
         # Add basics. (results are already added elsewhere)
         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
-            'accumulation_num': self.acc_num,  "orig_l": raw['text'],
+            'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
+            "orig_l": raw['text'],
             "orig_label": data['label'].cpu().tolist(),
             "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
@@ -269,12 +267,32 @@ class Trainer:
             'rewards_mean':         np.mean(  self.batch_d['reward']),
             'pp_logp_hist':         Histogram(self.batch_d['pp_logp']),
             'pp_logp_mean':         np.mean(  self.batch_d['pp_logp']),
-            'loss_hist'   :         Histogram(self.batch_d['loss'])})
+            'loss_hist'   :         Histogram(self.batch_d['loss']),
+            'acc_batch_sizes':      Histogram(self.acc_current_l)
+        })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
         not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp',
                               'reward', 'sts_score', 'vm_score',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
+
+
+        print("WANDB LOG  ",
+                    "epoch", self.epoch,
+                    "batch_num", self.batch_num,
+                    "global_step", self.global_step,
+                    "acc_steps", self._cfg.acc_steps,
+                    "acc_leftover_batches", self._cfg.acc_leftover_batches,
+                    "acc_global_l", self.acc_global_l,
+                    "acc_current_l", self.acc_current_l,
+                    "acc_num", self.acc_num,
+                    "acc_current_n_examples", self.acc_current_n_examples,
+                    "orig_batch_size", self.orig_batch_size,
+                    "loss", self.batch_d['loss'],
+                    "loss_sum", self.batch_d['loss_sum'],
+                    "loss_batch", self.batch_d['loss_batch']
+        )
+
         wandb.log(self.batch_wandb_d, commit=True)
 
     def _convert_data_d_to_df(self, data_d_key):
@@ -350,16 +368,14 @@ class Trainer:
             pp_logp = self._get_pp_logp(pp_output)
 
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
-            loss = -reward * pp_logp
-            #loss_batch = torch.mean(loss)
-            loss_batch = torch.sum(loss)
+            loss       = -reward * pp_logp
+            loss_sum   = torch.sum(loss)  # we scale it later
+            loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
 
-        self.batch_d['pp_logp']    =    pp_logp.detach().cpu().tolist()
-        self.batch_d['loss']       =       loss.detach().cpu().tolist()
-        self.batch_d['loss_batch'] = loss_batch.detach().cpu().tolist()
-        pp("Inside loss function")
-        pp(loss)
-        pp(loss_batch)
+        self.batch_d['pp_logp']    =        pp_logp.detach().cpu().tolist()
+        self.batch_d['loss']       =           loss.detach().cpu().tolist()
+        self.batch_d['loss_sum']   =       loss_sum.detach().cpu().tolist()
+        self.batch_d['loss_batch']   =   loss_batch.detach().cpu().tolist()
         return loss_batch
 
     def _reward_fn(self, data, raw, pp_l):
@@ -380,7 +396,7 @@ class Trainer:
             sts_scores = pytorch_cos_sim(data['orig_sts_embeddings'], pp_embeddings).diagonal()
 
         # Reward calculation
-        rewards = torch.tensor([-0.5 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
+        rewards = torch.tensor([0 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
 
         if self._cfg.normalise_rewards:
             self.batch_d['reward_unscaled'] = rewards.detach().cpu().tolist()
@@ -400,7 +416,6 @@ class Trainer:
     def _get_pp_logp(self, pp_output):
         """log(p(pp|orig)) basically.
         works for greedy search, will need tweaking for other types probably"""
-        ### TODO: this looks like logp to me, not plogp. Find out if this is right and if so rename, if not, fix
         ### We want to align tokens with token probabilities. The first token is given at the start
         # and has no probability attached to it, so we remove it.
         seq_without_first_tkn = pp_output.sequences[:, 1:]
@@ -597,28 +612,18 @@ class Trainer:
             self.data_d[split] = []
         wandb.log(wandb_d, commit=True)
 
-    def _plot_wandb_charts(self):
-        ## TODO: rename to indicate it only plots summary and examples charts
-        ## Can you refactor into regular wandb charts?
-        if self._cfg.wandb['plot_examples']:
-            # Examples charts
-            for split in ['train', 'valid']:
-                df = pd.DataFrame(data_d[split]) if type(self.data_d[split]) is list else self.data_d[split]
-                df = df.query("idx in @plt_idx_d[@split]").sort_values(['idx', 'epoch'])
-                for metric in self._cfg.metrics:
-                    chart = plot_examples_chart(split, table=wandb.Table(dataframe=df), metric=metric)
-                    wandb.log({f"individual_examples/{split}_{metric}_vs_epoch_examples": chart}, commit=False)
-
     def _set_df_colorder(self, data_d_key):
         colorder_eval=['idx','epoch', 'orig_l',  'pp_l','orig_truelabel_probs','pp_truelabel_probs',
         'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score',
-        'reward', 'pp_logp','loss','batch_num','global_step','accumulation_num','loss_batch', 'label_flip_fraction',
+        'reward', 'pp_logp','loss','batch_num','global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
         'orig_length','orig_batch_size','pp_length','pp_batch_size']
 
         if data_d_key == "training_step":
             colorder_training_step = colorder_eval + [o for o in self.data_d['training_step'].columns if 'time_' in o]
+            assert len(set(colorder_training_step).difference(set(self.data_d[data_d_key].columns))) == 0
             self.data_d[data_d_key] = self.data_d[data_d_key][colorder_training_step]
         else:
+            assert len(set(colorder_eval).difference(set(self.data_d[data_d_key].columns))) == 0
             self.data_d[data_d_key] = self.data_d[data_d_key][colorder_eval]
 
     def _add_wandb_run_summary_statistics(self):
@@ -628,3 +633,10 @@ class Trainer:
         test_metrics = self.data_d['test'].filter(self._cfg.metrics, axis=1).mean()
         for metric, val in zip(test_metrics.index, test_metrics):
             self.run.summary[f"{metric}_avg_test"] = val
+
+    def get_training_dfs(self):
+        """Return a dict of dataframes with all training and eval data"""
+        df_d = dict()
+        for key in self._cfg.splits + ['training_step']:
+            df_d[key] = pd.read_csv(f"{self._cfg.path_run}{key}.csv")
+        return df_d
