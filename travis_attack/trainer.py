@@ -43,6 +43,7 @@ class Trainer:
         #resume_pp_model(f"{path_checkpoints}devout-durian-172_39")
         self._setup_wandb_run()
         self._setup_data_stores()
+        self._setup_gradient_accumulation_variables()
         if self._cfg.wandb['plot_examples']: self._setup_wandb_examples_plots()
         self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
 
@@ -53,7 +54,7 @@ class Trainer:
                            num_processes=1, use_fp16=self._cfg.use_fp16)
 
     def _reset_batch_dicts(self):
-          # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
+        # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
         # there will be overlap between them.
         self.batch_d,self.batch_time_d,self.batch_wandb_d = dict(),dict(),dict()
 
@@ -83,12 +84,34 @@ class Trainer:
         self.plt_idx_d = dict()
         for split in self._cfg.splits:  self.plt_idx_d[split] = get_examples_plot_idxs(self.ds.dsd[split])
 
-
+    @snoop
     def _setup_gradient_accumulation_variables(self):
+        """acc_global_l is a list of all batch sizes encountered during training.
+           acc_current_l is a list of the batch sizes in the current accumulation batch. """
         self.acc_global_l = self._cfg.dl_batch_sizes['train'] * self._cfg.n_train_epochs
-        self.acc_current_l = self.acc_global_l[0:self.acc_steps]  # for the first run
+        assert len(self.acc_global_l) ==  self._cfg.n_train_steps
+        # Check if there will be leftover batches
+        self.acc_leftover_batches =  self._cfg.n_train_steps % self._cfg.acc_steps
+        if self.acc_leftover_batches != 0:
+            msg = f"Config set to do gradient accumulation every {self._cfg.acc_steps} batches, and there are \
+            {self._cfg.n_train_steps} total training steps, so there will be {self.acc_leftover_batches} batches at \
+            the end that will not be trained on."
+            warnings.warn(msg)
 
+        self._reset_acc_lists()
 
+    @snoop
+    def _reset_acc_lists(self):
+        # call at start and every time you call opt step
+        last_step = (self._cfg.n_train_steps - 1) - self.acc_leftover_batches
+        if self.global_step == 0:   # at start of training
+            self.acc_current_l = self.acc_global_l[self.global_step:self._cfg.acc_steps]
+            assert len(self.acc_current_l) == self._cfg.acc_steps
+        else:
+            self.acc_current_l = self.acc_global_l[(self.global_step+1):(self.global_step+self._cfg.acc_steps+1)]
+            if self.global_step == last_step:  assert len(self.acc_current_l) == self.acc_leftover_batches
+            else:                              assert len(self.acc_current_l) == self._cfg.acc_steps
+        self.acc_current_n_examples = sum(self.acc_current_l)
 
     def _training_function(self):
         self.accelerator = Accelerator()
@@ -115,8 +138,11 @@ class Trainer:
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
                     self._reset_batch_dicts()
                     self._training_step(data, raw)
-                    self.acc_num = (self.acc_num + 1) % self.acc_steps
-                    ; self.global_step += 1 ;  progress_bar.update(1)
+                    self.acc_num = (self.acc_num + 1) % self._cfg.acc_steps
+                    pp("in training function, updated acc_num to", self.acc_num)
+                    self.global_step += 1
+                    progress_bar.update(1)
+
 
             wandb.log({'time/train_one_epoch_time': time_train_one_epoch.t,
                        'time/train_one_epoch_thoroughput': len(self.ds.dsd_tkn['train']) / time_train_one_epoch.t,
@@ -170,10 +196,17 @@ class Trainer:
             self.df_d[split] = pd.read_csv(f"{self._cfg.path_run}{key}.csv")
         self.run.finish()
 
+    @snoop
     def _training_step(self, data, raw):
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
         recording results, wandb logging.
         """
+        pp("training step start.")
+        pp(self.acc_global_l)
+        pp(self.acc_current_l)
+        pp(self.acc_num)
+        pp(self._cfg.acc_steps)
+
         if not self.pp_model.training: self.pp_model.train()
         if not self.vm_model.training: self.vm_model.train()
         with timecode() as self.batch_time_d['time_generate_pp']:
@@ -187,7 +220,6 @@ class Trainer:
             with timecode() as self.batch_time_d['time_loss_fn']:
                 loss_batch_sum = self._loss_fn(data, raw, pp_output, pp_l)
             loss_batch = self._scale_loss(loss_batch_sum)  # for gradient accumulation
-        #    loss_batch = loss_batch / self._cfg.acc_steps
 
         with timecode() as self.batch_time_d['time_backwards']:
             self.accelerator.backward(loss_batch)
@@ -197,16 +229,18 @@ class Trainer:
             with timecode() as self.batch_time_d['time_opt_step']:
                 self.optimizer.step()
             self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
-            self.acc_current_l = self.acc_global_l[self.global_step+1:(self.global_step+self.acc_steps+1)]
+            self._reset_acc_lists()
 
         self._prepare_train_batch_d(raw, data, pp_l)
         self.data_d['training_step'].append(self.batch_d)
-
         self._wandb_log_training_step()
 
+    @snoop
     def _scale_loss(self, loss_batch_sum):
         """Compute a weighted average of loss for gradient accumulation"""
-        return (loss_batch_sum * self.acc_current_l[self.acc_num] ) / sum(self.acc_current_l)
+        pp(self.acc_current_n_examples)
+        pp(loss_batch_sum)
+        return loss_batch_sum / self.acc_current_n_examples
 
     def _add_batch_vars_to_batch_d(self, raw, data, pp_l):
         # Add basics. (results are already added elsewhere)
@@ -260,7 +294,7 @@ class Trainer:
             else:
                 df_shape = (self._cfg.ds_length["train"] * self._cfg.eval_freq, df.shape[1])
         elif data_d_key in ["train", "valid", "test"]:
-            df_shape = (self._cfg.ds_length[data_d_key], df.shape[1])
+                 df_shape = (self._cfg.ds_length[data_d_key],                   df.shape[1])
         assert df_expanded.shape == df_shape
         return df_expanded
 
@@ -323,6 +357,9 @@ class Trainer:
         self.batch_d['pp_logp']    =    pp_logp.detach().cpu().tolist()
         self.batch_d['loss']       =       loss.detach().cpu().tolist()
         self.batch_d['loss_batch'] = loss_batch.detach().cpu().tolist()
+        pp("Inside loss function")
+        pp(loss)
+        pp(loss_batch)
         return loss_batch
 
     def _reward_fn(self, data, raw, pp_l):
@@ -476,17 +513,6 @@ class Trainer:
         # check everything we filter out is zero
         torch.isclose(ent.flatten()[torch.nonzero(~(att_flat > 0))].sum(), torch.tensor(0.), 1e-3)
         return Histogram(ent_flat.detach().cpu().tolist())
-#         ent_d = dict(
-#       #      ent_min             = ent_flat.quantile(0).item(),
-#             ent_lower_quartile  = ent_flat.quantile(0.25).item(),
-#             ent_median          = ent_flat.median().item(),
-#       #      ent_mean            = ent_flat.mean().item(),
-#             ent_upper_quartile  = ent_flat.quantile(0.75).item(),
-#       #      ent_max             = ent_flat.quantile(1).item(),   # skews the graph
-#             epoch=self.epoch, global_step=self.global_step
-#         )
-#         return ent_d
-        print('tmp')
 
     def _get_token_probability_metrics(self, scores_log_softmax, attention_mask, k=3):
         token_prob_d = dict()

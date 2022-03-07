@@ -4,6 +4,8 @@ __all__ = ['Config']
 
 # Cell
 import torch
+import warnings
+
 
 # Cell
 class Config:
@@ -18,7 +20,7 @@ class Config:
         self.pp_name = "eugenesiow/bart-paraphrase"
         self.vm_name = "textattack/distilbert-base-uncased-rotten-tomatoes"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        self.dataset_name = "simple"
+        self.dataset_name = "rotten_tomatoes"
 
         ### Training hyperparameters
         self.seed = 420
@@ -104,7 +106,6 @@ class Config:
         # Checks
         self._validate_n_epochs()
 
-
     def adjust_config_for_simple_dataset(self):
         """Adjust config for the simple dataset."""
         self.dataset_name = "simple"
@@ -114,7 +115,7 @@ class Config:
         self.pp['max_length'] = 20
         self.batch_size_train = 4
         self.batch_size_eval = 4
-        self.acc_steps = 1  # gradient accumulation steps
+        self.acc_steps = 2  # gradient accumulation steps
         self.n_train_epochs = 6
         self.eval_freq = 2
         return self
@@ -126,10 +127,10 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 64
         self.pp['max_length'] = 64
-        self.batch_size_train = 16
+        self.batch_size_train = 10
         self.batch_size_eval = 64
         self.acc_steps = 1  # gradient accumulation steps
-        self.n_train_epochs = 8
+        self.n_train_epochs = 3
         self.eval_freq = 1
         return self
 
@@ -139,7 +140,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 40
+        self.n_shards = 300
         self.shard_contiguous = False
         return self
 
