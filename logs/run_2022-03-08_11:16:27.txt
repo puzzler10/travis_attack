@@ -1,0 +1,147 @@
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/vocab.txt HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer.json HTTP/1.1" 404 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/vocab.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/merges.txt HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-08 11:17 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 11:17 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 11:17 sentence_transformers.SentenceTransformer INFO     Load pretrained SentenceTransformer: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-08 11:17 sentence_transformers.SentenceTransformer INFO     Did not find folder sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-08 11:17 sentence_transformers.SentenceTransformer INFO     Search model on server: http://sbert.net/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2.zip
+03-08 11:17 sentence_transformers.SentenceTransformer INFO     Load SentenceTransformer from folder: /home/tproth/.cache/torch/sentence_transformers/sbert.net_models_sentence-transformers_paraphrase-multilingual-MiniLM-L12-v2
+03-08 11:17 sentence_transformers.SentenceTransformer INFO     Use pytorch device: cuda
+03-08 11:18 root         DEBUG    Loader for google.colab was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for jupyter_server was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for BaseHTTPServer was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for rfc3987 was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for rfc3986_validator was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for strict_rfc3339 was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for rfc3339_validator was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for webcolors was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for uritemplate was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for gi was unable to find the sources
+03-08 11:18 wandb.jupyter ERROR    Failed to detect the name of this notebook, you can set it manually with the WANDB_NOTEBOOK_NAME environment variable to enable code saving.
+03-08 11:18 wandb        DEBUG    no default config file found in config-defaults.yaml
+03-08 11:18 trainer      DEBUG    GPU memory usage after loading models: 22.3% (3594 out of 16125)
+03-08 11:18 trainer      INFO     Now on epoch 1 of 3
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  40.4% (6510 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  50.5% (8150 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  50.5% (8150 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  51.8% (8348 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  51.8% (8348 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  51.8% (8348 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  51.8% (8348 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  56.8% (9158 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  56.8% (9158 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  56.8% (9158 out of 16125)
+03-08 11:18 root         DEBUG    Loader for numexpr was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 trainer      INFO     Now on epoch 2 of 3
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  42.4% (6840 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  52.5% (8470 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  53.8% (8668 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  55.0% (8866 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  55.0% (8866 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  55.0% (8866 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  55.0% (8866 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  60.1% (9688 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  60.1% (9688 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  60.1% (9688 out of 16125)
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 trainer      INFO     Now on epoch 3 of 3
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  46.5% (7492 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  56.7% (9144 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  56.7% (9144 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  56.7% (9144 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  56.7% (9144 out of 16125)
+03-08 11:18 trainer      DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  56.7% (9144 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  56.7% (9144 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  61.8% (9966 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  61.8% (9966 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  61.8% (9966 out of 16125)
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:18 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  30.6% (4932 out of 16125)
+03-08 11:18 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  31.4% (5062 out of 16125)
+03-08 11:18 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:21 wandb        DEBUG    no default config file found in config-defaults.yaml
+03-08 11:21 trainer      DEBUG    GPU memory usage after loading models: 34.3% (5538 out of 16125)
+03-08 11:21 trainer      INFO     Now on epoch 1 of 3
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  46.4% (7474 out of 16125)
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  56.5% (9106 out of 16125)
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  56.5% (9106 out of 16125)
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  56.5% (9106 out of 16125)
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  56.5% (9106 out of 16125)
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  56.5% (9106 out of 16125)
+03-08 11:21 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  56.5% (9106 out of 16125)
+03-08 11:21 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  61.6% (9928 out of 16125)
+03-08 11:21 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  61.6% (9928 out of 16125)
+03-08 11:21 trainer      DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  61.6% (9928 out of 16125)
+03-08 11:21 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:21 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:21 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:21 trainer      INFO     Now on epoch 2 of 3
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  45.9% (7404 out of 16125)
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  56.0% (9026 out of 16125)
+03-08 11:21 trainer      DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  56.0% (9026 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  56.0% (9026 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  56.0% (9026 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  56.0% (9026 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  56.0% (9026 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  61.1% (9848 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  61.1% (9848 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  61.1% (9848 out of 16125)
+03-08 11:22 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:22 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:22 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:22 trainer      INFO     Now on epoch 3 of 3
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  44.5% (7170 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  54.3% (8752 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  54.3% (8752 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  54.3% (8752 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  54.3% (8752 out of 16125)
+03-08 11:22 trainer      DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  54.3% (8752 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  54.3% (8752 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  59.4% (9574 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  59.4% (9574 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  59.4% (9574 out of 16125)
+03-08 11:22 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:22 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:22 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 11:22 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  30.4% (4910 out of 16125)
+03-08 11:22 trainer      DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  31.3% (5042 out of 16125)
+03-08 11:22 root         DEBUG    Loader for s3fs was unable to find the sources

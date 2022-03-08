@@ -4,6 +4,7 @@ __all__ = ['Config']
 
 # Cell
 import torch
+import datetime
 import warnings
 
 
@@ -97,7 +98,8 @@ class Config:
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
         self.path_run = None #keep as None; this is automatically filled out by Trainer class
         self.path_data_cache = "/data/tproth/.cache/huggingface/datasets/"
-
+        self.path_logs = f"./logs/"
+        self.path_logfile = self.path_logs + f"run_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.txt"
 
         # Adjust config depending on dataset.
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()

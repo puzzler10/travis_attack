@@ -35,7 +35,7 @@ from undecorated import undecorated
 # Cell
 class Trainer:
     def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, optimizer,
-                ds, logger, initial_eval=True, log_code=True):
+                ds, initial_eval=True, log_code=True):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.epoch,self.acc_num,self.global_step,self.eval_num = 0,0,0,0
@@ -116,37 +116,24 @@ class Trainer:
         vm_model,pp_model,sts_model,optimizer,ds.dld_tkn['train'] = self.accelerator.prepare(
             self.vm_model,self.pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'])
 
-        self.logger.debug(show_gpu(f'GPU memory usage after loading models:'))
+        logger.debug(show_gpu(f'GPU memory usage after loading models:'))
         progress_bar = tqdm(range(self._cfg.n_train_steps))
         self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
 
         # initial eval (at epoch 0)
         if self.initial_eval:
-            self.logger.info("Launching initial eval run: train")
+            logger.info("Launching initial eval run: train")
             self._eval_dl(split='train')
-            self.logger.info("Launching initial eval run: valid")
+            logger.info("Launching initial eval run: valid")
             self._eval_dl(split='valid')
             self._compute_and_log_eval_metrics()
 
         for self.epoch in range(1, self._cfg.n_train_epochs+1):
-            self.logger.info(f"Now on epoch {self.epoch} of {self._cfg.n_train_epochs}")
+            logger.info(f"Now on epoch {self.epoch} of {self._cfg.n_train_epochs}")
             if not self.pp_model.training: self.pp_model.train()
             with timecode() as time_train_one_epoch:
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
                     self._reset_batch_dicts()
-
-                    print("TRAINING FN",
-                            "epoch", self.epoch,
-                            "batch_num", self.batch_num,
-                            "global_step", self.global_step,
-                            "acc_steps", self._cfg.acc_steps,
-                            "acc_leftover_batches", self._cfg.acc_leftover_batches,
-                            "acc_global_l", self.acc_global_l,
-                            "acc_current_l", self.acc_current_l,
-                            "acc_num", self.acc_num,
-                            "acc_current_n_examples", self.acc_current_n_examples,
-                    )
-
                     self._training_step(data, raw)
                     if self._batch_for_opt_step(): self._reset_acc_lists()
                     self.acc_num = (self.acc_num + 1) % self._cfg.acc_steps
@@ -214,22 +201,6 @@ class Trainer:
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after backwards pass: '))
         with timecode() as self.batch_time_d['time_opt_step']:
             if self._batch_for_opt_step():
-
-                print("OPT STEP    "
-                    "epoch", self.epoch,
-                    "batch_num", self.batch_num,
-                    "global_step", self.global_step,
-                    "acc_steps", self._cfg.acc_steps,
-                    "acc_leftover_batches", self._cfg.acc_leftover_batches,
-                    "acc_global_l", self.acc_global_l,
-                    "acc_current_l", self.acc_current_l,
-                    "acc_num", self.acc_num,
-                    "acc_current_n_examples", self.acc_current_n_examples,
-                    "orig_batch_size", self.orig_batch_size,
-                    "loss", self.batch_d['loss'],
-                    "loss_sum", self.batch_d['loss_sum'],
-                    "loss_batch", self.batch_d['loss_batch'])
-
                 self.optimizer.step()
                 self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
 
@@ -275,24 +246,6 @@ class Trainer:
                               'reward', 'sts_score', 'vm_score',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
-
-
-        print("WANDB LOG  ",
-                    "epoch", self.epoch,
-                    "batch_num", self.batch_num,
-                    "global_step", self.global_step,
-                    "acc_steps", self._cfg.acc_steps,
-                    "acc_leftover_batches", self._cfg.acc_leftover_batches,
-                    "acc_global_l", self.acc_global_l,
-                    "acc_current_l", self.acc_current_l,
-                    "acc_num", self.acc_num,
-                    "acc_current_n_examples", self.acc_current_n_examples,
-                    "orig_batch_size", self.orig_batch_size,
-                    "loss", self.batch_d['loss'],
-                    "loss_sum", self.batch_d['loss_sum'],
-                    "loss_batch", self.batch_d['loss_batch']
-        )
-
         wandb.log(self.batch_wandb_d, commit=True)
 
     def _convert_data_d_to_df(self, data_d_key):
@@ -577,10 +530,9 @@ class Trainer:
         dl_tkn = self.ds.dld_tkn[dl_key]
         with torch.no_grad():
             for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
-                self.logger.debug("EVAL:", split, "with dl_key", dl_key)
-                self.logger.debug("Eval batch size: ", data['input_ids'].shape[0])
-                self.logger.debug(f"Elements in data_d[{split}]", len(self.data_d[split]))
-                self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
+                logger.debug(f"EVAL: {split} with dl_key {dl_key}")
+                logger.debug(f"Elements in data_d[{split}]: {len(self.data_d[split])}")
+                logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
                 assert data['input_ids'].shape[0] == len(raw['text'])
                 self._reset_batch_dicts()
                 assert len(self.batch_d) == len(self.batch_time_d) == len(self.batch_wandb_d) == 0
@@ -592,7 +544,7 @@ class Trainer:
                 _ = self._loss_fn(data, raw, pp_output, pp_l)
                 self._add_batch_vars_to_batch_d(raw, data, pp_l)
                 self.data_d[split].append(self.batch_d)
-                self.logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
+                logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
 
     def _compute_and_log_eval_metrics(self):
         """Calculate eval metrics for each split and log to wandb, then empty data_d"""
@@ -617,7 +569,6 @@ class Trainer:
         'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score',
         'reward', 'pp_logp','loss','batch_num','global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
         'orig_length','orig_batch_size','pp_length','pp_batch_size']
-
         if data_d_key == "training_step":
             colorder_training_step = colorder_eval + [o for o in self.data_d['training_step'].columns if 'time_' in o]
             assert len(set(colorder_training_step).difference(set(self.data_d[data_d_key].columns))) == 0
