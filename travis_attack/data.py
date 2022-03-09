@@ -12,7 +12,7 @@ from .config import Config
 from .utils import robust_rmtree, timecode
 
 import logging
-logger = logging.getLogger(__main__)
+logger = logging.getLogger("travis_attack.data")
 
 
 # Cell
@@ -26,8 +26,11 @@ class ProcessedDataset:
         self.cache_path_raw = f"{self._cfg.path_data_cache}{self._cfg.dataset_name}_raw{shard_suffix}"
         self.cache_path_tkn = f"{self._cfg.path_data_cache}{self._cfg.dataset_name}_tkn{shard_suffix}"
 
+        logger.info(f"Will load dataset {self._cfg.dataset_name} with use_small_ds set to {self._cfg.use_small_ds}")
+
         if load_processed_from_file:
             if os.path.exists(self.cache_path_raw) and os.path.exists(self.cache_path_tkn):
+                logger.info("Cache file found for processed dataset, so loading that dataset.")
                 self.dsd_raw = load_from_disk(self.cache_path_raw)
                 self.dsd_tkn = load_from_disk(self.cache_path_tkn)
                 self._prep_dataloaders()
@@ -37,6 +40,12 @@ class ProcessedDataset:
         else:
             self._preprocess_dataset()
         self._update_cfg()
+
+        logger.debug(f"Dataset lengths: {self._cfg.ds_length}")
+        logger.debug(f"Total training epochs:{self._cfg.n_train_steps}")
+        logger.debug(f"Last batch size in each epoch is: {self._cfg.dl_last_batch_size}")
+        logger.debug(f"Dataloader batch sizes are: {self._cfg.dl_batch_sizes}")
+
 
     def _prep_dsd_simple(self):
         """Load the simple dataset and package it up in a DatasetDict (dsd)

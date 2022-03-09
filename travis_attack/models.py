@@ -10,8 +10,9 @@ from sentence_transformers import SentenceTransformer
 from types import MethodType
 from undecorated import undecorated
 from .config import Config
+
 import logging
-logger = logging.getLogger(__main__)
+logger = logging.getLogger("travis_attack.models")
 
 # Cell
 def _prepare_pp_tokenizer_and_model(cfg):

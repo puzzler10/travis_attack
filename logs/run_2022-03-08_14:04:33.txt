@@ -1,0 +1,354 @@
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/vocab.txt HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer.json HTTP/1.1" 404 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/vocab.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/merges.txt HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-08 14:04 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-08 14:04 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-08 14:05 sentence_transformers.SentenceTransformer INFO     Load pretrained SentenceTransformer: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-08 14:05 sentence_transformers.SentenceTransformer INFO     Did not find folder sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-08 14:05 sentence_transformers.SentenceTransformer INFO     Search model on server: http://sbert.net/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2.zip
+03-08 14:05 sentence_transformers.SentenceTransformer INFO     Load SentenceTransformer from folder: /home/tproth/.cache/torch/sentence_transformers/sbert.net_models_sentence-transformers_paraphrase-multilingual-MiniLM-L12-v2
+03-08 14:05 sentence_transformers.SentenceTransformer INFO     Use pytorch device: cuda
+03-08 14:05 root         DEBUG    Loader for google.colab was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for jupyter_server was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for BaseHTTPServer was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for rfc3987 was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for rfc3986_validator was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for strict_rfc3339 was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for rfc3339_validator was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for webcolors was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for uritemplate was unable to find the sources
+03-08 14:05 root         DEBUG    Loader for gi was unable to find the sources
+03-08 14:05 wandb.jupyter ERROR    Failed to detect the name of this notebook, you can set it manually with the WANDB_NOTEBOOK_NAME environment variable to enable code saving.
+03-08 14:05 root         DEBUG    Loader for azure was unable to find the sources
+03-08 14:05 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-08 14:05 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-08 14:05 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-08 14:05 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-08 14:05 root         DEBUG    Loader for kaggle_session was unable to find the sources
+03-08 14:05 git.cmd      DEBUG    Popen(['git', 'cat-file', '--batch-check'], cwd=/data/tproth/travis_attack, universal_newlines=False, shell=None, istream=<valid stream>)
+03-08 14:05 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-08 14:05 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-08 14:05 travis_attack.trainer DEBUG    GPU memory usage after loading models: 22.3% (3594 out of 16125)
+03-08 14:05 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:05 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  40.4% (6510 out of 16125)
+03-08 14:06 git.cmd      DEBUG    Popen(['git', 'cat-file', '--batch-check'], cwd=/data/tproth/travis_attack, universal_newlines=False, shell=None, istream=<valid stream>)
+03-08 14:06 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-08 14:06 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-08 14:06 travis_attack.trainer DEBUG    GPU memory usage after loading models: 50.5% (8150 out of 16125)
+03-08 14:06 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:06 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  50.5% (8150 out of 16125)
+03-08 14:08 git.cmd      DEBUG    Popen(['git', 'cat-file', '--batch-check'], cwd=/data/tproth/travis_attack, universal_newlines=False, shell=None, istream=<valid stream>)
+03-08 14:08 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-08 14:08 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-08 14:08 travis_attack.trainer DEBUG    GPU memory usage after loading models: 51.8% (8348 out of 16125)
+03-08 14:08 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:08 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  51.8% (8348 out of 16125)
+03-08 14:09 git.cmd      DEBUG    Popen(['git', 'cat-file', '--batch-check'], cwd=/data/tproth/travis_attack, universal_newlines=False, shell=None, istream=<valid stream>)
+03-08 14:09 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-08 14:09 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-08 14:09 travis_attack.trainer DEBUG    GPU memory usage after loading models: 51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:09 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  51.8% (8348 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  56.8% (9158 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:09 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  56.8% (9158 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  56.8% (9158 out of 16125)
+03-08 14:09 root         DEBUG    Loader for numexpr was unable to find the sources
+03-08 14:09 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:09 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:09 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:09 travis_attack.trainer INFO     Now on epoch 2 of 3
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  44.1% (7112 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  54.2% (8742 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  55.4% (8940 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  56.7% (9138 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  56.7% (9138 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  56.7% (9138 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:09 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  56.7% (9138 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  61.7% (9948 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:09 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  61.7% (9948 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  61.7% (9948 out of 16125)
+03-08 14:09 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:09 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:09 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:09 travis_attack.trainer INFO     Now on epoch 3 of 3
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  46.3% (7464 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  56.0% (9028 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  56.0% (9028 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  56.0% (9028 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  56.0% (9028 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  56.0% (9028 out of 16125)
+03-08 14:09 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:09 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:10 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  56.0% (9028 out of 16125)
+03-08 14:10 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  61.0% (9838 out of 16125)
+03-08 14:10 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:10 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:10 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  61.0% (9838 out of 16125)
+03-08 14:10 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  61.0% (9838 out of 16125)
+03-08 14:10 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:10 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:10 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:10 travis_attack.trainer DEBUG    EVAL: test with dl_key test
+03-08 14:10 travis_attack.trainer DEBUG    Elements in data_d[test]: 0
+03-08 14:10 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  37.8% (6088 out of 16125)
+03-08 14:10 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  38.1% (6136 out of 16125)
+03-08 14:10 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:27 travis_attack.trainer DEBUG    GPU memory usage after loading models: 40.5% (6532 out of 16125)
+03-08 14:27 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:27 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  48.0% (7744 out of 16125)
+03-08 14:27 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    GPU memory usage after loading models: 58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:29 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  58.1% (9372 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  63.1% (10182 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:29 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  63.1% (10182 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  63.1% (10182 out of 16125)
+03-08 14:29 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:29 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:29 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:29 travis_attack.trainer INFO     Now on epoch 2 of 3
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  46.6% (7520 out of 16125)
+03-08 14:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  56.4% (9096 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    GPU memory usage after loading models: 56.3% (9075 out of 16125)
+03-08 14:30 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  56.5% (9103 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  58.1% (9363 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  58.1% (9363 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  58.1% (9363 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  58.1% (9363 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  58.1% (9363 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:30 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:30 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  58.1% (9363 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  63.1% (10173 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:30 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:30 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  63.1% (10173 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  63.1% (10173 out of 16125)
+03-08 14:30 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:30 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:30 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:30 travis_attack.trainer INFO     Now on epoch 2 of 3
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  47.8% (7711 out of 16125)
+03-08 14:30 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  57.9% (9343 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  57.9% (9343 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  57.9% (9343 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  57.9% (9343 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  57.9% (9343 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:31 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  57.9% (9343 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  63.0% (10153 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:31 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  63.0% (10153 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  63.0% (10153 out of 16125)
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 travis_attack.trainer INFO     Now on epoch 3 of 3
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  48.4% (7803 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  58.6% (9453 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  58.6% (9453 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  58.6% (9453 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  58.6% (9453 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  58.6% (9453 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:31 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  58.6% (9453 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  63.7% (10275 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:31 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  63.7% (10275 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  63.7% (10275 out of 16125)
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 travis_attack.trainer DEBUG    EVAL: test with dl_key test
+03-08 14:31 travis_attack.trainer DEBUG    Elements in data_d[test]: 0
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  39.3% (6331 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  39.5% (6377 out of 16125)
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 travis_attack.trainer DEBUG    GPU memory usage after loading models: 42.0% (6773 out of 16125)
+03-08 14:31 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  47.2% (7617 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  57.3% (9235 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  57.3% (9235 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  57.3% (9235 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  57.3% (9235 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  57.3% (9235 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:31 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  57.3% (9235 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  62.4% (10057 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:31 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  62.4% (10057 out of 16125)
+03-08 14:31 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  62.4% (10057 out of 16125)
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:31 travis_attack.trainer INFO     Now on epoch 2 of 3
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  47.8% (7711 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  57.9% (9341 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  57.9% (9341 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  57.9% (9341 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  57.9% (9341 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  57.9% (9341 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:32 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  57.9% (9341 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  63.0% (10163 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:32 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  63.0% (10163 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  63.0% (10163 out of 16125)
+03-08 14:32 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:32 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:32 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:32 travis_attack.trainer INFO     Now on epoch 3 of 3
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  45.9% (7407 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  55.6% (8969 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  55.6% (8969 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  55.6% (8969 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  55.6% (8969 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  55.6% (8969 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:32 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  55.6% (8969 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  60.7% (9791 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:32 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  60.7% (9791 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  60.7% (9791 out of 16125)
+03-08 14:32 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:32 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:32 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:32 travis_attack.trainer DEBUG    EVAL: test with dl_key test
+03-08 14:32 travis_attack.trainer DEBUG    Elements in data_d[test]: 0
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  39.0% (6291 out of 16125)
+03-08 14:32 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  39.3% (6337 out of 16125)
+03-08 14:32 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:38 travis_attack.trainer DEBUG    GPU memory usage after loading models: 41.8% (6733 out of 16125)
+03-08 14:38 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:38 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  45.8% (7383 out of 16125)
+03-08 14:38 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  55.5% (8947 out of 16125)
+03-08 14:40 travis_attack.trainer DEBUG    GPU memory usage after loading models: 55.5% (8947 out of 16125)
+03-08 14:40 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:40 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  55.5% (8947 out of 16125)
+03-08 14:40 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  55.5% (8947 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    GPU memory usage after loading models: 55.5% (8947 out of 16125)
+03-08 14:47 travis_attack.trainer INFO     Now on epoch 1 of 3
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  55.6% (8965 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  57.2% (9217 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  57.2% (9217 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  57.2% (9217 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  57.2% (9217 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  57.2% (9217 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:47 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  57.2% (9217 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  62.3% (10039 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:47 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  62.3% (10039 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  62.3% (10039 out of 16125)
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 travis_attack.trainer INFO     Now on epoch 2 of 3
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  46.4% (7481 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  55.6% (8967 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  55.6% (8967 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  55.6% (8967 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  55.6% (8967 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  55.6% (8967 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:47 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  55.6% (8967 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  60.7% (9789 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:47 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  60.7% (9789 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  60.7% (9789 out of 16125)
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 travis_attack.trainer INFO     Now on epoch 3 of 3
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  47.8% (7705 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  57.9% (9339 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  57.9% (9339 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  57.9% (9339 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  57.9% (9339 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  57.9% (9339 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-08 14:47 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  57.9% (9339 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  63.0% (10161 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-08 14:47 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  63.0% (10161 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  63.0% (10161 out of 16125)
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources
+03-08 14:47 travis_attack.trainer DEBUG    EVAL: test with dl_key test
+03-08 14:47 travis_attack.trainer DEBUG    Elements in data_d[test]: 0
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  42.1% (6787 out of 16125)
+03-08 14:47 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  42.4% (6833 out of 16125)
+03-08 14:47 root         DEBUG    Loader for s3fs was unable to find the sources

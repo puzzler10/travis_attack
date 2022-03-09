@@ -132,7 +132,7 @@ class Config:
         self.batch_size_train = 13
         self.batch_size_eval = 64
         self.acc_steps = 4
-        self.n_train_epochs = 3
+        self.n_train_epochs = 5
         self.eval_freq = 1
         return self
 
