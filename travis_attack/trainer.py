@@ -604,13 +604,6 @@ class Trainer:
         for metric, val in zip(test_metrics.index, test_metrics):
             self.run.summary[f"{metric}_avg_test"] = val
 
-    def get_training_dfs(self):
-        """Return a dict of dataframes with all training and eval data"""
-        df_d = dict()
-        for key in self._cfg.splits + ['training_step']:  df_d[key] = pd.read_csv(f"{self._cfg.path_run}{key}.csv")
-        logger.info(f'Dataframes have shapes {[f"{k}: {df.shape}" for (k, df) in df_d.items()]}')
-        return df_d
-
     def _get_gradient_update_norm(self):
         total_norm = 0
         for p in [o for o in self.pp_model.parameters() if o[1].requires_grad]:
