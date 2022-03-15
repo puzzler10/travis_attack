@@ -38,8 +38,6 @@ class Config:
         self.remove_misclassified_examples = True
         self.unfreeze_last_n_layers = 2  # counting from the back. set to "all" to do no layer freezing.
 
-
-
         ### Paraphrase parameters
         self.pp = {
             "num_beams": 1,

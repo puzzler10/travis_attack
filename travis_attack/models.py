@@ -19,7 +19,7 @@ def _prepare_pp_tokenizer_and_model(cfg):
     """As well as preparing the pp model and tokenizer this function also adds a new method `generate_with_grad` to
     the pp model so that we can backprop when generating."""
     pp_tokenizer = AutoTokenizer.from_pretrained(cfg.pp_name)
-    # takes about 3GB memory space up on the GPU
+    # PEGASUS takes about 3GB memory space up on the GPU
     # change the `local_files_only` argument if changing the model name
     pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True)
     pp_model.train()
