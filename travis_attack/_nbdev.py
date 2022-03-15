@@ -34,9 +34,9 @@ index = {"logger": "25_insights.ipynb",
          "ProcessedDataset": "10_data.ipynb",
          "Trainer": "20_trainer.ipynb",
          "nlp": "25_insights.ipynb",
+         "get_training_dfs": "25_insights.ipynb",
          "postprocess_df": "25_insights.ipynb",
-         "create_and_log_wandb_postrun_plots": "25_insights.ipynb",
-         "plot_examples_chart": "35_charts.ipynb"}
+         "create_and_log_wandb_postrun_plots": "25_insights.ipynb"}
 
 modules = ["utils.py",
            "tests.py",
@@ -44,8 +44,7 @@ modules = ["utils.py",
            "models.py",
            "data.py",
            "trainer.py",
-           "insights.py",
-           "charts.py"]
+           "insights.py"]
 
 doc_url = "https://puzzler10.github.io/travis_attack/"
 

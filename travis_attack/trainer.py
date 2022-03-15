@@ -174,7 +174,6 @@ class Trainer:
                            'epoch': self.epoch}, commit=True)
 
         self._eval_save_log_test_set()
-        self.run.finish()
 
     def _training_step(self, data, raw):
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),

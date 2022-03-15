@@ -1,0 +1,251 @@
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/vocab.txt HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer.json HTTP/1.1" 404 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/vocab.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/merges.txt HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /eugenesiow/bart-paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-15 10:28 sentence_transformers.SentenceTransformer INFO     Load pretrained SentenceTransformer: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-15 10:28 sentence_transformers.SentenceTransformer INFO     Did not find folder sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-15 10:28 sentence_transformers.SentenceTransformer INFO     Search model on server: http://sbert.net/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2.zip
+03-15 10:28 sentence_transformers.SentenceTransformer INFO     Load SentenceTransformer from folder: /home/tproth/.cache/torch/sentence_transformers/sbert.net_models_sentence-transformers_paraphrase-multilingual-MiniLM-L12-v2
+03-15 10:28 sentence_transformers.SentenceTransformer INFO     Use pytorch device: cuda
+03-15 10:28 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to True
+03-15 10:28 travis_attack.data INFO     Cache file found for processed dataset, so loading that dataset.
+03-15 10:28 travis_attack.data DEBUG    Dataset lengths: {'train': 28, 'test': 4, 'valid': 4}
+03-15 10:28 travis_attack.data DEBUG    Total training epochs:15
+03-15 10:28 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 2, 'test': 4, 'valid': 4, 'train_eval': 28}
+03-15 10:28 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [13, 13, 2], 'test': [4], 'valid': [4], 'train_eval': [28]}
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-15 10:28 git.cmd      DEBUG    Popen(['git', 'cat-file', '--batch-check'], cwd=/data/tproth/travis_attack, universal_newlines=False, shell=None, istream=<valid stream>)
+03-15 10:28 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): api.wandb.ai:443
+03-15 10:28 urllib3.connectionpool DEBUG    https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+03-15 10:28 travis_attack.trainer DEBUG    GPU memory usage after loading models: 21.8% (3515 out of 16125)
+03-15 10:28 travis_attack.trainer INFO     Now on epoch 1 of 5
+03-15 10:28 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  39.9% (6431 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  50.1% (8071 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  50.1% (8071 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  51.3% (8269 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  51.3% (8269 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  51.3% (8269 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  51.3% (8269 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  56.3% (9079 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  56.3% (9079 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  56.3% (9079 out of 16125)
+03-15 10:29 travis_attack.trainer INFO     Now on epoch 2 of 5
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  41.9% (6761 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  52.0% (8391 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  54.5% (8787 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  54.5% (8787 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  54.5% (8787 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  54.5% (8787 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  54.5% (8787 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  59.6% (9609 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loading data:  59.6% (9609 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 2, batch 0, GPU memory usage after loss_fn pass:  59.6% (9609 out of 16125)
+03-15 10:29 travis_attack.trainer INFO     Now on epoch 3 of 5
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  45.9% (7409 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  61.3% (9883 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loading data:  61.3% (9883 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 3, batch 0, GPU memory usage after loss_fn pass:  61.3% (9883 out of 16125)
+03-15 10:29 travis_attack.trainer INFO     Now on epoch 4 of 5
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after forward pass:  45.9% (7409 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after backwards pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 1, GPU memory usage after forward pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 1, GPU memory usage after backwards pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 2, GPU memory usage after forward pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 2, GPU memory usage after backwards pass:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 4, batch 0, GPU memory usage after loading data:  56.2% (9061 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 4, batch 0, GPU memory usage after loss_fn pass:  61.3% (9883 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 4, batch 0, GPU memory usage after loading data:  61.3% (9883 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 4, batch 0, GPU memory usage after loss_fn pass:  61.3% (9883 out of 16125)
+03-15 10:29 travis_attack.trainer INFO     Now on epoch 5 of 5
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after forward pass:  45.5% (7339 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after backwards pass:  55.6% (8961 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 1, GPU memory usage after forward pass:  55.6% (8961 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 1, GPU memory usage after backwards pass:  55.6% (8961 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 2, GPU memory usage after forward pass:  55.6% (8961 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 2, GPU memory usage after backwards pass:  55.6% (8961 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loading data:  55.6% (8961 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loss_fn pass:  60.7% (9783 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loading data:  60.7% (9783 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loss_fn pass:  60.7% (9783 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL: test with dl_key test
+03-15 10:29 travis_attack.trainer DEBUG    Elements in data_d[test]: 0
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loading data:  30.2% (4869 out of 16125)
+03-15 10:29 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loss_fn pass:  31.0% (5003 out of 16125)
+03-15 10:29 travis_attack.insights INFO     Dataframes have shapes ['train: (140, 25)', 'valid: (20, 25)', 'test: (4, 25)', 'training_step: (140, 38)']
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 10:29 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 10:29 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 10:29 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 10:29 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 10:29 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 10:29 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:41 parso.cache  DEBUG    pickle loaded: /home/tproth/Programs/miniconda/envs/nlp_env/lib/python3.8/site-packages/jedi/third_party/typeshed/stdlib/2and3/builtins.pyi
+03-15 11:41 parso.python.diff DEBUG    diff parser start
+03-15 11:41 parso.python.diff DEBUG    line_lengths old: 1; new: 1
+03-15 11:41 parso.python.diff DEBUG    -> code[replace] old[1:1] new[1:1]
+03-15 11:41 parso.python.diff DEBUG    parse_part from 1 to 1 (to 0 in part parser)
+03-15 11:41 parso.python.diff DEBUG    diff parser end
+03-15 11:43 travis_attack.insights INFO     Dataframes have shapes ['train: (140, 25)', 'valid: (20, 25)', 'test: (4, 25)', 'training_step: (140, 38)']
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 11:43 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Dataframes have shapes ['train: (140, 25)', 'valid: (20, 25)', 'test: (4, 25)', 'training_step: (140, 38)']
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 11:43 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 11:43 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:43 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 11:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:44 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 11:44 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 11:44 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:44 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 11:44 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:44 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 11:44 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 11:44 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 11:44 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 11:44 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Dataframes have shapes ['training_step: (140, 38)', 'train: (140, 25)', 'valid: (20, 25)', 'test: (4, 25)']
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 12:28 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 12:28 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 12:28 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:28 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 12:28 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 12:28 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:42 travis_attack.insights INFO     Dataframes have shapes ['training_step: (140, 38)', 'train: (140, 25)', 'valid: (20, 25)', 'test: (4, 25)']
+03-15 12:42 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 12:42 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:42 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 12:42 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:42 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 12:42 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 12:42 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:43 travis_attack.insights INFO     Dataframes have shapes ['training_step: (140, 38)', 'train: (140, 25)', 'valid: (20, 25)', 'test: (4, 25)']
+03-15 12:43 travis_attack.insights INFO     Adding text metrics for column orig_l
+03-15 12:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:43 travis_attack.insights INFO     Adding text metrics for column pp_l
+03-15 12:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
+03-15 12:43 travis_attack.insights INFO     Calculating metric differences between orig and pp
+03-15 12:43 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+03-15 12:43 datasets.arrow_dataset WARNING  Setting TOKENIZERS_PARALLELISM=false for forked processes.
