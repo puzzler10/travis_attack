@@ -18,25 +18,29 @@ class Config:
         # 1. tuner007/pegasus_paraphrase
         # 2. tdopierre/ProtAugment-ParaphraseGenerator
         # 3. eugenesiow/bart-paraphrase
-        self.pp_name = "eugenesiow/bart-paraphrase"
+        self.pp_name = "tuner007/pegasus_paraphrase"
         self.vm_name = "textattack/distilbert-base-uncased-rotten-tomatoes"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         self.dataset_name = "rotten_tomatoes"
 
         ### Training hyperparameters
         self.seed = 420
-        self.use_fp16 = True
+        self.use_fp16 = False
         self.lr = 1e-5
         self.normalise_rewards = False
         self.pin_memory = True
         self.zero_grad_with_none = False
-        self.pad_token_embeddings = True
+        self.pad_token_embeddings = False
         self.embedding_padding_multiple = 8
         self.orig_padding_multiple = 8   # pad input to multiple of this
         self.bucket_by_length = True
         self.shuffle_train = False
         self.remove_misclassified_examples = True
-        self.unfreeze_last_n_layers = 2  # counting from the back. set to "all" to do no layer freezing.
+        self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
+        self.reward_fn = "reward_fn_4"
+        # This makes the reward function easier to see in wandb
+        # copy-paste this from reward function
+        self.reward_strategy = "[-0.3 if sts < 0.6   else max(0.2 + v*sts*4, 0) for v,sts in zip(vm_scores, sts_scores)]"
 
         ### Paraphrase parameters
         self.pp = {
@@ -44,7 +48,7 @@ class Config:
             "num_return_sequences": 1,
             "num_beam_groups": 1,
             "diversity_penalty": 0.,   # must be a float
-            "temperature": 1.5,
+            "temperature": 1,
             "length_penalty" : 1,
             "min_length" : 5,
         }
@@ -58,12 +62,8 @@ class Config:
         self.save_model_while_training = False
         self.save_model_freq = 10
 
-
         ### These parameters don't do anything yet
-        self.sampling_strategy = "simple"  # doesn't do anything
-        # This makes the reward function more visible
-        # copy-paste this from reward function
-        self.reward_strategy = "[-0.5 if sts < 0.5 else 0.5+v*sts for v,sts in zip(vm_scores, sts_scores)]"
+        self.sampling_strategy = "greedy"  # doesn't do anything
 
         ### W&B parameters
         self.wandb = dict(
@@ -72,9 +72,7 @@ class Config:
             mode = "online",  # set to "disabled" to turn off wandb, "online" to enable it
             log_grads = False,
             log_grads_freq = 1,  # no effect if wandb_log_grads is False
-            plot_examples = False,
-            n_examples_plot = 4,  # number of individual examples to plot curves for
-            log_token_entropy=True,
+            log_token_entropy = True,
             log_token_probabilities = True,
             run_notes = f"Reward: {self.reward_strategy}\nDataset: {self.dataset_name}"
         )
@@ -82,7 +80,6 @@ class Config:
         ### Devices and GPU settings
         #### TODO: do you need this with accelerator? does this handle the post-processing analytics too?
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        #device = accelerator.device
         self.devicenum = torch.cuda.current_device() if self.device.type == 'cuda' else -1
         # When not using Accelerator
         #n_wkrs = 4 * torch.cuda.device_count()
@@ -94,7 +91,7 @@ class Config:
         self.metrics = ['loss', 'pp_logp', 'reward', 'vm_score', "sts_score", 'label_flip']
         self.path_data = "./data/"
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
-        self.path_run = None #keep as None; this is automatically filled out by Trainer class
+        self.path_run = None  # keep as None; this is automatically filled out by Trainer class
         self.path_data_cache = "/data/tproth/.cache/huggingface/datasets/"
         self.path_logs = f"./logs/"
         self.path_logfile = self.path_logs + f"run_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.txt"
@@ -116,8 +113,8 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 6
-        self.eval_freq = 2
+        self.n_train_epochs = 300
+        self.eval_freq = 1
         return self
 
     def adjust_config_for_rotten_tomatoes_dataset(self):
@@ -125,9 +122,9 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.orig_max_length = 64
-        self.pp['max_length'] = 64
-        self.batch_size_train = 13
+        self.orig_max_length = 60  # seems to be the longest that pegasus is trained on.
+        self.pp['max_length'] = 60
+        self.batch_size_train = 16
         self.batch_size_eval = 64
         self.acc_steps = 4
         self.n_train_epochs = 5
@@ -140,7 +137,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 300
+        self.n_shards = 50
         self.shard_contiguous = False
         return self
 

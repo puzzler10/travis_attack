@@ -10,7 +10,7 @@ from IPython.display import display, HTML
 from .models import get_vm_probs
 from .config import Config
 from .utils import robust_rmtree, timecode
-
+from IPython.core.debugger import set_trace
 import logging
 logger = logging.getLogger("travis_attack.data")
 
@@ -43,7 +43,7 @@ class ProcessedDataset:
 
         logger.debug(f"Dataset lengths: {self._cfg.ds_length}")
         logger.debug(f"Total training epochs:{self._cfg.n_train_steps}")
-        logger.debug(f"Last batch size in each epoch is: {self._cfg.dl_last_batch_size}")
+        logger.debug(f"Last batch size in each epoch is: {self._cfg.dl_leftover_batch_size}")
         logger.debug(f"Dataloader batch sizes are: {self._cfg.dl_batch_sizes}")
 
 
@@ -187,11 +187,14 @@ class ProcessedDataset:
         return d
 
     def _update_cfg(self):
-        self._cfg.ds_length,self._cfg.dl_n_batches,self._cfg.dl_last_batch_size,self._cfg.dl_batch_sizes = dict(),dict(),dict(),dict()
+        self._cfg.ds_length,self._cfg.dl_n_batches,self._cfg.dl_leftover_batch_size,self._cfg.dl_batch_sizes = dict(),dict(),dict(),dict()
         def get_dl_batch_sizes(batch_size, dl_n_batches):
-            l = [batch_size for i in range(dl_n_batches - 1)]
-            l.append(self._cfg.dl_last_batch_size[k])
-            return l
+            if self._cfg.dl_leftover_batch_size[k] == 0:
+                return [batch_size for i in range(dl_n_batches)]
+            else:
+                l = [batch_size for i in range(dl_n_batches - 1)]
+                l.append(self._cfg.dl_leftover_batch_size[k])
+                return l
 
         for k,v in self.dsd_raw.items(): self._cfg.ds_length[k] = len(v)   # Dataset lengths
         for k,v in self.dld_raw.items():
@@ -199,10 +202,10 @@ class ProcessedDataset:
             # Dataloader last batch size and list of batch sizes
             ds_k = "train" if k == "train_eval" else k
             if k == "train":
-                self._cfg.dl_last_batch_size[k] = self._cfg.ds_length[ds_k] % self._cfg.batch_size_train
+                self._cfg.dl_leftover_batch_size[k] = self._cfg.ds_length[ds_k] % self._cfg.batch_size_train
                 self._cfg.dl_batch_sizes[k]     = get_dl_batch_sizes(self._cfg.batch_size_train, self._cfg.dl_n_batches[k])
             else:
-                self._cfg.dl_last_batch_size[k] = self._cfg.ds_length[ds_k] % self._cfg.batch_size_eval
+                self._cfg.dl_leftover_batch_size[k] = self._cfg.ds_length[ds_k] % self._cfg.batch_size_eval
                 self._cfg.dl_batch_sizes[k]     = get_dl_batch_sizes(self._cfg.batch_size_eval, self._cfg.dl_n_batches[k])
 
         # Total number of training steps

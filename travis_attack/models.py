@@ -18,14 +18,14 @@ logger = logging.getLogger("travis_attack.models")
 def _prepare_pp_tokenizer_and_model(cfg):
     """As well as preparing the pp model and tokenizer this function also adds a new method `generate_with_grad` to
     the pp model so that we can backprop when generating."""
-    pp_tokenizer = AutoTokenizer.from_pretrained(cfg.pp_name)
     # PEGASUS takes about 3GB memory space up on the GPU
     # change the `local_files_only` argument if changing the model name
-    pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True)
+    pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10)
     pp_model.train()
     pp_model_freeze_layers(cfg, pp_model)  # dictated by cfg.unfreeze_last_n_layers; set to "all" to do no freezing
     generate_with_grad = undecorated(pp_model.generate)      # remove the @no_grad decorator from generate
     pp_model.generate_with_grad = MethodType(generate_with_grad, pp_model)
+    pp_tokenizer = AutoTokenizer.from_pretrained(cfg.pp_name)
     return pp_tokenizer, pp_model
 
 def _prepare_vm_tokenizer_and_model(cfg):
@@ -86,7 +86,7 @@ def pp_model_freeze_layers(cfg, pp_model):
     """Freeze all layers of pp_model except the last few decoder layers (determined by cfg.unfreeze_last_n_layers),
     the final layer_norm layer, and the linear head (which is tied to the input embeddings). """
     if cfg.unfreeze_last_n_layers == "all":
-        for i, (name, param) in enumerate(pp_model.base_model.named_parameters()): param.requires_grad = True
+        for i, (name, param) in enumerate(pp_model.named_parameters()): param.requires_grad = True
     else:
         unfreeze_layer_list = _get_layers_to_unfreeze(cfg)
         for i, (name, param) in enumerate(pp_model.base_model.named_parameters()):
