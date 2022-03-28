@@ -37,7 +37,7 @@ class Config:
         self.shuffle_train = False
         self.remove_misclassified_examples = True
         self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
-        self.reward_fn = "reward_fn_4"
+        self.reward_fn = "reward_fn_1"
         # This makes the reward function easier to see in wandb
         # copy-paste this from reward function
         self.reward_strategy = "[-0.3 if sts < 0.6   else max(0.2 + v*sts*4, 0) for v,sts in zip(vm_scores, sts_scores)]"
@@ -127,7 +127,7 @@ class Config:
         self.batch_size_train = 16
         self.batch_size_eval = 64
         self.acc_steps = 4
-        self.n_train_epochs = 5
+        self.n_train_epochs = 2
         self.eval_freq = 1
         return self
 
@@ -137,7 +137,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 50
+        self.n_shards = 300
         self.shard_contiguous = False
         return self
 

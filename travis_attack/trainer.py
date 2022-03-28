@@ -257,6 +257,10 @@ class Trainer:
             'pp_logp_hist':         Histogram(self.batch_d['pp_logp']),
             'pp_logp_mean':         np.mean(  self.batch_d['pp_logp']),
             'loss_hist'   :         Histogram(self.batch_d['loss']),
+            'pp_letter_diff_hist':     Histogram(self.batch_d['pp_letter_diff']),
+            'pp_letter_diff_mean':     np.mean(  self.batch_d['pp_letter_diff']),
+            'pp_letter_percent_hist':  Histogram(self.batch_d['pp_letter_percent']),
+            'pp_letter_percent_mean':  np.mean(  self.batch_d['pp_letter_percent']),
             'acc_batch_sizes':      Histogram(self.acc_current_l),
             "gradient_norm":        self.grad_norm,
             "parameter_norm":       self.param_norm
@@ -368,20 +372,51 @@ class Trainer:
             # This returns a cosine similarity matrix, of which we just want the diagonal
             sts_scores = pytorch_cos_sim(data['orig_sts_embeddings'], pp_embeddings).diagonal()
 
-        # Reward calculation
-        def reward_fn_1(vm_scores, sts_scores):
-            return torch.tensor([0    if sts < 0.6   else max(0.4 + v*sts*2, 0) for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
-        def reward_fn_2(vm_scores, sts_scores):
-            return torch.tensor([0    if sts < 0.6   else max(0.2 + v*sts*4, 0) for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
-        def reward_fn_3(vm_scores, sts_scores):
-            return torch.tensor([-0.2 if sts < 0.6   else max(0.4 + v*sts*2, 0) for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
-        def reward_fn_4(vm_scores, sts_scores):
-            return torch.tensor([-0.3 if sts < 0.6   else max(0.2 + v*sts*4, 0) for v,sts in zip(vm_scores, sts_scores)],device=self._cfg.device)
+        with timecode() as self.batch_time_d['time_pp_letter_diff']:
+            pp_letters = np.array([len(o) for o in pp_l])
+            orig_letters = data['n_letters'].cpu().numpy()
+            pp_letter_diff    = orig_letters - pp_letters
+            pp_letter_percent = orig_letters / pp_letters
 
-        if   self._cfg.reward_fn == "reward_fn_1": rewards = reward_fn_1(vm_scores, sts_scores)
-        elif self._cfg.reward_fn == "reward_fn_2": rewards = reward_fn_2(vm_scores, sts_scores)
-        elif self._cfg.reward_fn == "reward_fn_3": rewards = reward_fn_3(vm_scores, sts_scores)
-        elif self._cfg.reward_fn == "reward_fn_4": rewards = reward_fn_4(vm_scores, sts_scores)
+        # Reward calculation
+        def reward_fn_1(vm_score, sts_score, pp_letter_diff):
+            if sts_score < 0.6: return 0
+            reward =  0.2 + vm_score * 8
+            reward = reward - (pp_letter_diff * 0.01)  # adjust for letter differences
+            return min(max(0, reward), 3 )  # clip reward to [0, 3]
+
+        def reward_fn_2(vm_score, sts_score, pp_letter_diff):
+            if sts_score < 0.6 or pp_letter_diff > 25: return 0
+            reward =  0.2 + vm_score * 8
+            return min(max(0, reward), 3 )  # clip reward to [0, 3]
+
+        def reward_fn_3(vm_score, sts_score, pp_letter_diff):
+            if sts_score < 0.6: return 0
+            reward =  0 + vm_score * 12
+            reward = reward - (pp_letter_diff * 0.01)  # adjust for letter differences
+            return min(max(0, reward), 3 )  # clip reward to [0, 3]
+
+        def reward_fn_4(vm_score, sts_score, pp_letter_diff):
+            if sts_score < 0.6: return 0
+            reward =  0.2 + vm_score * 8
+            reward = reward - (pp_letter_diff * 0.02)  # adjust for letter differences
+            return min(max(0, reward), 3 )  # clip reward to [0, 3]
+
+        def reward_fn_5(vm_score, sts_score, pp_letter_diff):
+            if sts_score < 0.6: return 0
+            reward =  0.2 + vm_score * 8
+            reward = reward - (pp_letter_diff * 0.02)  # adjust for letter differences
+            return min(max(0, reward), 1)  # clip reward to [0, 1]
+
+        def calc_reward(vm_scores, sts_scores, pp_letter_diff):
+            if   self._cfg.reward_fn == "reward_fn_1": reward_fn = reward_fn_1
+            elif self._cfg.reward_fn == "reward_fn_2": reward_fn = reward_fn_2
+            elif self._cfg.reward_fn == "reward_fn_3": reward_fn = reward_fn_3
+            elif self._cfg.reward_fn == "reward_fn_4": reward_fn = reward_fn_4
+            elif self._cfg.reward_fn == "reward_fn_5": reward_fn = reward_fn_5
+            return torch.tensor([reward_fn(vm, sts, ldiff) for vm,sts,ldiff in zip(vm_scores, sts_scores, pp_letter_diff)], device=self._cfg.device)
+
+        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff)
 
         if self._cfg.normalise_rewards:
             self.batch_d['reward_unscaled'] = rewards.detach().cpu().tolist()
@@ -395,6 +430,8 @@ class Trainer:
         self.batch_d['reward']              = rewards.detach().cpu().tolist()
         self.batch_d['vm_score']            = vm_scores.detach().cpu().tolist()
         self.batch_d['sts_score']           = sts_scores.detach().cpu().tolist()
+        self.batch_d['pp_letter_diff']      = pp_letter_diff.tolist()
+        self.batch_d['pp_letter_percent']   = pp_letter_percent.tolist()
 
         return rewards
 
@@ -598,7 +635,7 @@ class Trainer:
 
     def _set_df_colorder(self, data_d_key):
         colorder_eval=['idx','epoch', 'orig_l',  'pp_l','orig_truelabel_probs','pp_truelabel_probs',
-        'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score',
+        'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score', 'pp_letter_diff', 'pp_letter_percent',
         'reward', 'pp_logp','loss','batch_num','global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
         'orig_length','orig_batch_size','pp_length','pp_batch_size']
         if data_d_key == "training_step":

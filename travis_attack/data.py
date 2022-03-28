@@ -87,6 +87,7 @@ class ProcessedDataset:
         dsd = dsd.map(self._add_sts_orig_embeddings, batched=True)  # add STS score
         dsd = dsd.map(self._tokenize_fn,             batched=True)  # tokenize
         dsd = dsd.map(self._add_n_tokens,            batched=True)  # add n_tokens
+        dsd = dsd.map(self._add_n_letters,           batched=True)  # add n_letters
         if self._cfg.bucket_by_length: dsd = dsd.sort("n_tokens", reverse=True)  # sort by n_tokens (high to low), useful for cuda memory caching
         # Split dsd into dsd_raw and dsd_tkn
         assert dsd.column_names['train'] == dsd.column_names['valid'] == dsd.column_names['test']
@@ -110,6 +111,10 @@ class ProcessedDataset:
     def _add_n_tokens(self, batch):
         """Add the number of tokens of the orig text """
         batch['n_tokens'] = [len(o) for o in batch['input_ids']]
+        return batch
+
+    def _add_n_letters(self, batch):
+        batch['n_letters'] = [len(o) for o in batch['text']]
         return batch
 
     def _add_sts_orig_embeddings(self, batch):
