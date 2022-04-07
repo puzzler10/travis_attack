@@ -1,0 +1,51 @@
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/vocab.txt HTTP/1.1" 200 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer.json HTTP/1.1" 404 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-30 14:41 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:41 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /textattack/distilbert-base-uncased-rotten-tomatoes/resolve/main/config.json HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/config.json HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/spiece.model HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/tokenizer.json HTTP/1.1" 404 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/added_tokens.json HTTP/1.1" 404 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/special_tokens_map.json HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/config.json HTTP/1.1" 200 0
+03-30 14:42 urllib3.connectionpool DEBUG    Starting new HTTPS connection (1): huggingface.co:443
+03-30 14:42 urllib3.connectionpool DEBUG    https://huggingface.co:443 "HEAD /tuner007/pegasus_paraphrase/resolve/main/config.json HTTP/1.1" 200 0
+03-30 14:42 sentence_transformers.SentenceTransformer INFO     Load pretrained SentenceTransformer: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-30 14:42 sentence_transformers.SentenceTransformer INFO     Did not find folder sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+03-30 14:42 sentence_transformers.SentenceTransformer INFO     Search model on server: http://sbert.net/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2.zip
+03-30 14:42 sentence_transformers.SentenceTransformer INFO     Load SentenceTransformer from folder: /home/tproth/.cache/torch/sentence_transformers/sbert.net_models_sentence-transformers_paraphrase-multilingual-MiniLM-L12-v2
+03-30 14:42 sentence_transformers.SentenceTransformer INFO     Use pytorch device: cuda
+03-30 14:42 travis_attack.data INFO     Will load dataset simple with use_small_ds set to False
+03-30 14:42 travis_attack.data INFO     Cache file found for processed dataset, so loading that dataset.
+03-30 14:42 travis_attack.data DEBUG    Dataset lengths: {'train': 4, 'valid': 4, 'test': 4}
+03-30 14:42 travis_attack.data DEBUG    Total training epochs:10
+03-30 14:42 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 0, 'valid': 0, 'test': 0, 'train_eval': 0}
+03-30 14:42 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [4], 'valid': [4], 'test': [4], 'train_eval': [4]}

@@ -1,0 +1,15 @@
+program: run.py
+method: grid
+metric:
+  name: reward_valid
+  goal: maximize
+parameters:
+  lr:
+    values: [2e-4, 5e-4, 1e-3, 5e-3 ]
+  acc_steps:
+    values: [8]
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - ${args}

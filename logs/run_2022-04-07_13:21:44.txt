@@ -1,0 +1,6 @@
+04-07 13:22 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+04-07 13:22 travis_attack.data INFO     Cache file found for processed dataset, so loading that dataset.
+04-07 13:22 travis_attack.data DEBUG    Dataset lengths: {'train': 19, 'valid': 3, 'test': 3}
+04-07 13:22 travis_attack.data DEBUG    Total training epochs:6
+04-07 13:22 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 3, 'valid': 3, 'test': 3, 'train_eval': 19}
+04-07 13:22 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [16, 3], 'valid': [3], 'test': [3], 'train_eval': [19]}

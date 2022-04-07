@@ -23,7 +23,7 @@ def _prepare_pp_tokenizer_and_model(cfg):
     pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10)
     pp_model.train()
     pp_model_freeze_layers(cfg, pp_model)  # dictated by cfg.unfreeze_last_n_layers; set to "all" to do no freezing
-    generate_with_grad = undecorated(pp_model.generate)      # remove the @no_grad decorator from generate
+    generate_with_grad = undecorated(pp_model.generate)      # removes the @no_grad decorator from generate so we can backprop
     pp_model.generate_with_grad = MethodType(generate_with_grad, pp_model)
     pp_tokenizer = AutoTokenizer.from_pretrained(cfg.pp_name)
     return pp_tokenizer, pp_model

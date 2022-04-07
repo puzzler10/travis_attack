@@ -7,7 +7,7 @@ import torch, random, pandas as pd, os, warnings, shutil, uuid
 from torch.utils.data import DataLoader, RandomSampler
 from datasets import load_dataset, load_from_disk, DatasetDict, ClassLabel
 from IPython.display import display, HTML
-from .models import get_vm_probs
+from .models import get_vm_probs, prepare_models
 from .config import Config
 from .utils import robust_rmtree, timecode
 from IPython.core.debugger import set_trace
@@ -46,7 +46,6 @@ class ProcessedDataset:
         logger.debug(f"Last batch size in each epoch is: {self._cfg.dl_leftover_batch_size}")
         logger.debug(f"Dataloader batch sizes are: {self._cfg.dl_batch_sizes}")
 
-
     def _prep_dsd_simple(self):
         """Load the simple dataset and package it up in a DatasetDict (dsd)
         with splits for train, valid, test."""
@@ -57,12 +56,21 @@ class ProcessedDataset:
         return dsd
 
     def _prep_dsd_rotten_tomatoes(self):
-        """Load the rotten tomatoes dataet and package it up in a DatasetDict (dsd)
+        """Load the rotten tomatoes dataset and package it up in a DatasetDict (dsd)
         with splits for train, valid, test."""
         dsd = load_dataset("rotten_tomatoes")
         dsd['valid'] = dsd.pop('validation')  # "valid" is easier than "validation"
         # make sure that all datasets have the same number of labels as what the victim model predicts
         for _,ds in dsd.items(): assert ds.features[self._cfg.label_cname].num_classes == self._cfg.vm_num_labels
+        return dsd
+
+    def _prep_dsd_financial(self):
+        """Load the financial dataset and package it up in a DatasetDict (dsd)
+        with splits for train, valid, test."""
+        dsd = load_dataset("financial_phrasebank", "sentences_50agree")
+        dsd = self._get_train_valid_test_split(dsd)
+        dsd = dsd.rename_column('sentence', 'text')
+       # for _,ds in dsd.items(): assert ds.features[self._cfg.label_cname].num_classes == self._cfg.vm_num_labels
         return dsd
 
     def _prep_dsd_raw_snli(self):
@@ -77,7 +85,8 @@ class ProcessedDataset:
         """Add columns, tokenize, transform, prepare dataloaders, and do other preprocessing tasks."""
         if   self._cfg.dataset_name == "simple":          dsd = self._prep_dsd_simple()
         elif self._cfg.dataset_name == "rotten_tomatoes": dsd = self._prep_dsd_rotten_tomatoes()
-        else: raise Exception("cfg.dataset_name must be either 'simple' or 'rotten_tomatoes'")
+        elif self._cfg.dataset_name == "financial":       dsd = self._prep_dsd_financial()
+        else: raise Exception("cfg.dataset_name not valid")
         dsd = dsd.map(self._add_idx, batched=True, with_indices=True)  # add idx column
         if self._cfg.use_small_ds: dsd = self._shard_dsd(dsd)  # do after adding idx so it's consistent across runs
         # add VM score & filter out misclassified examples.
@@ -103,6 +112,15 @@ class ProcessedDataset:
         self.dld_raw = self._get_dataloaders_dict(self.dsd_raw, collate_fn=self._collate_fn_raw)  # dict of data loaders that serve raw text
         self.dld_tkn = self._get_dataloaders_dict(self.dsd_tkn, collate_fn=self._collate_fn_tkn)  # dict of data loaders that serve tokenized text
 
+    def _get_train_valid_test_split(self, dsd, train_size=0.8):
+            dsd1 = dsd['train'].train_test_split(train_size=train_size)
+            dsd2 = dsd1['test'].train_test_split(train_size=0.5)
+            return DatasetDict({
+                'train': dsd1['train'],
+                'valid': dsd2['train'],
+                'test': dsd2['test']
+            })
+
     def _add_idx(self, batch, idx):
         """Add row numbers"""
         batch['idx'] = idx
@@ -119,13 +137,13 @@ class ProcessedDataset:
 
     def _add_sts_orig_embeddings(self, batch):
         """Add the sts embeddings of the orig text"""
-        batch['orig_sts_embeddings'] = self._sts_model.encode(batch[self._cfg.orig_cname], batch_size=64, convert_to_tensor=False)
+        batch['orig_sts_embeddings'] = self._sts_model.encode(batch['text'], batch_size=64, convert_to_tensor=False)
         return batch
 
     def _add_vm_orig_score(self, batch):
         """Add the vm score of the orig text"""
         labels = torch.tensor(batch[self._cfg.label_cname], device=self._cfg.device)
-        orig_probs,orig_predclass = get_vm_probs(batch[self._cfg.orig_cname], self._cfg, self._vm_tokenizer,
+        orig_probs,orig_predclass = get_vm_probs(batch['text'], self._cfg, self._vm_tokenizer,
                                                  self._vm_model, return_predclass=True)
         batch['orig_truelabel_probs'] = torch.gather(orig_probs,1, labels[:,None]).squeeze().cpu().tolist()
         batch['orig_vm_predclass'] = orig_predclass.cpu().tolist()
@@ -133,7 +151,7 @@ class ProcessedDataset:
 
     def _tokenize_fn(self, batch):
         """Tokenize a batch of orig text using the paraphrase tokenizer."""
-        return self._pp_tokenizer(batch[self._cfg.orig_cname], truncation=True, max_length=self._cfg.orig_max_length)
+        return self._pp_tokenizer(batch['text'], truncation=True, max_length=self._cfg.orig_max_length)
 
     def _collate_fn_tkn(self, x):
         """Collate function used by the DataLoader that serves tokenized data.

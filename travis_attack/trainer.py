@@ -267,7 +267,7 @@ class Trainer:
         })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
         not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp',
-                              'reward', 'sts_score', 'vm_score',
+                              'reward', 'sts_score', 'vm_score', 'pp_letter_diff', 'pp_letter_percent',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
         wandb.log(self.batch_wandb_d, commit=True)
@@ -376,51 +376,30 @@ class Trainer:
             pp_letters = np.array([len(o) for o in pp_l])
             orig_letters = data['n_letters'].cpu().numpy()
             pp_letter_diff    = orig_letters - pp_letters
-            pp_letter_percent = orig_letters / pp_letters
+            pp_letter_percent = pp_letters / orig_letters
 
         # Reward calculation
-        def reward_fn_1(vm_score, sts_score, pp_letter_diff):
-            if sts_score < 0.6: return 0
-            reward =  0.2 + vm_score * 8
-            reward = reward - (pp_letter_diff * 0.01)  # adjust for letter differences
-            return min(max(0, reward), 3 )  # clip reward to [0, 3]
-
-        def reward_fn_2(vm_score, sts_score, pp_letter_diff):
-            if sts_score < 0.6 or pp_letter_diff > 25: return 0
-            reward =  0.2 + vm_score * 8
-            return min(max(0, reward), 3 )  # clip reward to [0, 3]
-
-        def reward_fn_3(vm_score, sts_score, pp_letter_diff):
-            if sts_score < 0.6: return 0
+        def reward_fn_baseline(vm_score, sts_score, pp_letter_diff):
+            if sts_score < 0.6:                              return 0
+            if pp_letter_diff > 30 or pp_letter_diff < -30:  return 0
             reward =  0 + vm_score * 12
-            reward = reward - (pp_letter_diff * 0.01)  # adjust for letter differences
-            return min(max(0, reward), 3 )  # clip reward to [0, 3]
+            return min(max(0, reward), 3)
 
-        def reward_fn_4(vm_score, sts_score, pp_letter_diff):
-            if sts_score < 0.6: return 0
-            reward =  0.2 + vm_score * 8
-            reward = reward - (pp_letter_diff * 0.02)  # adjust for letter differences
-            return min(max(0, reward), 3 )  # clip reward to [0, 3]
-
-        def reward_fn_5(vm_score, sts_score, pp_letter_diff):
-            if sts_score < 0.6: return 0
-            reward =  0.2 + vm_score * 8
-            reward = reward - (pp_letter_diff * 0.02)  # adjust for letter differences
-            return min(max(0, reward), 1)  # clip reward to [0, 1]
+        def reward_fn_less_coef(vm_score, sts_score, pp_letter_diff):
+            if sts_score < 0.6:                              return 0
+            if pp_letter_diff > 30 or pp_letter_diff < -30:  return 0
+            reward =  0 + vm_score
+            return min(max(0, reward), 0.25)
 
         def calc_reward(vm_scores, sts_scores, pp_letter_diff):
-            if   self._cfg.reward_fn == "reward_fn_1": reward_fn = reward_fn_1
-            elif self._cfg.reward_fn == "reward_fn_2": reward_fn = reward_fn_2
-            elif self._cfg.reward_fn == "reward_fn_3": reward_fn = reward_fn_3
-            elif self._cfg.reward_fn == "reward_fn_4": reward_fn = reward_fn_4
-            elif self._cfg.reward_fn == "reward_fn_5": reward_fn = reward_fn_5
+            if   self._cfg.reward_fn == "reward_fn_baseline":  reward_fn = reward_fn_baseline
+            elif self._cfg.reward_fn == "reward_fn_less_coef": reward_fn = reward_fn_less_coef
+#             elif self._cfg.reward_fn == "reward_fn_3": reward_fn = reward_fn_3
+#             elif self._cfg.reward_fn == "reward_fn_4": reward_fn = reward_fn_4
+#             elif self._cfg.reward_fn == "reward_fn_5": reward_fn = reward_fn_5
             return torch.tensor([reward_fn(vm, sts, ldiff) for vm,sts,ldiff in zip(vm_scores, sts_scores, pp_letter_diff)], device=self._cfg.device)
 
         rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff)
-
-        if self._cfg.normalise_rewards:
-            self.batch_d['reward_unscaled'] = rewards.detach().cpu().tolist()
-            rewards = (rewards - torch.mean(rewards)) / torch.std(rewards)
 
         self.batch_d['pp_truelabel_probs']  = pp_truelabel_probs.detach().cpu().tolist()
         self.batch_d['pp_predclass']        = pp_predclass.detach().cpu().tolist()
@@ -580,7 +559,7 @@ class Trainer:
         # tokens over probs above 0.1, 0.01, 0.001, 0.0001, 1/vocab_size prob
         allprobs = (scores_log_softmax.detach().exp() * attention_mask[:,:,None]).flatten()
         allprobs = allprobs[allprobs != 0]
-        for p in [0.1, 0.01, 0.001, 0.0001, 0.00001]:
+        for p in [1e-5, 1e-6, 1e-7, 1e-8, 1e-9]:
             token_prob_d[f"%_of_tokens_above_prob_{p}"] =  (torch.sum(allprobs > p) / allprobs.shape[0]).item()
         token_prob_d[f"%_of_tokens_above_prob_1/vocab_size"] = \
             (torch.sum(allprobs > (1/self._cfg.vocab_size)) / allprobs.shape[0]).item()

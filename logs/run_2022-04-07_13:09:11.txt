@@ -1,0 +1,14 @@
+04-07 13:09 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+04-07 13:09 travis_attack.data DEBUG    Dataset lengths: {'train': 19, 'valid': 3, 'test': 3}
+04-07 13:09 travis_attack.data DEBUG    Total training epochs:6
+04-07 13:09 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 3, 'valid': 3, 'test': 3, 'train_eval': 19}
+04-07 13:09 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [16, 3], 'valid': [3], 'test': [3], 'train_eval': [19]}
+04-07 13:10 travis_attack.trainer DEBUG    GPU memory usage after loading models: 25.3% (4142 out of 16384)
+04-07 13:10 travis_attack.trainer INFO     Now on epoch 1 of 3
+04-07 13:10 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  48.0% (7872 out of 16384)
+04-07 13:12 travis_attack.trainer DEBUG    GPU memory usage after loading models: 48.2% (7894 out of 16384)
+04-07 13:12 travis_attack.trainer INFO     Now on epoch 1 of 3
+04-07 13:12 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  71.3% (11684 out of 16384)
+04-07 13:12 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  88.0% (14426 out of 16384)
+04-07 13:12 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  88.0% (14426 out of 16384)
+04-07 13:12 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  90.3% (14802 out of 16384)

@@ -19,15 +19,15 @@ class Config:
         # 2. tdopierre/ProtAugment-ParaphraseGenerator
         # 3. eugenesiow/bart-paraphrase
         self.pp_name = "tuner007/pegasus_paraphrase"
-        self.vm_name = "textattack/distilbert-base-uncased-rotten-tomatoes"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        self.dataset_name = "rotten_tomatoes"
+        self.dataset_name = "financial"
+        self._select_vm_model()
+
 
         ### Training hyperparameters
         self.seed = 420
         self.use_fp16 = False
-        self.lr = 1e-5
-        self.normalise_rewards = False
+        self.lr = 5e-5
         self.pin_memory = True
         self.zero_grad_with_none = False
         self.pad_token_embeddings = False
@@ -37,10 +37,10 @@ class Config:
         self.shuffle_train = False
         self.remove_misclassified_examples = True
         self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
-        self.reward_fn = "reward_fn_1"
+        self.reward_fn = "reward_fn_baseline"
         # This makes the reward function easier to see in wandb
         # copy-paste this from reward function
-        self.reward_strategy = "[-0.3 if sts < 0.6   else max(0.2 + v*sts*4, 0) for v,sts in zip(vm_scores, sts_scores)]"
+        self.reward_strategy = ""
 
         ### Paraphrase parameters
         self.pp = {
@@ -54,7 +54,7 @@ class Config:
         }
 
         ### Used for testing
-        self.use_small_ds = False
+        self.use_small_ds = True
         self.n_shards = None
         self.shard_contiguous = None
 
@@ -99,9 +99,16 @@ class Config:
         # Adjust config depending on dataset.
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()
         elif self.dataset_name == "rotten_tomatoes":  self.adjust_config_for_rotten_tomatoes_dataset()
+        elif self.dataset_name == "financial":        self.adjust_config_for_financial_dataset()
+
 
         # Checks
         self._validate_n_epochs()
+
+    def _select_vm_model(self):
+        if   self.dataset_name in ["rotten_tomatoes", "simple"]:  self.vm_name = "textattack/distilbert-base-uncased-rotten-tomatoes"
+        elif self.dataset_name == "financial":                    self.vm_name = "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
+
 
     def adjust_config_for_simple_dataset(self):
         """Adjust config for the simple dataset."""
@@ -113,7 +120,7 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 300
+        self.n_train_epochs = 20
         self.eval_freq = 1
         return self
 
@@ -126,8 +133,22 @@ class Config:
         self.pp['max_length'] = 60
         self.batch_size_train = 16
         self.batch_size_eval = 64
-        self.acc_steps = 4
-        self.n_train_epochs = 2
+        self.acc_steps = 2
+        self.n_train_epochs = 5
+        self.eval_freq = 1
+        return self
+
+    def adjust_config_for_financial_dataset(self):
+        """Adjust config for the financial dataset."""
+        self.dataset_name = "financial"
+        self.orig_cname = "sentence"
+        self.label_cname = 'label'
+        self.orig_max_length = 60  # seems to be the longest that pegasus is trained on.
+        self.pp['max_length'] = 60
+        self.batch_size_train = 16
+        self.batch_size_eval = 64
+        self.acc_steps = 2
+        self.n_train_epochs = 3
         self.eval_freq = 1
         return self
 
@@ -137,7 +158,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 300
+        self.n_shards = 200
         self.shard_contiguous = False
         return self
 
