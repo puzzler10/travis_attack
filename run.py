@@ -20,7 +20,7 @@ import logging
 logger = logging.getLogger("run")
 
 
-# In[4]:
+# In[6]:
 
 
 cfg = Config()  # default values
@@ -33,16 +33,16 @@ if cfg.use_small_ds:  cfg = cfg.small_ds()
 set_seed(cfg.seed)
 set_session_options()
 setup_logging(cfg, disable_other_loggers=True)
-vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, cfg = prepare_models(cfg)
+vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
 optimizer = get_optimizer(cfg, pp_model)
 ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=True)
 
 
-# In[8]:
+# In[7]:
 
 
-cfg.wandb['mode'] = 'online'
-trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, optimizer,
+cfg.wandb['mode'] = 'disabled'
+trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
                   ds, initial_eval=False, use_cpu=False)
 trainer.train()
 

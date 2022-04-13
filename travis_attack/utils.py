@@ -49,7 +49,7 @@ def setup_logging(cfg, disable_other_loggers=True):
 
     if disable_other_loggers:
         allowed_modules = ["travis_attack", "wandb"]  #  "sentence_transformers", "transformers", "datasets"
-        logger.debug(f"Disabling all loggers except those from the following libraries:", allowed_modules)
+        logger.debug(f"Disabling all loggers except those from the following libraries: {allowed_modules}")
         for log_name, log_obj in logging.Logger.manager.loggerDict.items():
             if not any(mod in log_name for mod in allowed_modules):
                 log_obj.disabled = True

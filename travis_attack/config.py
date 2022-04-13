@@ -20,7 +20,8 @@ class Config:
         # 3. eugenesiow/bart-paraphrase
         self.pp_name = "tuner007/pegasus_paraphrase"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        self.dataset_name = "financial"
+        self.nli_name = "microsoft/deberta-base-mnli"
+        self.dataset_name = "simple"
         self._select_vm_model()
 
 
@@ -37,7 +38,7 @@ class Config:
         self.shuffle_train = False
         self.remove_misclassified_examples = True
         self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
-        self.reward_fn = "reward_fn_baseline"
+        self.reward_fn = "reward_fn_contradiction"
         # This makes the reward function easier to see in wandb
         # copy-paste this from reward function
         self.reward_strategy = ""
@@ -54,7 +55,7 @@ class Config:
         }
 
         ### Used for testing
-        self.use_small_ds = True
+        self.use_small_ds = False
         self.n_shards = None
         self.shard_contiguous = None
 
@@ -88,7 +89,7 @@ class Config:
 
         ## Globals
         self.splits = ['train', 'valid', 'test']
-        self.metrics = ['loss', 'pp_logp', 'reward', 'vm_score', "sts_score", 'label_flip']
+        self.metrics = ['loss', 'pp_logp', 'reward', 'vm_score', "sts_score", 'label_flip', 'contradiction_score', 'pp_letter_diff']
         self.path_data = "./data/"
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
         self.path_run = None  # keep as None; this is automatically filled out by Trainer class
@@ -122,6 +123,7 @@ class Config:
         self.acc_steps = 2
         self.n_train_epochs = 20
         self.eval_freq = 1
+        self._select_vm_model()
         return self
 
     def adjust_config_for_rotten_tomatoes_dataset(self):
@@ -131,11 +133,12 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 60  # seems to be the longest that pegasus is trained on.
         self.pp['max_length'] = 60
-        self.batch_size_train = 16
+        self.batch_size_train = 8
         self.batch_size_eval = 64
         self.acc_steps = 2
         self.n_train_epochs = 5
         self.eval_freq = 1
+        self._select_vm_model()
         return self
 
     def adjust_config_for_financial_dataset(self):
@@ -148,8 +151,9 @@ class Config:
         self.batch_size_train = 16
         self.batch_size_eval = 64
         self.acc_steps = 2
-        self.n_train_epochs = 3
+        self.n_train_epochs = 10
         self.eval_freq = 1
+        self._select_vm_model()
         return self
 
     def small_ds(self):

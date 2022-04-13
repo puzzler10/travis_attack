@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from .utils import (timecode, show_gpu, merge_dicts, unpack_nested_lists_in_df,
                                  display_all, append_df_to_csv, start_wandb_run)
 from .tests import check_no_nans_or_infs
-from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids
+from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids, get_nli_probs
 
 
 # Cell
@@ -41,7 +41,7 @@ from IPython.core.debugger import set_trace
 
 # Cell
 class Trainer:
-    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, optimizer,
+    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
                 ds, initial_eval=True, log_code=True, use_cpu=False):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
@@ -261,13 +261,15 @@ class Trainer:
             'pp_letter_diff_mean':     np.mean(  self.batch_d['pp_letter_diff']),
             'pp_letter_percent_hist':  Histogram(self.batch_d['pp_letter_percent']),
             'pp_letter_percent_mean':  np.mean(  self.batch_d['pp_letter_percent']),
+            'contradiction_score_hist':     Histogram(self.batch_d['contradiction_score']),
+            'contradiction_score_mean':     np.mean(  self.batch_d['contradiction_score']),
             'acc_batch_sizes':      Histogram(self.acc_current_l),
             "gradient_norm":        self.grad_norm,
             "parameter_norm":       self.param_norm
         })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
         not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp',
-                              'reward', 'sts_score', 'vm_score', 'pp_letter_diff', 'pp_letter_percent',
+                              'reward', 'sts_score', 'vm_score', 'pp_letter_diff', 'pp_letter_percent','contradiction_score',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
         wandb.log(self.batch_wandb_d, commit=True)
@@ -378,28 +380,43 @@ class Trainer:
             pp_letter_diff    = orig_letters - pp_letters
             pp_letter_percent = pp_letters / orig_letters
 
+
+        with timecode() as self.batch_time_d['time_contradiction_scores']:
+            # contradiction probs (i.e. scores) are stored in idx 0 usually
+            contradiction_scores = get_nli_probs(raw['text'], pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:, 0]
+
         # Reward calculation
-        def reward_fn_baseline(vm_score, sts_score, pp_letter_diff):
+        def reward_fn_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
             if sts_score < 0.6:                              return 0
             if pp_letter_diff > 30 or pp_letter_diff < -30:  return 0
             reward =  0 + vm_score * 12
             return min(max(0, reward), 3)
 
-        def reward_fn_less_coef(vm_score, sts_score, pp_letter_diff):
+        def reward_fn_contradiction(vm_score, sts_score, pp_letter_diff, contradiction_score):
             if sts_score < 0.6:                              return 0
-            if pp_letter_diff > 30 or pp_letter_diff < -30:  return 0
-            reward =  0 + vm_score
-            return min(max(0, reward), 0.25)
+            if contradiction_score > 0.8:                    return 0
+            reward = 0 + vm_score * 12
+            return min(max(0, reward), 3)
 
-        def calc_reward(vm_scores, sts_scores, pp_letter_diff):
-            if   self._cfg.reward_fn == "reward_fn_baseline":  reward_fn = reward_fn_baseline
-            elif self._cfg.reward_fn == "reward_fn_less_coef": reward_fn = reward_fn_less_coef
+        def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
+            if sts_score < 0.6:                              return 0
+            if contradiction_score > 0.8:                    return 0
+            if pp_letter_diff > 30 or pp_letter_diff < -30:  return 0
+            reward = 0 + vm_score * 12
+            return min(max(0, reward), 3)
+
+        def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores):
+            if   self._cfg.reward_fn == "reward_fn_letter_diff":      reward_fn = reward_fn_letter_diff
+            elif self._cfg.reward_fn == "reward_fn_contradiction":    reward_fn = reward_fn_contradiction
+            elif self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
+
 #             elif self._cfg.reward_fn == "reward_fn_3": reward_fn = reward_fn_3
 #             elif self._cfg.reward_fn == "reward_fn_4": reward_fn = reward_fn_4
 #             elif self._cfg.reward_fn == "reward_fn_5": reward_fn = reward_fn_5
-            return torch.tensor([reward_fn(vm, sts, ldiff) for vm,sts,ldiff in zip(vm_scores, sts_scores, pp_letter_diff)], device=self._cfg.device)
+            return torch.tensor([reward_fn(vm, sts, ldiff, contra) for vm,sts,ldiff,contra in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)],
+                                device=self._cfg.device)
 
-        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff)
+        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
 
         self.batch_d['pp_truelabel_probs']  = pp_truelabel_probs.detach().cpu().tolist()
         self.batch_d['pp_predclass']        = pp_predclass.detach().cpu().tolist()
@@ -411,6 +428,7 @@ class Trainer:
         self.batch_d['sts_score']           = sts_scores.detach().cpu().tolist()
         self.batch_d['pp_letter_diff']      = pp_letter_diff.tolist()
         self.batch_d['pp_letter_percent']   = pp_letter_percent.tolist()
+        self.batch_d['contradiction_score'] = contradiction_scores.cpu().tolist()
 
         return rewards
 
@@ -615,7 +633,7 @@ class Trainer:
     def _set_df_colorder(self, data_d_key):
         colorder_eval=['idx','epoch', 'orig_l',  'pp_l','orig_truelabel_probs','pp_truelabel_probs',
         'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score', 'pp_letter_diff', 'pp_letter_percent',
-        'reward', 'pp_logp','loss','batch_num','global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
+        'contradiction_score', 'reward', 'pp_logp','loss','batch_num','global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
         'orig_length','orig_batch_size','pp_length','pp_batch_size']
         if data_d_key == "training_step":
             colorder_training_step = colorder_eval + [o for o in self.data_d['training_step'].columns if 'time_' in o]
