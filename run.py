@@ -20,7 +20,7 @@ import logging
 logger = logging.getLogger("run")
 
 
-# In[6]:
+# In[4]:
 
 
 cfg = Config()  # default values
@@ -38,22 +38,28 @@ optimizer = get_optimizer(cfg, pp_model)
 ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=True)
 
 
-# In[7]:
+# In[5]:
 
 
-cfg.wandb['mode'] = 'disabled'
+cfg.wandb['mode'] = 'online'
 trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
                   ds, initial_eval=False, use_cpu=False)
 trainer.train()
 
 
-# In[ ]:
+# In[7]:
 
 
 df_d = get_training_dfs(cfg.path_run, postprocessed=False)
 for k, df in df_d.items(): 
-    df_d[k] = postprocess_df(df, filter_idx=None, num_proc=2)
+    df_d[k] = postprocess_df(df, filter_idx=None, num_proc=1)
     df_d[k].to_pickle(f"{cfg.path_run}{k}_postprocessed.pkl")    
 create_and_log_wandb_postrun_plots(df_d)
 trainer.run.finish()
+
+
+# In[ ]:
+
+
+
 

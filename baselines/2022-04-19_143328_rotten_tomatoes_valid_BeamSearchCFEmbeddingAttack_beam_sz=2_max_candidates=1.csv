@@ -1,0 +1,3 @@
+"ground_truth_output","num_queries","original_output","original_score","original_text","perturbed_output","perturbed_score","perturbed_text","result_type"
+1.0,122.0,1.0,0.055190086364746094,"compassionately explores the seemingly irreconcilable situation between conservative christian parents and their estranged gay and lesbian children .",1.0,0.07326221466064453,"compassionately explore the apparently incompatible circumstances between curator christians relatives and their stepfather homosexual and lesbians child .","Failed"
+1.0,6.0,1.0,0.19473797082901,"the soundtrack alone is worth the price of admission .",0.0,0.8646378517150879,"the soundtrack alone is penalty the price of admission .","Successful"

@@ -21,14 +21,14 @@ class Config:
         self.pp_name = "tuner007/pegasus_paraphrase"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         self.nli_name = "microsoft/deberta-base-mnli"
-        self.dataset_name = "simple"
+        self.dataset_name = "rotten_tomatoes"
         self._select_vm_model()
 
 
         ### Training hyperparameters
         self.seed = 420
         self.use_fp16 = False
-        self.lr = 5e-5
+        self.lr = 2e-5
         self.pin_memory = True
         self.zero_grad_with_none = False
         self.pad_token_embeddings = False
@@ -38,7 +38,7 @@ class Config:
         self.shuffle_train = False
         self.remove_misclassified_examples = True
         self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
-        self.reward_fn = "reward_fn_contradiction"
+        self.reward_fn = "reward_fn_contradiction_and_letter_diff"
         # This makes the reward function easier to see in wandb
         # copy-paste this from reward function
         self.reward_strategy = ""
@@ -148,7 +148,7 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 60  # seems to be the longest that pegasus is trained on.
         self.pp['max_length'] = 60
-        self.batch_size_train = 16
+        self.batch_size_train = 8
         self.batch_size_eval = 64
         self.acc_steps = 2
         self.n_train_epochs = 10

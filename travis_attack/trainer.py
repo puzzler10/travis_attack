@@ -276,11 +276,18 @@ class Trainer:
 
     def _convert_data_d_to_df(self, data_d_key):
         df = pd.DataFrame(self.data_d[data_d_key])
-        # check all lists have the same number of elements in their row
+        ### Check all lists have the same number of elements in their row
         # last batch will have different number of elements to the batch size
         nonscalar_cols = df.columns[[o == np.dtype('object') for o in df.head(1).dtypes]].tolist()
-        df_lengths = df[nonscalar_cols].applymap(len)
+        df_nonscalar_cols = df[nonscalar_cols]
+        # sometimes if we have one element in the last batch, the tolist() function returns a scalar instead of a list
+        # so we handle that case here
+        def scalar2list(x): return x if type(x) == list else [x]
+        if len(df_nonscalar_cols.iloc[-1]["idx"]) == 1: df_nonscalar_cols.iloc[-1] = df_nonscalar_cols.iloc[-1].apply(scalar2list)
+        df_lengths = df_nonscalar_cols.applymap(len)
         assert df_lengths.eq(df_lengths.iloc[:,0], axis=0).all(None)
+
+        ### Put in dataframes
         # expand lists and broadcast scalars
         scalar_cols = df.columns[[o != np.dtype('object') for o in df.head(1).dtypes]].tolist()
         df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
