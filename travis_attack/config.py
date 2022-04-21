@@ -21,7 +21,7 @@ class Config:
         self.pp_name = "tuner007/pegasus_paraphrase"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         self.nli_name = "microsoft/deberta-base-mnli"
-        self.dataset_name = "rotten_tomatoes"
+        self.dataset_name = "simple"
         self._select_vm_model()
 
 
@@ -29,6 +29,7 @@ class Config:
         self.seed = 420
         self.use_fp16 = False
         self.lr = 2e-5
+        self.kl_coef = 0.2
         self.pin_memory = True
         self.zero_grad_with_none = False
         self.pad_token_embeddings = False
@@ -70,7 +71,7 @@ class Config:
         self.wandb = dict(
             project = "travis_attack",
             entity = "uts_nlp",
-            mode = "online",  # set to "disabled" to turn off wandb, "online" to enable it
+            mode = "disabled",  # set to "disabled" to turn off wandb, "online" to enable it
             log_grads = False,
             log_grads_freq = 1,  # no effect if wandb_log_grads is False
             log_token_entropy = True,
@@ -118,10 +119,10 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 20
         self.pp['max_length'] = 20
-        self.batch_size_train = 4
+        self.batch_size_train = 2
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 20
+        self.n_train_epochs = 10
         self.eval_freq = 1
         self._select_vm_model()
         return self

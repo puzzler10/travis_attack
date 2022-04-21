@@ -9,6 +9,8 @@ from datasets import load_dataset, load_from_disk, DatasetDict, ClassLabel
 from pprint import pprint
 from datetime import datetime
 import argparse
+import functools
+
 
 from textattack import Attack, AttackArgs,Attacker
 from textattack.models.wrappers import HuggingFaceModelWrapper
@@ -16,6 +18,7 @@ from textattack.datasets import HuggingFaceDataset
 from textattack.loggers import CSVLogger # tracks a dataframe for us.
 from textattack.attack_recipes import AttackRecipe
 from textattack.search_methods import BeamSearch
+from textattack.constraints import Constraint
 from textattack.constraints.pre_transformation import RepeatModification, StopwordModification
 from textattack.transformations import WordSwapEmbedding, WordSwapMaskedLM
 from textattack.goal_functions import UntargetedClassification
@@ -36,40 +39,14 @@ path_baselines = "./baselines/"
 datetime_now = datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
 
-# In[4]:
+# In[16]:
 
-
-class BeamSearchCFEmbeddingAttack(AttackRecipe):
-    """Untarged classification + word embedding swap + [no repeat, no stopword] constraints + beam search"""
-    @staticmethod
-    def build(model_wrapper, beam_sz=2, max_candidates=5):
-        goal_function = UntargetedClassification(model_wrapper)
-        stopwords = nltk.corpus.stopwords.words("english") # The one used by default in textattack
-        constraints = [RepeatModification(),
-                       StopwordModification(stopwords)]
-        transformation = WordSwapEmbedding(max_candidates=max_candidates)
-        search_method = BeamSearch(beam_width=beam_sz)
-        attack = Attack(goal_function, constraints, transformation, search_method)
-        return attack
-
-class BeamSearchLMAttack(AttackRecipe): 
-    """"""
-    @staticmethod
-    def build(model_wrapper, beam_sz=2, max_candidates=5):
-        stopwords = nltk.corpus.stopwords.words("english") # The one used by default in textattack
-        goal_function = UntargetedClassification(model_wrapper)
-        constraints = [RepeatModification(),
-                       StopwordModification()]
-        transformation = WordSwapMaskedLM(method='bae', masked_language_model='distilroberta-base', max_candidates=max_candidates)
-        search_method = BeamSearch(beam_width=beam_sz)
-        attack = Attack(goal_function, constraints, transformation, search_method)
-        return attack
 
 def setup_baselines_parser(): 
     parser = argparse.ArgumentParser()
     parser.add_argument("--ds_name")
     parser.add_argument("--split")
-    parser.add_argument("--attack_recipe")
+    parser.add_argument("--attack_name")
     parser.add_argument("--num_examples", type=int)
     parser.add_argument("--beam_sz", type=int)
     parser.add_argument("--max_candidates", type=int)
@@ -79,7 +56,7 @@ def setup_baselines_parser():
     return parser
 
 
-# In[5]:
+# In[4]:
 
 
 ######### CONFIG (default values) #########
@@ -90,7 +67,7 @@ d = dict(
     attack_name = 'BeamSearchCFEmbeddingAttack',
     num_examples = -1,
     beam_sz = 1,
-    max_candidates = 1,
+    max_candidates = 2,
     sts_threshold = 0.6,
     contradiction_threshold = 0.8
 )
@@ -101,6 +78,78 @@ if not in_jupyter():  # override with any script options
     newargs = vars(parser.parse_args())
     for k,v in newargs.items(): 
         if v is not None: d[k] = v
+
+
+# In[5]:
+
+
+class StsScoreConstraint(Constraint): 
+    def __init__(self, sts_model, sts_threshold): 
+        super().__init__(True)  # need the true here to compare against original (as opposed to previous x') I think
+        self.sts_threshold = sts_threshold
+        self.sts_model     = sts_model
+        
+    @functools.lru_cache(maxsize=2**14)
+    def get_embedding(self, text):  return self.sts_model.encode(text)
+    
+    def _check_constraint(self, transformed_text, current_text):
+        orig_embedding = self.get_embedding(current_text.text)
+        pp_embedding   = self.get_embedding(transformed_text.text)
+        sts_score = pytorch_cos_sim(orig_embedding, pp_embedding).item()
+        if sts_score > self.sts_threshold:   return True 
+        else:                                return False
+        
+
+class ContradictionScoreConstraint(Constraint): 
+    def __init__(self, cfg, nli_tokenizer, nli_model, contradiction_threshold): 
+        super().__init__(True) 
+        self.cfg = cfg 
+        self.nli_tokenizer = nli_tokenizer
+        self.nli_model     = nli_model
+        self.contradiction_threshold = contradiction_threshold
+        
+    def _check_constraint(self, transformed_text, current_text):
+        orig =     current_text.text
+        pp   = transformed_text.text
+        contradiction_score = get_nli_probs(orig, pp, self.cfg, self.nli_tokenizer, self.nli_model).cpu()[0][0].item()
+        if contradiction_score < self.contradiction_threshold:   return True 
+        else:                                                    return False
+    
+
+class BeamSearchCFEmbeddingAttack(AttackRecipe):
+    """Untarged classification + word embedding swap + [no repeat, no stopword] constraints + beam search"""
+    @staticmethod
+    def build(model_wrapper, cfg,  sts_model, nli_tokenizer, nli_model, beam_sz=2, 
+              max_candidates=5, sts_threshold=0.6, contradiction_threshold=0.8):
+        goal_function = UntargetedClassification(model_wrapper)
+        stopwords = nltk.corpus.stopwords.words("english") # The one used by default in textattack
+        constraints = [RepeatModification(),
+                       StopwordModification(stopwords), 
+                       StsScoreConstraint(sts_model, sts_threshold ), 
+                       ContradictionScoreConstraint(cfg, nli_tokenizer, nli_model, contradiction_threshold)]
+        transformation = WordSwapEmbedding(max_candidates=max_candidates)
+        search_method = BeamSearch(beam_width=beam_sz)
+        attack = Attack(goal_function, constraints, transformation, search_method)
+        return attack
+
+    
+class BeamSearchLMAttack(AttackRecipe): 
+    """"""
+    @staticmethod
+    def build(model_wrapper, cfg,  sts_model, nli_tokenizer, nli_model, beam_sz=2, 
+              max_candidates=5, sts_threshold=0.6, contradiction_threshold=0.8):
+        stopwords = nltk.corpus.stopwords.words("english") # The one used by default in textattack
+        goal_function = UntargetedClassification(model_wrapper)
+        constraints = [RepeatModification(),
+                       StopwordModification(stopwords), 
+                       StsScoreConstraint(sts_model, sts_threshold ), 
+                       ContradictionScoreConstraint(cfg, nli_tokenizer, nli_model, contradiction_threshold)]
+        transformation = WordSwapMaskedLM(method='bae', masked_language_model='distilroberta-base', max_candidates=max_candidates)
+        search_method = BeamSearch(beam_width=beam_sz)
+        attack = Attack(goal_function, constraints, transformation, search_method)
+        return attack
+
+    
 
 
 # In[6]:
@@ -132,26 +181,29 @@ dataset = HuggingFaceDataset(dsd[d['split']])
 
 vm_tokenizer, vm_model, _,_, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
 vm_model_wrapper = HuggingFaceModelWrapper(vm_model, vm_tokenizer)
-attack = attack_recipe.build(vm_model_wrapper, d['beam_sz'], d['max_candidates'])
+attack = attack_recipe.build(vm_model_wrapper, cfg,  sts_model, nli_tokenizer, nli_model,
+           beam_sz=d['beam_sz'], max_candidates=d['max_candidates'], sts_threshold=d['sts_threshold'],
+           contradiction_threshold=d['contradiction_threshold']
+)
 attack_args = AttackArgs(num_examples=d['num_examples'], enable_advance_metrics=True,
                         log_to_csv=filename, csv_coloring_style='plain', disable_stdout=True)
 attacker = Attacker(attack, dataset, attack_args)
 
 
-# In[ ]:
+# In[9]:
 
 
 print("Current config for attack:")
 print(d)
 
 
-# In[9]:
+# In[10]:
 
 
 attack_results = attacker.attack_dataset()
 
 
-# In[10]:
+# In[11]:
 
 
 attack_result_metrics = {
@@ -165,7 +217,13 @@ attack_result_metrics.pop('num_words_changed_until_success')
 d = merge_dicts(d, attack_result_metrics)
 
 
-# In[11]:
+# In[12]:
+
+
+x=attack_results[0]
+
+
+# In[13]:
 
 
 def display_adv_example(df): 
@@ -269,10 +327,18 @@ append_df_to_csv(summary_df, f"{path_baselines}results.csv")
 #df.iloc[104][['original_text', 'perturbed_text']].values
 
 
-# In[ ]:
+# In[21]:
 
 
+#filename1 = f"/data/tproth/travis_attack/baselines/2022-04-20_133329_rotten_tomatoes_valid_BeamSearchCFEmbeddingAttack_beam_sz=1_max_candidates=1_processed.csv"
+#df = pd.read_csv(filename1)
 #display_all(df.sample(2))
+
+
+# In[30]:
+
+
+#df_results = pd.read_csv(f"/data/tproth/travis_attack/baselines/results.csv")
 
 
 # In[ ]:
