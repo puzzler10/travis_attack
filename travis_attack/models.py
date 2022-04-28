@@ -72,11 +72,12 @@ def prepare_models(cfg):
     """
     vm_tokenizer, vm_model =  _prepare_vm_tokenizer_and_model(cfg)
     pp_tokenizer, pp_model =  _prepare_pp_tokenizer_and_model(cfg)
+    _, ref_pp_model = _prepare_pp_tokenizer_and_model(cfg)
     sts_model = _prepare_sts_model(cfg)
     nli_tokenizer, nli_model = _prepare_nli_tokenizer_and_model(cfg)
     if cfg.pad_token_embeddings:  _pad_model_token_embeddings(cfg, pp_model, vm_model, sts_model)
     cfg = _update_config(cfg, vm_model, pp_model)
-    return vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, cfg
+    return vm_tokenizer, vm_model, pp_tokenizer, pp_model,ref_pp_model, sts_model, nli_tokenizer, nli_model, cfg
 
 def _get_layers_to_unfreeze(cfg):
     """Return a list that determines which layers should be kept unfrozen"""

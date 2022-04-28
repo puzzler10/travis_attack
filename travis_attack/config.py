@@ -21,7 +21,7 @@ class Config:
         self.pp_name = "tuner007/pegasus_paraphrase"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         self.nli_name = "microsoft/deberta-base-mnli"
-        self.dataset_name = "simple"
+        self.dataset_name = "rotten_tomatoes"
         self._select_vm_model()
 
 
@@ -132,7 +132,7 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.orig_max_length = 60  # seems to be the longest that pegasus is trained on.
+        self.orig_max_length = 60  # longest for pegasus
         self.pp['max_length'] = 60
         self.batch_size_train = 8
         self.batch_size_eval = 64
@@ -147,7 +147,7 @@ class Config:
         self.dataset_name = "financial"
         self.orig_cname = "sentence"
         self.label_cname = 'label'
-        self.orig_max_length = 60  # seems to be the longest that pegasus is trained on.
+        self.orig_max_length = 60
         self.pp['max_length'] = 60
         self.batch_size_train = 8
         self.batch_size_eval = 64

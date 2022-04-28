@@ -41,8 +41,9 @@ from IPython.core.debugger import set_trace
 
 # Cell
 class Trainer:
-    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
-                ds, initial_eval=True, log_code=True, use_cpu=False):
+    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model,
+                 sts_model, nli_tokenizer, nli_model, optimizer,
+                 ds, initial_eval=True, log_code=True, use_cpu=False):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.epoch,self.acc_num,self.global_step,self.eval_num,self.param_norm = 0,0,0,0,0
@@ -335,14 +336,14 @@ class Trainer:
     def _get_paraphrases(self, orig_ids, attention_mask):
         """Wrapper for generating paraphrases (pp's).  Only greedy search supported at the moment"""
         pp_output = self.pp_model.generate_with_grad(input_ids=orig_ids,
-                                                attention_mask=attention_mask,
-                                                 **self._cfg.pp,
-                                                 do_sample=False,
-                                                 return_dict_in_generate=True,
-                                                 output_scores=True,
-                                                 remove_invalid_values=False,
-                                                 pad_token_id = self.pp_tokenizer.pad_token_id,
-                                                 eos_token_id = self.pp_tokenizer.eos_token_id)
+                                                    attention_mask=attention_mask,
+                                                     **self._cfg.pp,
+                                                     do_sample=True,
+                                                     return_dict_in_generate=True,
+                                                     output_scores=True,
+                                                     remove_invalid_values=False,
+                                                     pad_token_id = self.pp_tokenizer.pad_token_id,
+                                                     eos_token_id = self.pp_tokenizer.eos_token_id)
         pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
         return pp_output, pp_l
 
@@ -455,14 +456,15 @@ class Trainer:
         assert scores_stacked.shape == torch.Size([self.orig_batch_size, (self.pp_length - 1), self._cfg.vocab_size])
         assert torch.all(~torch.isnan(scores_stacked))
         assert torch.all(~torch.isposinf(scores_stacked))
-        # Rough check that all idx before min_length are -inf for all elements in batch
-        # We do min_length - 1 because sequences are allowed to have length min_length so that idx
-        # shouldn't be set to -inf
-        # Not a 100% test but very likely to identify
-        idx_neginf = torch.nonzero(torch.isneginf(scores_stacked))
-        assert len(idx_neginf[idx_neginf[:,2] == self.pp_tokenizer.eos_token_id, :]) == \
-                  (self._cfg.pp["min_length"] -1) * self.orig_batch_size
-        del idx_neginf
+
+#         # Rough check that every time the eos token occurs before min_length it is -inf for all elements in batch
+#         # We do min_length - 1 because sequences are allowed to have length min_length so that idx
+#         # shouldn't be set to -inf
+#         # Not a 100% test but very likely to identify
+#         idx_neginf = torch.nonzero(torch.isneginf(scores_stacked))
+#         assert len(idx_neginf[idx_neginf[:,2] == self.pp_tokenizer.eos_token_id, :]) == \
+#                   (self._cfg.pp["min_length"] -1) * self.orig_batch_size
+#         del idx_neginf
 
         ### Take log softmax of scores and then extract those that correspond
         # to the generated sequences
@@ -502,7 +504,7 @@ class Trainer:
         assert all(seq_without_first_tkn[attention_mask == 0] == self.pp_tokenizer.pad_token_id)
         check_no_nans_or_infs(seq_token_log_probs)
         # check that we aren't picking extrememly rare tokens
-        assert torch.all(seq_token_log_probs  > -10)
+        # assert torch.all(seq_token_log_probs  > -10)
 
         ### Get sequence probabilities by summing up token log probabilities
         seq_log_prob = seq_token_log_probs.sum(-1)

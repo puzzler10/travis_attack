@@ -33,7 +33,7 @@ if cfg.use_small_ds:  cfg = cfg.small_ds()
 set_seed(cfg.seed)
 set_session_options()
 setup_logging(cfg, disable_other_loggers=True)
-vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
+vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
 optimizer = get_optimizer(cfg, pp_model)
 ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=True)
 
@@ -41,13 +41,29 @@ ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load
 # In[5]:
 
 
+# orig = ['hello my name is tom']
+# pp = ['hi I am tom']
+# orig_tokens = pp_tokenizer(orig, return_tensors='pt')
+# pp_tokens = pp_tokenizer(pp, return_tensors='pt')
+# x = ref_pp_model(input_ids = orig_tokens['input_ids'], decoder_input_ids=pp_tokens['input_ids'])
+
+
+# In[ ]:
+
+
 cfg.wandb['mode'] = 'online'
-trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
+trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
                   ds, initial_eval=False, use_cpu=False)
 trainer.train()
 
 
-# In[7]:
+# In[ ]:
+
+
+get_ipython().run_line_magic('debug', '')
+
+
+# In[ ]:
 
 
 df_d = get_training_dfs(cfg.path_run, postprocessed=False)

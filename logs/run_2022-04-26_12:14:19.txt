@@ -1,0 +1,19 @@
+04-26 12:14 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+04-26 12:17 travis_attack.data INFO     Will load dataset simple with use_small_ds set to False
+04-26 12:17 travis_attack.data INFO     Cache file found for processed dataset, so loading that dataset.
+04-26 12:17 travis_attack.data DEBUG    Dataset lengths: {'train': 2, 'valid': 2, 'test': 2}
+04-26 12:17 travis_attack.data DEBUG    Total training epochs:10
+04-26 12:17 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 0, 'valid': 2, 'test': 2, 'train_eval': 2}
+04-26 12:17 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [2], 'valid': [2], 'test': [2], 'train_eval': [2]}
+04-26 12:19 wandb        DEBUG    no default config file found in config-defaults.yaml
+04-26 12:19 travis_attack.trainer DEBUG    GPU memory usage after loading models: 18.8% (4623 out of 24576)
+04-26 12:19 travis_attack.trainer INFO     Now on epoch 1 of 10
+04-26 12:21 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  19.0% (4681 out of 24576)
+04-26 12:29 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  32.0% (7865 out of 24576)
+04-26 12:29 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+04-26 12:29 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+04-26 12:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  32.0% (7865 out of 24576)
+04-26 12:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loss_fn pass:  32.0% (7865 out of 24576)
+04-26 12:29 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+04-26 12:29 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+04-26 12:29 travis_attack.trainer DEBUG    EVAL, epoch 1, batch 0, GPU memory usage after loading data:  32.0% (7865 out of 24576)

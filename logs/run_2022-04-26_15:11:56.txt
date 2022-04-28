@@ -1,0 +1,8 @@
+04-26 15:11 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+04-26 15:12 travis_attack.data INFO     Will load dataset simple with use_small_ds set to False
+04-26 15:12 travis_attack.data INFO     Cache file found for processed dataset, so loading that dataset.
+04-26 15:12 travis_attack.data DEBUG    Dataset lengths: {'train': 2, 'valid': 2, 'test': 2}
+04-26 15:12 travis_attack.data DEBUG    Total training epochs:10
+04-26 15:12 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 0, 'valid': 2, 'test': 2, 'train_eval': 2}
+04-26 15:12 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [2], 'valid': [2], 'test': [2], 'train_eval': [2]}
+04-26 15:13 wandb        DEBUG    no default config file found in config-defaults.yaml

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[4]:
 
 
 import transformers, nltk, pandas as pd, torch
@@ -68,8 +68,8 @@ d = dict(
     num_examples = -1,
     beam_sz = 1,
     max_candidates = 2,
-    sts_threshold = 0.6,
-    contradiction_threshold = 0.8
+    sts_threshold = 0.9,
+    contradiction_threshold = 0.1
 )
 ###########################################
 
@@ -117,7 +117,7 @@ class ContradictionScoreConstraint(Constraint):
     
 
 class BeamSearchCFEmbeddingAttack(AttackRecipe):
-    """Untarged classification + word embedding swap + [no repeat, no stopword] constraints + beam search"""
+    """Untarged classification + word embedding swap + [no repeat, no stopword, STS, contradiction score] constraints + beam search"""
     @staticmethod
     def build(model_wrapper, cfg,  sts_model, nli_tokenizer, nli_model, beam_sz=2, 
               max_candidates=5, sts_threshold=0.6, contradiction_threshold=0.8):
@@ -125,7 +125,7 @@ class BeamSearchCFEmbeddingAttack(AttackRecipe):
         stopwords = nltk.corpus.stopwords.words("english") # The one used by default in textattack
         constraints = [RepeatModification(),
                        StopwordModification(stopwords), 
-                       StsScoreConstraint(sts_model, sts_threshold ), 
+                       StsScoreConstraint(sts_model, sts_threshold), 
                        ContradictionScoreConstraint(cfg, nli_tokenizer, nli_model, contradiction_threshold)]
         transformation = WordSwapEmbedding(max_candidates=max_candidates)
         search_method = BeamSearch(beam_width=beam_sz)
@@ -134,7 +134,7 @@ class BeamSearchCFEmbeddingAttack(AttackRecipe):
 
     
 class BeamSearchLMAttack(AttackRecipe): 
-    """"""
+    """Untarged classification + language model word swap + [no repeat, no stopword, STS, contradiction score] constraints + beam search"""
     @staticmethod
     def build(model_wrapper, cfg,  sts_model, nli_tokenizer, nli_model, beam_sz=2, 
               max_candidates=5, sts_threshold=0.6, contradiction_threshold=0.8):
@@ -142,7 +142,7 @@ class BeamSearchLMAttack(AttackRecipe):
         goal_function = UntargetedClassification(model_wrapper)
         constraints = [RepeatModification(),
                        StopwordModification(stopwords), 
-                       StsScoreConstraint(sts_model, sts_threshold ), 
+                       StsScoreConstraint(sts_model, sts_threshold), 
                        ContradictionScoreConstraint(cfg, nli_tokenizer, nli_model, contradiction_threshold)]
         transformation = WordSwapMaskedLM(method='bae', masked_language_model='distilroberta-base', max_candidates=max_candidates)
         search_method = BeamSearch(beam_width=beam_sz)
@@ -160,7 +160,7 @@ elif d['attack_name'] == 'BeamSearchCFEmbeddingAttack': attack_recipe = BeamSear
 filename = f"{path_baselines}{datetime_now}_{d['ds_name']}_{d['split']}_{d['attack_name']}_beam_sz={d['beam_sz']}_max_candidates={d['max_candidates']}.csv"
 
 
-# In[7]:
+# In[ ]:
 
 
 if d['ds_name'] == "financial_phrasebank":
@@ -179,7 +179,7 @@ dataset = HuggingFaceDataset(dsd[d['split']])
 # In[8]:
 
 
-vm_tokenizer, vm_model, _,_, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
+vm_tokenizer, vm_model, _,_,_, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
 vm_model_wrapper = HuggingFaceModelWrapper(vm_model, vm_tokenizer)
 attack = attack_recipe.build(vm_model_wrapper, cfg,  sts_model, nli_tokenizer, nli_model,
            beam_sz=d['beam_sz'], max_candidates=d['max_candidates'], sts_threshold=d['sts_threshold'],
@@ -223,7 +223,7 @@ d = merge_dicts(d, attack_result_metrics)
 x=attack_results[0]
 
 
-# In[13]:
+# In[5]:
 
 
 def display_adv_example(df): 
@@ -280,14 +280,14 @@ def get_cts_summary_stats(df):
     return tmp_d
 
 
-# In[14]:
+# In[6]:
 
 
-#filename1 = f"/data/tproth/travis_attack/baselines/rotten_tomatoes_valid_BeamSearchLMAttack_beam_sz=5_max_candidates=25.csv"
-#filename = filename1
+filename1 = f"/data/tproth/travis_attack/baselines/2022-04-21_044443_rotten_tomatoes_valid_BeamSearchLMAttack_beam_sz=2_max_candidates=5.csv"
+filename = filename1
 df = pd.read_csv(filename)
 #display_adv_example(df)
-df = add_vm_score_and_label_flip(df,dataset, cfg, vm_tokenizer, vm_model)
+df = add_vm_score_and_label_flip(df, dataset, cfg, vm_tokenizer, vm_model)
 df = df.query("result_type != 'Skipped'")
 df = add_sts_score(df, sts_model, cfg)
 df = add_contradiction_score(df, cfg, nli_tokenizer, nli_model)
