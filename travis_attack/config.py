@@ -29,7 +29,7 @@ class Config:
         self.seed = 420
         self.use_fp16 = False
         self.lr = 2e-5
-        self.kl_coef = 0.2
+        self.kl_coef = 0.01
         self.pin_memory = True
         self.zero_grad_with_none = False
         self.pad_token_embeddings = False
@@ -90,7 +90,7 @@ class Config:
 
         ## Globals
         self.splits = ['train', 'valid', 'test']
-        self.metrics = ['loss', 'pp_logp', 'reward', 'vm_score', "sts_score", 'label_flip', 'contradiction_score', 'pp_letter_diff']
+        self.metrics = [ 'loss', 'pp_logp', 'ref_logp', 'kl_div', 'reward_with_kl', 'reward', 'vm_score', "sts_score", 'label_flip', 'contradiction_score', 'pp_letter_diff']
         self.path_data = "./data/"
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
         self.path_run = None  # keep as None; this is automatically filled out by Trainer class
@@ -137,7 +137,7 @@ class Config:
         self.batch_size_train = 8
         self.batch_size_eval = 64
         self.acc_steps = 2
-        self.n_train_epochs = 5
+        self.n_train_epochs = 10
         self.eval_freq = 1
         self._select_vm_model()
         return self

@@ -28,12 +28,15 @@ def get_training_dfs(path_run, postprocessed=False):
     """Return a dict of dataframes with all training and eval data"""
     df_d = dict()
     for key in ['training_step', 'train', 'valid', 'test']:
-        if postprocessed:
-            fname = f"{path_run}{key}_postprocessed.pkl"
-            df_d[key] = pd.read_pickle(fname)
-        else:
-            fname = f"{path_run}{key}.csv"
-            df_d[key] = pd.read_csv(fname)
+        try:
+            if postprocessed:
+                fname = f"{path_run}{key}_postprocessed.pkl"
+                df_d[key] = pd.read_pickle(fname)
+            else:
+                fname = f"{path_run}{key}.csv"
+                df_d[key] = pd.read_csv(fname)
+        except FileNotFoundError:
+            pass
     logger.info(f'Dataframes have shapes {[f"{k}: {df.shape}" for (k, df) in df_d.items()]}')
     return df_d
 

@@ -114,8 +114,8 @@ class Trainer:
     def _training_function(self):
         self.accelerator = Accelerator(cpu=self.use_cpu)
         self._cfg.device = self.accelerator.device
-        self.vm_model,self.pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'] = self.accelerator.prepare(
-            self.vm_model,self.pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'])
+        self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'] = self.accelerator.prepare(
+            self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'])
 
         logger.debug(show_gpu(f'GPU memory usage after loading models:'))
         progress_bar = tqdm(range(self._cfg.n_train_steps))
@@ -257,6 +257,12 @@ class Trainer:
             'rewards_mean':         np.mean(  self.batch_d['reward']),
             'pp_logp_hist':         Histogram(self.batch_d['pp_logp']),
             'pp_logp_mean':         np.mean(  self.batch_d['pp_logp']),
+            'ref_logp_hist':        Histogram(self.batch_d['ref_logp']),
+            'ref_logp_mean':        np.mean(  self.batch_d['ref_logp']),
+            'kl_div_hist':          Histogram(self.batch_d['kl_div']),
+            'kl_div_mean':          np.mean(  self.batch_d['kl_div']),
+            'reward_with_kl_hist':          Histogram(self.batch_d['reward_with_kl']),
+            'reward_with_kl_mean':          np.mean(  self.batch_d['reward_with_kl']),
             'loss_hist'   :         Histogram(self.batch_d['loss']),
             'pp_letter_diff_hist':     Histogram(self.batch_d['pp_letter_diff']),
             'pp_letter_diff_mean':     np.mean(  self.batch_d['pp_letter_diff']),
@@ -269,7 +275,7 @@ class Trainer:
             "parameter_norm":       self.param_norm
         })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
-        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp',
+        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp','ref_logp', 'kl_div', 'reward_with_kl',
                               'reward', 'sts_score', 'vm_score', 'pp_letter_diff', 'pp_letter_percent','contradiction_score',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
@@ -354,12 +360,21 @@ class Trainer:
         with timecode() as self.batch_time_d['time_pp_logp']:
             pp_logp = self._get_pp_logp(pp_output)
 
+        with timecode() as self.batch_time_d['time_ref_logprobs']:
+            ref_logp = self._get_ref_logprobs(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
+
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
-            loss       = -reward * pp_logp
+            kl_div =  pp_logp - ref_logp
+            kl_reward_modifier = -(self._cfg.kl_coef * kl_div)
+            reward_with_kl = torch.clip(reward + kl_reward_modifier, min=0)  # prevent negative rewards
+            loss       = reward_with_kl * pp_logp
             loss_sum   = torch.sum(loss)  # we scale it later
             loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
 
-        self.batch_d['pp_logp']    =        pp_logp.detach().cpu().tolist()
+        self.batch_d['pp_logp']     =       pp_logp.detach().cpu().tolist()
+        self.batch_d['ref_logp']    =      ref_logp.detach().cpu().tolist()
+        self.batch_d['kl_div']      =        kl_div.detach().cpu().tolist()
+        self.batch_d['reward_with_kl'] = reward_with_kl.detach().cpu().tolist()
         self.batch_d['loss']       =           loss.detach().cpu().tolist()
         self.batch_d['loss_sum']   =       loss_sum.detach().cpu().tolist()
         self.batch_d['loss_batch']   =   loss_batch.detach().cpu().tolist()
@@ -522,6 +537,26 @@ class Trainer:
                         self._get_token_probability_metrics(scores_log_softmax, attention_mask, k=3))
         return seq_log_prob
 
+    def _get_ref_logprobs(self, orig_ids, pp_ids):
+     #   orig_input_ids = self.pp_tokenizer(orig_l, return_tensors='pt', padding=True, truncation=True).input_ids
+       # pp_input_ids   = self.pp_tokenizer(pp_l,   return_tensors='pt', padding=True, truncation=True).input_ids
+        decoder_start_token_ids = torch.tensor([self.ref_pp_model.config.decoder_start_token_id], device=self._cfg.device).repeat(self.orig_batch_size, 1)
+        pp_ids = torch.cat([decoder_start_token_ids, pp_ids], 1)
+        logprobs = []
+        for i in range(pp_ids.shape[1] - 1):
+            decoder_input_ids = pp_ids[:, 0:(i+1)]
+            outputs = self.ref_pp_model(input_ids=orig_ids, decoder_input_ids=decoder_input_ids)
+            token_logprobs = outputs.logits[:,i,:].log_softmax(1)
+            pp_next_token_ids = pp_ids[:,i+1].unsqueeze(-1)
+            pp_next_token_logprobs = torch.gather(token_logprobs, 1, pp_next_token_ids).detach().squeeze(-1)
+            logprobs.append(pp_next_token_logprobs)
+        logprobs = torch.stack(logprobs, 1)
+        attention_mask = self.ref_pp_model._prepare_attention_mask_for_generation(pp_ids[:,1:],
+                self.pp_tokenizer.pad_token_id, self.pp_tokenizer.eos_token_id)
+        logprobs = logprobs * attention_mask
+        logprobs_sum = logprobs.sum(1)
+        return logprobs_sum
+
     def _check_scores_log_softmax_sums(self, scores_log_softmax):
         sums = scores_log_softmax.exp().sum(2)
         # check that the axes is right
@@ -642,8 +677,9 @@ class Trainer:
     def _set_df_colorder(self, data_d_key):
         colorder_eval=['idx','epoch', 'orig_l',  'pp_l','orig_truelabel_probs','pp_truelabel_probs',
         'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score', 'pp_letter_diff', 'pp_letter_percent',
-        'contradiction_score', 'reward', 'pp_logp','loss','batch_num','global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
-        'orig_length','orig_batch_size','pp_length','pp_batch_size']
+        'contradiction_score', 'reward', 'pp_logp','ref_logp', 'kl_div', 'reward_with_kl','loss','batch_num',
+                       'global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
+                       'orig_length','orig_batch_size','pp_length','pp_batch_size']
         if data_d_key == "training_step":
             colorder_training_step = colorder_eval + [o for o in self.data_d['training_step'].columns if 'time_' in o]
             assert len(set(colorder_training_step).difference(set(self.data_d[data_d_key].columns))) == 0

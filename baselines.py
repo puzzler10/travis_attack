@@ -217,12 +217,6 @@ attack_result_metrics.pop('num_words_changed_until_success')
 d = merge_dicts(d, attack_result_metrics)
 
 
-# In[12]:
-
-
-x=attack_results[0]
-
-
 # In[5]:
 
 
@@ -283,8 +277,8 @@ def get_cts_summary_stats(df):
 # In[6]:
 
 
-filename1 = f"/data/tproth/travis_attack/baselines/2022-04-21_044443_rotten_tomatoes_valid_BeamSearchLMAttack_beam_sz=2_max_candidates=5.csv"
-filename = filename1
+#filename1 = f"/data/tproth/travis_attack/baselines/2022-04-21_044443_rotten_tomatoes_valid_BeamSearchLMAttack_beam_sz=2_max_candidates=5.csv"
+#filename = filename1
 df = pd.read_csv(filename)
 #display_adv_example(df)
 df = add_vm_score_and_label_flip(df, dataset, cfg, vm_tokenizer, vm_model)
