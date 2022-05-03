@@ -367,7 +367,7 @@ class Trainer:
             kl_div =  pp_logp - ref_logp
             kl_reward_modifier = -(self._cfg.kl_coef * kl_div)
             reward_with_kl = torch.clip(reward + kl_reward_modifier, min=0)  # prevent negative rewards
-            loss       = reward_with_kl * pp_logp
+            loss       = -reward_with_kl * pp_logp
             loss_sum   = torch.sum(loss)  # we scale it later
             loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
 
@@ -527,6 +527,9 @@ class Trainer:
         assert seq_log_prob.shape == torch.Size([self.pp_batch_size])
         check_no_nans_or_infs(seq_log_prob)
 
+        # normalise for length
+        logprobs_normalised = seq_log_prob / attention_mask.sum(1)  # normalise for length of generated sequence
+
         if self.pp_model.training:  # don't bother logging or calculate entropy, token_probs in eval mode
             if self._cfg.wandb['log_token_entropy']:
                 with timecode() as self.batch_time_d['time_log_entropy']:
@@ -535,7 +538,7 @@ class Trainer:
                 with timecode() as self.batch_time_d['time_log_token_probabilities']:
                     self.batch_wandb_d = merge_dicts(self.batch_wandb_d,
                         self._get_token_probability_metrics(scores_log_softmax, attention_mask, k=3))
-        return seq_log_prob
+        return logprobs_normalised
 
     def _get_ref_logprobs(self, orig_ids, pp_ids):
      #   orig_input_ids = self.pp_tokenizer(orig_l, return_tensors='pt', padding=True, truncation=True).input_ids
@@ -555,7 +558,8 @@ class Trainer:
                 self.pp_tokenizer.pad_token_id, self.pp_tokenizer.eos_token_id)
         logprobs = logprobs * attention_mask
         logprobs_sum = logprobs.sum(1)
-        return logprobs_sum
+        logprobs_normalised = logprobs_sum / attention_mask.sum(1)  # normalise for length of generated sequence
+        return logprobs_normalised
 
     def _check_scores_log_softmax_sums(self, scores_log_softmax):
         sums = scores_log_softmax.exp().sum(2)

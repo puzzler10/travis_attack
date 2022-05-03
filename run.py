@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[2]:
 
 
 ## Imports and environment variables 
@@ -20,11 +20,11 @@ import logging
 logger = logging.getLogger("run")
 
 
-# In[ ]:
+# In[4]:
 
 
 cfg = Config()  # default values
-if not in_jupyter():  # override with any script options
+if not in_jupyter():  # override with any -- options when running with command line
     parser = setup_parser()
     newargs = vars(parser.parse_args())
     for k,v in newargs.items(): 
@@ -102,13 +102,7 @@ trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_mo
 trainer.train()
 
 
-# In[8]:
-
-
-get_ipython().run_line_magic('debug', '')
-
-
-# In[11]:
+# In[ ]:
 
 
 df_d = get_training_dfs(cfg.path_run, postprocessed=False)
@@ -117,6 +111,7 @@ for k, df in df_d.items():
     df_d[k].to_pickle(f"{cfg.path_run}{k}_postprocessed.pkl")    
 create_and_log_wandb_postrun_plots(df_d)
 trainer.run.finish()
+#run.finish()
 
 
 # In[ ]:

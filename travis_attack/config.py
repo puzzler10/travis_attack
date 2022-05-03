@@ -28,7 +28,7 @@ class Config:
         ### Training hyperparameters
         self.seed = 420
         self.use_fp16 = False
-        self.lr = 2e-5
+        self.lr = 1e-5
         self.kl_coef = 0.01
         self.pin_memory = True
         self.zero_grad_with_none = False
@@ -119,10 +119,10 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 20
         self.pp['max_length'] = 20
-        self.batch_size_train = 2
+        self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 10
+        self.n_train_epochs = 500
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -134,10 +134,10 @@ class Config:
         self.label_cname = 'label'
         self.orig_max_length = 60  # longest for pegasus
         self.pp['max_length'] = 60
-        self.batch_size_train = 8
-        self.batch_size_eval = 64
+        self.batch_size_train = 4
+        self.batch_size_eval = 16
         self.acc_steps = 2
-        self.n_train_epochs = 10
+        self.n_train_epochs = 5
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -150,7 +150,7 @@ class Config:
         self.orig_max_length = 60
         self.pp['max_length'] = 60
         self.batch_size_train = 8
-        self.batch_size_eval = 64
+        self.batch_size_eval = 16
         self.acc_steps = 2
         self.n_train_epochs = 10
         self.eval_freq = 1
