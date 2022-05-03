@@ -56,9 +56,9 @@ class Trainer:
     def train(self):
         self._setup_wandb_run()
         ## we set num_processes=1 because we are running on 1 GPU only and we must specify the argument
-        #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1, use_fp16=use_fp16)
-        notebook_launcher(self._training_function, args=(),
-                           num_processes=1, use_fp16=self._cfg.use_fp16)
+        # we can't use FP16 with PEGASUS model, so full precision is needed.
+        #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1)
+        notebook_launcher(self._training_function, args=(), num_processes=1, use_fp16=False)
 
     def _reset_batch_dicts(self):
         # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
@@ -191,9 +191,10 @@ class Trainer:
 
         # autocast is used by accelerate to allow mixed-precision loss functions.
         # drop it if we deprecate fp16 support (because it isn't supported for models like PEGASUS)
-        with self.accelerator.autocast():
-            with timecode() as self.batch_time_d['time_loss_fn']:
-                loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
+        #with self.accelerator.autocast():
+
+        with timecode() as self.batch_time_d['time_loss_fn']:
+            loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
 
         with timecode() as self.batch_time_d['time_backwards']:
             self.accelerator.backward(loss_batch)
@@ -405,8 +406,7 @@ class Trainer:
 
 
         with timecode() as self.batch_time_d['time_contradiction_scores']:
-            # contradiction probs (i.e. scores) are stored in idx 0 usually
-            contradiction_scores = get_nli_probs(raw['text'], pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:, 0]
+            contradiction_scores = get_nli_probs(raw['text'], pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:,  self._cfg.contra_label]
 
         # Reward calculation
         def reward_fn_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
@@ -432,10 +432,6 @@ class Trainer:
             if   self._cfg.reward_fn == "reward_fn_letter_diff":      reward_fn = reward_fn_letter_diff
             elif self._cfg.reward_fn == "reward_fn_contradiction":    reward_fn = reward_fn_contradiction
             elif self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
-
-#             elif self._cfg.reward_fn == "reward_fn_3": reward_fn = reward_fn_3
-#             elif self._cfg.reward_fn == "reward_fn_4": reward_fn = reward_fn_4
-#             elif self._cfg.reward_fn == "reward_fn_5": reward_fn = reward_fn_5
             return torch.tensor([reward_fn(vm, sts, ldiff, contra) for vm,sts,ldiff,contra in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)],
                                 device=self._cfg.device)
 

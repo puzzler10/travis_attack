@@ -12,22 +12,24 @@ import warnings
 class Config:
     def __init__(self):
         """Set up default parameters"""
-
         ### Models and datasets
         # options for the pp_model
         # 1. tuner007/pegasus_paraphrase
         # 2. tdopierre/ProtAugment-ParaphraseGenerator
         # 3. eugenesiow/bart-paraphrase
         self.pp_name = "tuner007/pegasus_paraphrase"
+        self.use_small_ds = True
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        self.nli_name = "microsoft/deberta-base-mnli"
+        # NLI options
+        # 1. "microsoft/deberta-base-mnli" (~512 MB)
+        # 2. "howey/electra-small-mnli"
+        self.nli_name = "howey/electra-small-mnli"
         self.dataset_name = "rotten_tomatoes"
         self._select_vm_model()
 
 
         ### Training hyperparameters
         self.seed = 420
-        self.use_fp16 = False
         self.lr = 1e-5
         self.kl_coef = 0.01
         self.pin_memory = True
@@ -40,9 +42,7 @@ class Config:
         self.remove_misclassified_examples = True
         self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
-        # This makes the reward function easier to see in wandb
-        # copy-paste this from reward function
-        self.reward_strategy = ""
+
 
         ### Paraphrase parameters
         self.pp = {
@@ -56,7 +56,6 @@ class Config:
         }
 
         ### Used for testing
-        self.use_small_ds = False
         self.n_shards = None
         self.shard_contiguous = None
 
@@ -76,7 +75,7 @@ class Config:
             log_grads_freq = 1,  # no effect if wandb_log_grads is False
             log_token_entropy = True,
             log_token_probabilities = True,
-            run_notes = f"Reward: {self.reward_strategy}\nDataset: {self.dataset_name}"
+            run_notes = f""
         )
 
         ### Devices and GPU settings
@@ -137,7 +136,7 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 16
         self.acc_steps = 2
-        self.n_train_epochs = 5
+        self.n_train_epochs = 2
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -163,7 +162,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 200
+        self.n_shards = 500
         self.shard_contiguous = False
         return self
 

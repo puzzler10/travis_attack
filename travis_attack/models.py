@@ -50,7 +50,7 @@ def _prepare_nli_tokenizer_and_model(cfg):
 
 def _pad_model_token_embeddings(cfg, pp_model, vm_model, sts_model):
     """Resize first/embedding layer of all models to be a multiple of cfg.embedding_padding_multiple.
-    Good for tensor core efficiency when using fp16.
+    Good for tensor core efficiency when using fp16 (which we aren't...).
     Makes changes to models in-place."""
     def pad_token_embeddings_to_multiple_of_n(model, n):
         def get_new_vocab_size(model): return int((np.floor(model.config.vocab_size / n) + 1) * n)
@@ -63,6 +63,8 @@ def _pad_model_token_embeddings(cfg, pp_model, vm_model, sts_model):
 def _update_config(cfg, vm_model, pp_model):
     cfg.vm_num_labels = vm_model.num_labels
     cfg.vocab_size = pp_model.get_input_embeddings().num_embeddings   # unlike pp_tokenizer.vocab_size this includes the padding
+    if   cfg.nli_name == "microsoft/deberta-base-mnli":   cfg.contra_label = 0
+    elif cfg.nli_name == "howey/electra-small-mnli"   :   cfg.contra_label = 2
     return cfg
 
 def prepare_models(cfg):
@@ -160,14 +162,4 @@ def get_nli_probs(orig_l, pp_l, cfg, nli_tokenizer, nli_model):
     with torch.no_grad():
         logits = nli_model(**inputs).logits
         probs = logits.softmax(1)
-    #     for i in range(len(orig)):
-    #         print(orig[i])
-    #         print(adv[i])
-    #         print(logits[i])
-    #         print(round_t(probs[i],3))
-    #         print(logits.argmax(1)[i].item())
-    # print(logits)
-    # print(round_t(probs, 3))
-    # predicted_class_id = logits.argmax(1)
-    # predicted_class_id
     return probs

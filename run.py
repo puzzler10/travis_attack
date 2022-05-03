@@ -35,7 +35,7 @@ set_session_options()
 setup_logging(cfg, disable_other_loggers=True)
 vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
 optimizer = get_optimizer(cfg, pp_model)
-ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=True)
+ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=False)
 
 
 # In[5]:
@@ -93,16 +93,16 @@ ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load
 #     decoder_input_ids = decoder_input_ids + [predicted_id]
 
 
-# In[7]:
+# In[8]:
 
 
-cfg.wandb['mode'] = 'online'
+cfg.wandb['mode'] = 'disabled'
 trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
                   ds, initial_eval=False, use_cpu=False)
 trainer.train()
 
 
-# In[ ]:
+# In[9]:
 
 
 df_d = get_training_dfs(cfg.path_run, postprocessed=False)
