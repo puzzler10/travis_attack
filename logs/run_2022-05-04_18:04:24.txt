@@ -1,0 +1,11 @@
+05-04 18:04 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-04 18:07 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-04 18:08 travis_attack.data INFO     Will load dataset simple with use_small_ds set to False
+05-04 18:08 travis_attack.data DEBUG    Dataset lengths: {'train': 4, 'valid': 4, 'test': 4}
+05-04 18:08 travis_attack.data DEBUG    Total training epochs:50
+05-04 18:08 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 0, 'valid': 0, 'test': 0, 'train_eval': 0}
+05-04 18:08 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [4], 'valid': [4], 'test': [4], 'train_eval': [4]}
+05-04 18:08 wandb        DEBUG    no default config file found in config-defaults.yaml
+05-04 18:08 travis_attack.trainer DEBUG    GPU memory usage after loading models: 26.9% (6600 out of 24576)
+05-04 18:08 travis_attack.trainer INFO     Now on epoch 1 of 50
+05-04 18:08 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  28.9% (7104 out of 24576)

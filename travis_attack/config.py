@@ -14,24 +14,40 @@ class Config:
         """Set up default parameters"""
         ### Models and datasets
         # options for the pp_model
-        # 1. tuner007/pegasus_paraphrase
-        # 2. tdopierre/ProtAugment-ParaphraseGenerator
-        # 3. eugenesiow/bart-paraphrase
-        self.pp_name = "tuner007/pegasus_paraphrase"
-        self.use_small_ds = True
+        # 1. tuner007/pegasus_paraphrase (2.12 GB)
+        # 2. prithivida/parrot_paraphraser_on_T5 (850 MB)
+        # 3. ramsrigouthamg/t5-large-paraphraser-diverse-high-quality (2.75 GB)
+        self.pp_name = "prithivida/parrot_paraphraser_on_T5"
+        self.dataset_name = "rotten_tomatoes"
         self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         # NLI options
-        # 1. "microsoft/deberta-base-mnli" (~512 MB)
-        # 2. "howey/electra-small-mnli"
+        # 1. microsoft/deberta-base-mnli (~512 MB)
+        # 2. howey/electra-small-mnli
         self.nli_name = "howey/electra-small-mnli"
-        self.dataset_name = "rotten_tomatoes"
         self._select_vm_model()
 
 
-        ### Training hyperparameters
+        ### Important parameters
         self.seed = 420
-        self.lr = 1e-5
-        self.kl_coef = 0.01
+        self.use_small_ds = False
+        self.sampling_strategy = "sample"
+        self.lr = 4e-5
+        self.kl_coef = 0.2
+        self.reward_fn = "reward_fn_contradiction_and_letter_diff"
+
+
+        ### Paraphrase parameters
+        self.pp = {
+            "num_return_sequences": 1,
+            "temperature": 1,
+            "length_penalty" : 1,
+            "min_length" : 5,
+        }
+
+
+        # Other parameters (usually left untouched)
+        self.orig_max_length = 32  # longest for pegasus is 60, longest for Parrot is 32
+        self.pp['max_length'] = 48
         self.pin_memory = True
         self.zero_grad_with_none = False
         self.pad_token_embeddings = False
@@ -40,20 +56,9 @@ class Config:
         self.bucket_by_length = True
         self.shuffle_train = False
         self.remove_misclassified_examples = True
+        self.remove_long_orig_examples = False
         self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
-        self.reward_fn = "reward_fn_contradiction_and_letter_diff"
 
-
-        ### Paraphrase parameters
-        self.pp = {
-            "num_beams": 1,
-            "num_return_sequences": 1,
-            "num_beam_groups": 1,
-            "diversity_penalty": 0.,   # must be a float
-            "temperature": 1,
-            "length_penalty" : 1,
-            "min_length" : 5,
-        }
 
         ### Used for testing
         self.n_shards = None
@@ -63,8 +68,7 @@ class Config:
         self.save_model_while_training = False
         self.save_model_freq = 10
 
-        ### These parameters don't do anything yet
-        self.sampling_strategy = "greedy"  # doesn't do anything
+
 
         ### W&B parameters
         self.wandb = dict(
@@ -102,6 +106,7 @@ class Config:
         elif self.dataset_name == "rotten_tomatoes":  self.adjust_config_for_rotten_tomatoes_dataset()
         elif self.dataset_name == "financial":        self.adjust_config_for_financial_dataset()
 
+        self.adjust_config_for_sampling_strategy()
 
         # Checks
         self._validate_n_epochs()
@@ -116,13 +121,11 @@ class Config:
         self.dataset_name = "simple"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.orig_max_length = 20
-        self.pp['max_length'] = 20
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 500
-        self.eval_freq = 1
+        self.n_train_epochs = 50
+        self.eval_freq = 5
         self._select_vm_model()
         return self
 
@@ -131,12 +134,10 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.orig_max_length = 60  # longest for pegasus
-        self.pp['max_length'] = 60
-        self.batch_size_train = 4
+        self.batch_size_train = 16
         self.batch_size_eval = 16
         self.acc_steps = 2
-        self.n_train_epochs = 2
+        self.n_train_epochs = 5
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -146,8 +147,6 @@ class Config:
         self.dataset_name = "financial"
         self.orig_cname = "sentence"
         self.label_cname = 'label'
-        self.orig_max_length = 60
-        self.pp['max_length'] = 60
         self.batch_size_train = 8
         self.batch_size_eval = 16
         self.acc_steps = 2
@@ -169,3 +168,24 @@ class Config:
     def _validate_n_epochs(self):
         if self.n_train_epochs % self.eval_freq != 0:
             raise Exception("Set n_train_epochs to a multiple of eval_freq so there are no leftover epochs.")
+
+    def adjust_config_for_sampling_strategy(self):
+        if  self.sampling_strategy == "greedy":
+            self.pp['do_sample'] = False
+            self.pp['num_beams'] = 1
+        elif self.sampling_strategy == "sample":
+            self.pp['do_sample'] = True
+            self.pp['num_beams'] = 1
+
+    def using_t5(self):
+        return self.pp_name in ["prithivida/parrot_paraphraser_on_T5", "ramsrigouthamg/t5-large-paraphraser-diverse-high-quality"]
+
+
+
+        ### NOT SUPPORTED
+        #         elif self.sampling_strategy == "beam_search":
+        #             self.pp['do_sample'] = False
+        #             self.pp['num_beams'] = 3
+        #         elif self.sampling_strategy == "beam_sample":
+        #             self.pp['do_sample'] = True
+        #             self.pp['num_beams'] = 3

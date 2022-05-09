@@ -101,20 +101,22 @@ class ProcessedDataset:
         dsd = dsd.map(self._add_idx, batched=True, with_indices=True)  # add idx column
         if self._cfg.use_small_ds: dsd = self._shard_dsd(dsd)  # do after adding idx so it's consistent across runs
         # add VM score & filter out misclassified examples.
-        # use a common variable dsd, add all columns, and later filter columns to get dsd_raw and dsd_tkn
         dsd = dsd.map(self._add_vm_orig_score, batched=True)
         if self._cfg.remove_misclassified_examples:  dsd = dsd.filter(lambda x: x['orig_vm_predclass'] == x['label'])
-        dsd = dsd.map(self._add_sts_orig_embeddings, batched=True)  # add STS score
-        dsd = dsd.map(self._tokenize_fn,             batched=True)  # tokenize
-        dsd = dsd.map(self._add_n_tokens,            batched=True)  # add n_tokens
-        dsd = dsd.map(self._add_n_letters,           batched=True)  # add n_letters
-        if self._cfg.bucket_by_length: dsd = dsd.sort("n_tokens", reverse=True)  # sort by n_tokens (high to low), useful for cuda memory caching
-        # Split dsd into dsd_raw and dsd_tkn
+        dsd = dsd.map(self._prep_input_for_pp_model,  batched=True)  # preprocess raw text so pp model can read
+        dsd = dsd.map(self._add_sts_orig_embeddings,  batched=True)  # add STS score
+        dsd = dsd.map(self._tokenize_fn,              batched=True)  # tokenize
+        # add n_tokens & filter out examples that have more tokens than a threshold
+        dsd = dsd.map(self._add_n_tokens,             batched=True)  # add n_tokens
+        if self._cfg.remove_long_orig_examples:      dsd = dsd.filter(lambda x: x['n_tokens'] <= self._cfg.orig_max_length)
+        dsd = dsd.map(self._add_n_letters,            batched=True)  # add n_letters
+        if self._cfg.bucket_by_length: dsd = dsd.sort("n_tokens", reverse=True)  # sort by n_tokens (high to low), useful for cuda memory caching and reducing number of padding tokens
+        ## Split dsd into dsd_raw and dsd_tkn
         assert dsd.column_names['train'] == dsd.column_names['valid'] == dsd.column_names['test']
-        self.cnames_dsd_raw = ['idx', 'text', 'label']
-        self.cnames_dsd_tkn = [o for o in dsd.column_names['train'] if o != 'text']
+        self.cnames_dsd_raw = ['idx', 'text','text_with_prefix', 'label']
+        self.cnames_dsd_tkn = [o for o in dsd.column_names['train'] if o not in ['text', 'text_with_prefix']]
         self.dsd_raw = dsd.remove_columns([o for o in  dsd['train'].column_names if o not in self.cnames_dsd_raw])
-        self.dsd_tkn = dsd.remove_columns(["text"])
+        self.dsd_tkn = dsd.remove_columns(["text", 'text_with_prefix'])
         for s in self._cfg.splits: assert len(self.dsd_raw[s]) == len(self.dsd_tkn[s])  # check ds has same number of elements in raw and tkn
         self._cache_processed_ds()
         self._prep_dataloaders()
@@ -122,6 +124,12 @@ class ProcessedDataset:
     def _prep_dataloaders(self):
         self.dld_raw = self._get_dataloaders_dict(self.dsd_raw, collate_fn=self._collate_fn_raw)  # dict of data loaders that serve raw text
         self.dld_tkn = self._get_dataloaders_dict(self.dsd_tkn, collate_fn=self._collate_fn_tkn)  # dict of data loaders that serve tokenized text
+
+    def _prep_input_for_pp_model(self, batch):
+        """The t5 paraphrase model needs a prefix and postfix, PEGASUS doesn't."""
+        if self._cfg.using_t5(): batch['text_with_prefix'] = ["paraphrase: " + sen + " </s>" for sen in batch['text']]
+        else:                    batch['text_with_prefix'] = batch['text']
+        return batch
 
     def _add_idx(self, batch, idx):
         """Add row numbers"""
@@ -153,7 +161,8 @@ class ProcessedDataset:
 
     def _tokenize_fn(self, batch):
         """Tokenize a batch of orig text using the paraphrase tokenizer."""
-        return self._pp_tokenizer(batch['text'], truncation=True, max_length=self._cfg.orig_max_length)
+        if self._cfg.remove_long_orig_examples:  return self._pp_tokenizer(batch['text_with_prefix'])   # we drop the long examples later
+        else:                               return self._pp_tokenizer(batch['text_with_prefix'], truncation=True, max_length=self._cfg.orig_max_length)
 
     def _collate_fn_tkn(self, x):
         """Collate function used by the DataLoader that serves tokenized data.

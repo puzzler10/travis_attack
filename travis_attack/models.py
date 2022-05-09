@@ -21,7 +21,8 @@ def _prepare_pp_tokenizer_and_model(cfg):
     the pp model so that we can backprop when generating."""
     # PEGASUS takes about 3GB memory space up on the GPU
     # change the `local_files_only` argument if changing the model name
-    pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10)
+    if cfg.using_t5():  pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True)
+    else:               pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10)
     pp_model.train()
     pp_model_freeze_layers(cfg, pp_model)  # dictated by cfg.unfreeze_last_n_layers; set to "all" to do no freezing
     generate_with_grad = undecorated(pp_model.generate)      # removes the @no_grad decorator from generate so we can backprop
@@ -149,6 +150,11 @@ def get_start_end_special_token_ids(tokenizer):
         d["output_start_id"] =  tokenizer.eos_token_id
         d["output_end_id"] =  [tokenizer.pad_token_id, tokenizer.eos_token_id]
     elif tokenizer.name_or_path == "tuner007/pegasus_paraphrase":
+        d["input_start_id"] =  None
+        d["input_end_id"] =  [tokenizer.pad_token_id, tokenizer.eos_token_id]
+        d["output_start_id"] =  tokenizer.pad_token_id
+        d["output_end_id"] =  [tokenizer.pad_token_id, tokenizer.eos_token_id]
+    elif tokenizer.name_or_path in ["prithivida/parrot_paraphraser_on_T5", "ramsrigouthamg/t5-large-paraphraser-diverse-high-quality"]:
         d["input_start_id"] =  None
         d["input_end_id"] =  [tokenizer.pad_token_id, tokenizer.eos_token_id]
         d["output_start_id"] =  tokenizer.pad_token_id
