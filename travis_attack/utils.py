@@ -61,14 +61,22 @@ def setup_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float)
     parser.add_argument("--kl_coef", type=float)
+    parser.add_argument("--ref_logp_coef", type=float)
     parser.add_argument("--acc_steps", type=int)
     parser.add_argument("--seed", type=int)
     parser.add_argument("--n_train_epochs", type=int)
     parser.add_argument("--batch_size_train", type=int)
     parser.add_argument("--batch_size_eval", type=int)
+
+    parser.add_argument("--temperature", type=float)
+    parser.add_argument("--top_p", type=float)
+    parser.add_argument("--length_penalty", type=float)
+    parser.add_argument("--repetition_penalty", type=float)
+
     parser.add_argument("--reward_fn")
     parser.add_argument("--dataset_name")
     parser.add_argument("--sampling_strategy")
+    parser.add_argument("--reward_penalty_type")
 
 
     #parser.add_argument('args', nargs=argparse.REMAINDER)  # activate to put keywords in kwargs.

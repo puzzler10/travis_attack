@@ -11,6 +11,7 @@ from sentence_transformers import SentenceTransformer
 from types import MethodType
 from undecorated import undecorated
 from .config import Config
+from IPython.core.debugger import set_trace
 
 import logging
 logger = logging.getLogger("travis_attack.models")
@@ -21,14 +22,18 @@ def _prepare_pp_tokenizer_and_model(cfg):
     the pp model so that we can backprop when generating."""
     # PEGASUS takes about 3GB memory space up on the GPU
     # change the `local_files_only` argument if changing the model name
-    if cfg.using_t5():  pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True)
-    else:               pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10)
+    pp_model = _load_pp_model(cfg)
     pp_model.train()
     pp_model_freeze_layers(cfg, pp_model)  # dictated by cfg.unfreeze_last_n_layers; set to "all" to do no freezing
     generate_with_grad = undecorated(pp_model.generate)      # removes the @no_grad decorator from generate so we can backprop
     pp_model.generate_with_grad = MethodType(generate_with_grad, pp_model)
     pp_tokenizer = AutoTokenizer.from_pretrained(cfg.pp_name)
     return pp_tokenizer, pp_model
+
+def _load_pp_model(cfg):
+    if cfg.using_t5():  pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True)
+    else:               pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10)
+    return pp_model
 
 def _prepare_vm_tokenizer_and_model(cfg):
     vm_tokenizer = AutoTokenizer.from_pretrained(cfg.vm_name)
@@ -75,7 +80,8 @@ def prepare_models(cfg):
     """
     vm_tokenizer, vm_model =  _prepare_vm_tokenizer_and_model(cfg)
     pp_tokenizer, pp_model =  _prepare_pp_tokenizer_and_model(cfg)
-    _, ref_pp_model = _prepare_pp_tokenizer_and_model(cfg)
+    ref_pp_model = _load_pp_model(cfg).eval()
+    #_, ref_pp_model = _prepare_pp_tokenizer_and_model(cfg)
     sts_model = _prepare_sts_model(cfg)
     nli_tokenizer, nli_model = _prepare_nli_tokenizer_and_model(cfg)
     if cfg.pad_token_embeddings:  _pad_model_token_embeddings(cfg, pp_model, vm_model, sts_model)

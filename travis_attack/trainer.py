@@ -260,10 +260,12 @@ class Trainer:
             'pp_logp_mean':         np.mean(  self.batch_d['pp_logp']),
             'ref_logp_hist':        Histogram(self.batch_d['ref_logp']),
             'ref_logp_mean':        np.mean(  self.batch_d['ref_logp']),
-            'kl_div_hist':          Histogram(self.batch_d['kl_div']),
+            'kl_div_hist' :         Histogram(self.batch_d['kl_div']),
             'kl_div_mean':          np.mean(  self.batch_d['kl_div']),
-            'reward_with_kl_hist':          Histogram(self.batch_d['reward_with_kl']),
-            'reward_with_kl_mean':          np.mean(  self.batch_d['reward_with_kl']),
+            'reward_penalty_hist':               Histogram(self.batch_d['reward_penalty']),
+            'reward_penalty_mean':               np.mean(  self.batch_d['reward_penalty']),
+            'reward_with_penalty_hist':          Histogram(self.batch_d['reward_with_penalty']),
+            'reward_with_penalty_mean':          np.mean(  self.batch_d['reward_with_penalty']),
             'loss_hist'   :         Histogram(self.batch_d['loss']),
             'pp_letter_diff_hist':     Histogram(self.batch_d['pp_letter_diff']),
             'pp_letter_diff_mean':     np.mean(  self.batch_d['pp_letter_diff']),
@@ -276,7 +278,7 @@ class Trainer:
             "parameter_norm":       self.param_norm
         })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
-        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp','ref_logp', 'kl_div', 'reward_with_kl',
+        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp','ref_logp', 'kl_div', 'reward_with_penalty', 'reward_penalty',
                               'reward', 'sts_score', 'vm_score', 'pp_letter_diff', 'pp_letter_percent','contradiction_score',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
@@ -342,14 +344,9 @@ class Trainer:
 
     def _get_paraphrases(self, orig_ids, attention_mask):
         """Wrapper for generating paraphrases (pp's).  Only greedy search supported at the moment"""
-        pp_output = self.pp_model.generate_with_grad(input_ids=orig_ids,
-                                                    attention_mask=attention_mask,
-                                                     **self._cfg.pp,
-                                                     return_dict_in_generate=True,
-                                                     output_scores=True,
-                                                     remove_invalid_values=False,
-                                                     pad_token_id = self.pp_tokenizer.pad_token_id,
-                                                     eos_token_id = self.pp_tokenizer.eos_token_id)
+        pp_output = self.pp_model.generate_with_grad(input_ids=orig_ids, attention_mask=attention_mask, num_return_sequences=1, num_beams=1,
+                                                     **self._cfg.pp, return_dict_in_generate=True, output_scores=True, remove_invalid_values=False,
+                                                     pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
         pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
         return pp_output, pp_l
 
@@ -363,21 +360,26 @@ class Trainer:
         with timecode() as self.batch_time_d['time_ref_logprobs']:
             ref_logp = self._get_ref_logprobs(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
 
+        kl_div =  pp_logp - ref_logp
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
-            kl_div =  pp_logp - ref_logp
-            kl_reward_modifier = -(self._cfg.kl_coef * kl_div)
-            reward_with_kl = torch.clip(reward + kl_reward_modifier, min=0)  # prevent negative rewards
-            loss       = -reward_with_kl * pp_logp
+            if   self._cfg.reward_penalty_type == "kl_div":
+                reward_penalty = - (self._cfg.kl_coef       * kl_div)       # KL div is positive, this term is negative
+            elif self._cfg.reward_penalty_type == "ref_logp":
+                reward_penalty =    self._cfg.ref_logp_coef * ref_logp      # ref_logp is negative, this term is negative
+
+            reward_with_penalty = torch.clip(reward + reward_penalty, min=0)
+            loss       = -reward_with_penalty * pp_logp
             loss_sum   = torch.sum(loss)  # we scale it later
             loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
 
-        self.batch_d['pp_logp']     =       pp_logp.detach().cpu().tolist()
-        self.batch_d['ref_logp']    =      ref_logp.detach().cpu().tolist()
-        self.batch_d['kl_div']      =        kl_div.detach().cpu().tolist()
-        self.batch_d['reward_with_kl'] = reward_with_kl.detach().cpu().tolist()
-        self.batch_d['loss']       =           loss.detach().cpu().tolist()
-        self.batch_d['loss_sum']   =       loss_sum.detach().cpu().tolist()
-        self.batch_d['loss_batch']   =   loss_batch.detach().cpu().tolist()
+        self.batch_d['pp_logp']     =                      pp_logp.detach().cpu().tolist()
+        self.batch_d['ref_logp']    =                     ref_logp.detach().cpu().tolist()
+        self.batch_d['kl_div']      =                 kl_div.detach().cpu().tolist()
+        self.batch_d['reward_penalty'] =            reward_penalty.detach().cpu().tolist()
+        self.batch_d['reward_with_penalty'] =  reward_with_penalty.detach().cpu().tolist()
+        self.batch_d['loss']       =                          loss.detach().cpu().tolist()
+        self.batch_d['loss_sum']   =                      loss_sum.detach().cpu().tolist()
+        self.batch_d['loss_batch']   =                  loss_batch.detach().cpu().tolist()
         return loss_batch
 
     def _reward_fn(self, data, raw, pp_l):
@@ -408,29 +410,18 @@ class Trainer:
             contradiction_scores = get_nli_probs(raw['text'], pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:,  self._cfg.contra_label]
 
         # Reward calculation
-        def reward_fn_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
-            if sts_score < 0.6:                              return 0
-            if pp_letter_diff > 30 or pp_letter_diff < -30:  return 0
-            reward =  0 + vm_score * 12
-            return min(max(0, reward), 3)
-
-        def reward_fn_contradiction(vm_score, sts_score, pp_letter_diff, contradiction_score):
-            if sts_score < 0.6:                              return 0
-            if contradiction_score > 0.8:                    return 0
-            reward = 0 + vm_score * 12
-            return min(max(0, reward), 3)
 
         def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
-            if sts_score < 0.6:                              return 0
-            if contradiction_score > 0.8:                    return 0
-            if pp_letter_diff > 30 or pp_letter_diff < -30:  return 0
-            reward = 0 + vm_score * 12
-            return min(max(0, reward), 3)
+            if sts_score           < self._cfg.sts_threshold:                              return 0
+            if contradiction_score > self._cfg.contradiction_threshold:                    return 0
+            if pp_letter_diff >   self._cfg.pp_letter_diff_threshold:                      return 0
+            if pp_letter_diff < - self._cfg.pp_letter_diff_threshold:                      return 0
+            reward = self._cfg.reward_base + vm_score * self._cfg.reward_vm_multiplier
+            return min(max(self._cfg.reward_clip_min, reward), self._cfg.reward_clip_max)
+
 
         def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores):
-            if   self._cfg.reward_fn == "reward_fn_letter_diff":      reward_fn = reward_fn_letter_diff
-            elif self._cfg.reward_fn == "reward_fn_contradiction":    reward_fn = reward_fn_contradiction
-            elif self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
+            if self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
             return torch.tensor([reward_fn(vm, sts, ldiff, contra) for vm,sts,ldiff,contra in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)],
                                 device=self._cfg.device)
 
@@ -676,7 +667,7 @@ class Trainer:
     def _set_df_colorder(self, data_d_key):
         colorder_eval=['idx','epoch', 'orig_l',  'pp_l','orig_truelabel_probs','pp_truelabel_probs',
         'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score', 'pp_letter_diff', 'pp_letter_percent',
-        'contradiction_score', 'reward', 'pp_logp','ref_logp', 'kl_div', 'reward_with_kl','loss','batch_num',
+        'contradiction_score', 'reward', 'pp_logp','ref_logp', 'kl_div', 'reward_penalty',  'reward_with_penalty','loss','batch_num',
                        'global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
                        'orig_length','orig_batch_size','pp_length','pp_batch_size']
         if data_d_key == "training_step":

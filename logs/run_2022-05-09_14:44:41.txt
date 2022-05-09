@@ -1,0 +1,33 @@
+05-09 14:44 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-09 14:45 travis_attack.data INFO     Will load dataset simple with use_small_ds set to False
+05-09 14:45 travis_attack.data INFO     Cache file found for processed dataset, so loading that dataset.
+05-09 14:45 travis_attack.data DEBUG    Dataset lengths: {'train': 4, 'valid': 4, 'test': 4}
+05-09 14:45 travis_attack.data DEBUG    Total training epochs:10
+05-09 14:45 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 0, 'valid': 0, 'test': 0, 'train_eval': 0}
+05-09 14:45 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [4], 'valid': [4], 'test': [4], 'train_eval': [4]}
+05-09 14:45 wandb        DEBUG    no default config file found in config-defaults.yaml
+05-09 14:45 travis_attack.trainer DEBUG    GPU memory usage after loading models: 15.2% (3499 out of 23040)
+05-09 14:45 travis_attack.trainer INFO     Now on epoch 1 of 10
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  15.8% (3645 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  21.3% (4909 out of 23040)
+05-09 14:45 travis_attack.trainer INFO     Now on epoch 2 of 10
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  21.3% (4909 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  23.9% (5517 out of 23040)
+05-09 14:45 travis_attack.trainer INFO     Now on epoch 3 of 10
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer INFO     Now on epoch 4 of 10
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after forward pass:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after backwards pass:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer INFO     Now on epoch 5 of 10
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after forward pass:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after backwards pass:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    EVAL: train with dl_key train_eval
+05-09 14:45 travis_attack.trainer DEBUG    Elements in data_d[train]: 0
+05-09 14:45 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loading data:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loss_fn pass:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    EVAL: valid with dl_key valid
+05-09 14:45 travis_attack.trainer DEBUG    Elements in data_d[valid]: 0
+05-09 14:45 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loading data:  33.3% (7681 out of 23040)
+05-09 14:45 travis_attack.trainer DEBUG    EVAL, epoch 5, batch 0, GPU memory usage after loss_fn pass:  33.3% (7681 out of 23040)
+05-09 14:48 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']

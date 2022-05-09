@@ -13,13 +13,16 @@ class Config:
     def __init__(self):
         """Set up default parameters"""
         ### Models and datasets
-        # options for the pp_model
+        # PP options
         # 1. tuner007/pegasus_paraphrase (2.12 GB)
         # 2. prithivida/parrot_paraphraser_on_T5 (850 MB)
         # 3. ramsrigouthamg/t5-large-paraphraser-diverse-high-quality (2.75 GB)
         self.pp_name = "prithivida/parrot_paraphraser_on_T5"
         self.dataset_name = "rotten_tomatoes"
-        self.sts_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        # STS options
+        # 1. sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+        # 2. sentence-transformers/paraphrase-MiniLM-L12-v2
+        self.sts_name = "sentence-transformers/paraphrase-MiniLM-L12-v2"
         # NLI options
         # 1. microsoft/deberta-base-mnli (~512 MB)
         # 2. howey/electra-small-mnli
@@ -30,24 +33,32 @@ class Config:
         ### Important parameters
         self.seed = 420
         self.use_small_ds = False
-        self.sampling_strategy = "sample"
+        self.sampling_strategy = "sample"  # "sample" or "greedy"
         self.lr = 4e-5
-        self.kl_coef = 0.2
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
+        self.reward_clip_max = 3
+        self.reward_clip_min = 0
+        self.reward_base = 0
+        self.reward_vm_multiplier = 12
+        self.sts_threshold = 0.6
+        self.contradiction_threshold = 0.2
+        self.pp_letter_diff_threshold = 30
 
-
-        ### Paraphrase parameters
+        self.reward_penalty_type = "ref_logp"  # "kl_div" or "ref_logp"
+        self.kl_coef = 0.2              # only used if reward_penalty_type == "kl_div"
+        self.ref_logp_coef = 0.05       # only used if reward_penalty_type == "ref_logp"
         self.pp = {
-            "num_return_sequences": 1,
-            "temperature": 1,
-            "length_penalty" : 1,
-            "min_length" : 5,
+            "do_sample": False if self.sampling_strategy == "greedy" else True,
+            "min_length": 4,
+            "max_length": 48,
+            "temperature": 0.7,
+            "top_p": 0.98,
+            "length_penalty" : 1.,
+            "repetition_penalty": 1.
         }
-
 
         # Other parameters (usually left untouched)
         self.orig_max_length = 32  # longest for pegasus is 60, longest for Parrot is 32
-        self.pp['max_length'] = 48
         self.pin_memory = True
         self.zero_grad_with_none = False
         self.pad_token_embeddings = False
@@ -56,7 +67,7 @@ class Config:
         self.bucket_by_length = True
         self.shuffle_train = False
         self.remove_misclassified_examples = True
-        self.remove_long_orig_examples = False
+        self.remove_long_orig_examples = True
         self.unfreeze_last_n_layers = "all"  #counting from the back. set to "all" to do no layer freezing, else set to an int
 
 
@@ -93,7 +104,7 @@ class Config:
 
         ## Globals
         self.splits = ['train', 'valid', 'test']
-        self.metrics = [ 'loss', 'pp_logp', 'ref_logp', 'kl_div', 'reward_with_kl', 'reward', 'vm_score', "sts_score", 'label_flip', 'contradiction_score', 'pp_letter_diff']
+        self.metrics = [ 'loss', 'pp_logp', 'ref_logp', 'kl_div', 'reward_with_penalty', 'reward', 'vm_score', "sts_score", 'label_flip', 'contradiction_score', 'pp_letter_diff']
         self.path_data = "./data/"
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
         self.path_run = None  # keep as None; this is automatically filled out by Trainer class
@@ -105,8 +116,6 @@ class Config:
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()
         elif self.dataset_name == "rotten_tomatoes":  self.adjust_config_for_rotten_tomatoes_dataset()
         elif self.dataset_name == "financial":        self.adjust_config_for_financial_dataset()
-
-        self.adjust_config_for_sampling_strategy()
 
         # Checks
         self._validate_n_epochs()
@@ -124,7 +133,7 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 50
+        self.n_train_epochs = 10
         self.eval_freq = 5
         self._select_vm_model()
         return self
@@ -134,10 +143,10 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.batch_size_train = 16
-        self.batch_size_eval = 16
+        self.batch_size_train = 32
+        self.batch_size_eval = 32
         self.acc_steps = 2
-        self.n_train_epochs = 5
+        self.n_train_epochs = 10
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -147,10 +156,10 @@ class Config:
         self.dataset_name = "financial"
         self.orig_cname = "sentence"
         self.label_cname = 'label'
-        self.batch_size_train = 8
-        self.batch_size_eval = 16
+        self.batch_size_train = 16
+        self.batch_size_eval = 32
         self.acc_steps = 2
-        self.n_train_epochs = 10
+        self.n_train_epochs = 4
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -161,7 +170,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 500
+        self.n_shards = 100
         self.shard_contiguous = False
         return self
 
@@ -169,23 +178,5 @@ class Config:
         if self.n_train_epochs % self.eval_freq != 0:
             raise Exception("Set n_train_epochs to a multiple of eval_freq so there are no leftover epochs.")
 
-    def adjust_config_for_sampling_strategy(self):
-        if  self.sampling_strategy == "greedy":
-            self.pp['do_sample'] = False
-            self.pp['num_beams'] = 1
-        elif self.sampling_strategy == "sample":
-            self.pp['do_sample'] = True
-            self.pp['num_beams'] = 1
-
     def using_t5(self):
         return self.pp_name in ["prithivida/parrot_paraphraser_on_T5", "ramsrigouthamg/t5-large-paraphraser-diverse-high-quality"]
-
-
-
-        ### NOT SUPPORTED
-        #         elif self.sampling_strategy == "beam_search":
-        #             self.pp['do_sample'] = False
-        #             self.pp['num_beams'] = 3
-        #         elif self.sampling_strategy == "beam_sample":
-        #             self.pp['do_sample'] = True
-        #             self.pp['num_beams'] = 3

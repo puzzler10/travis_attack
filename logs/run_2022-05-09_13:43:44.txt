@@ -1,0 +1,11 @@
+05-09 13:43 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-09 13:44 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+05-09 13:44 travis_attack.data INFO     Cache file found for processed dataset, so loading that dataset.
+05-09 13:44 travis_attack.data DEBUG    Dataset lengths: {'train': 15, 'valid': 2, 'test': 2}
+05-09 13:44 travis_attack.data DEBUG    Total training epochs:4
+05-09 13:44 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 15, 'valid': 2, 'test': 2, 'train_eval': 15}
+05-09 13:44 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [15], 'valid': [2], 'test': [2], 'train_eval': [15]}
+05-09 13:44 wandb        DEBUG    no default config file found in config-defaults.yaml
+05-09 13:44 travis_attack.trainer DEBUG    GPU memory usage after loading models: 15.4% (3557 out of 23040)
+05-09 13:44 travis_attack.trainer INFO     Now on epoch 1 of 4
+05-09 13:44 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  25.4% (5845 out of 23040)
