@@ -343,7 +343,7 @@ class Trainer:
         self.pp_length           = pp_ids.shape[1]
 
     def _get_paraphrases(self, orig_ids, attention_mask):
-        """Wrapper for generating paraphrases (pp's).  Only greedy search supported at the moment"""
+        """Wrapper for generating paraphrases (pp's)."""
         pp_output = self.pp_model.generate_with_grad(input_ids=orig_ids, attention_mask=attention_mask, num_return_sequences=1, num_beams=1,
                                                      **self._cfg.pp, return_dict_in_generate=True, output_scores=True, remove_invalid_values=False,
                                                      pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
@@ -360,7 +360,7 @@ class Trainer:
         with timecode() as self.batch_time_d['time_ref_logprobs']:
             ref_logp = self._get_ref_logprobs(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
 
-        kl_div =  pp_logp - ref_logp
+        kl_div =  torch.clip(pp_logp - ref_logp, min=0)  # sometimes this is negative, not sure why.
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
             if   self._cfg.reward_penalty_type == "kl_div":
                 reward_penalty = - (self._cfg.kl_coef       * kl_div)       # KL div is positive, this term is negative
@@ -382,9 +382,58 @@ class Trainer:
         self.batch_d['loss_batch']   =                  loss_batch.detach().cpu().tolist()
         return loss_batch
 
+    def _get_vm_scores(self, pp_l, labels, orig_truelabel_probs):
+        pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
+        pp_predclass = torch.argmax(pp_probs, axis=1)
+        pp_truelabel_probs   = torch.gather(pp_probs, 1, labels[:,None]).squeeze()
+        pp_predclass_probs   = torch.gather(pp_probs, 1, pp_predclass[ :,None]).squeeze()
+        label_flip = ((pp_predclass != labels) * 1)
+        vm_scores = (orig_truelabel_probs - pp_truelabel_probs)
+        return dict(pp_truelabel_probs=pp_truelabel_probs, pp_predclass=pp_predclass, pp_predclass_probs=pp_predclass_probs, vm_scores=vm_scores, label_flip=label_flip)
+
+    def _get_pp_letter_diff(self, pp_l, orig_n_letters):
+        pp_n_letters = np.array([len(o) for o in pp_l])
+        orig_letters = np.array(orig_n_letters)
+        pp_letter_diff    = orig_n_letters - pp_n_letters
+        pp_letter_percent = pp_n_letters / orig_n_letters
+        return dict(pp_letter_diff=pp_letter_diff, pp_letter_percent=pp_letter_percent)
+
+    def _get_contradiction_scores(self, orig_l, pp_l):
+        contradiction_scores = get_nli_probs(orig_l, pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:,  self._cfg.contra_label]
+        return contradiction_scores
+
+    def _get_sts_scores_one_to_many(self, pp_l, orig_sts_embeddings):
+        """Calculate STS scores when there is one orig and a list of pp_l"""
+        orig_sts_embeddings = orig_sts_embeddings.to(self._cfg.device)
+        pp_sts_embeddings = self.sts_model.encode(pp_l, convert_to_tensor=True, device=self._cfg.device, show_progress_bar=False)
+        sts_scores = pytorch_cos_sim(orig_sts_embeddings, pp_sts_embeddings).cpu().tolist()
+        return sts_scores
+
+    def _is_valid_pp(self, sts_score, pp_letter_diff, contradiction_score):
+        if sts_score           < self._cfg.sts_threshold:                              return False
+        if contradiction_score > self._cfg.contradiction_threshold:                    return False
+        if pp_letter_diff >   self._cfg.pp_letter_diff_threshold:                      return False
+        if pp_letter_diff < - self._cfg.pp_letter_diff_threshold:                      return False
+        return True
+
+    def _get_reward(self, vm_scores, sts_scores, pp_letter_diff, contradiction_scores):
+        def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
+            if not self._is_valid_pp(sts_score, pp_letter_diff, contradiction_score): return 0
+            reward = self._cfg.reward_base + vm_score * self._cfg.reward_vm_multiplier
+            return min(max(self._cfg.reward_clip_min, reward), self._cfg.reward_clip_max)
+
+        def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores):
+            if self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
+            return torch.tensor([reward_fn(vm, sts, ldiff, contra) for vm,sts,ldiff,contra in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)],
+                                device=self._cfg.device)
+        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
+        return rewards
+
+
     def _reward_fn(self, data, raw, pp_l):
-        """"""
+        """Used for training, need 1-1 """
         # Victim model probability differences between orig and pp
+        # #TODO: update this whole function
         with timecode() as self.batch_time_d['time_vm_scores']:
             pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
             pp_predclass = torch.argmax(pp_probs, axis=1)
@@ -395,7 +444,7 @@ class Trainer:
 
         # STS scores
         with timecode() as self.batch_time_d['time_sts_scores']:
-            pp_embeddings  = self.sts_model.encode(pp_l, batch_size=len(raw), convert_to_tensor=True, device=self._cfg.device)
+            pp_embeddings  = self.sts_model.encode(pp_l, batch_size=len(raw), convert_to_tensor=True, show_progress_bar=False, device=self._cfg.device)
             # This returns a cosine similarity matrix, of which we just want the diagonal
             sts_scores = pytorch_cos_sim(data['orig_sts_embeddings'], pp_embeddings).diagonal()
 
@@ -426,7 +475,6 @@ class Trainer:
                                 device=self._cfg.device)
 
         rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
-
         self.batch_d['pp_truelabel_probs']  = pp_truelabel_probs.detach().cpu().tolist()
         self.batch_d['pp_predclass']        = pp_predclass.detach().cpu().tolist()
         self.batch_d['pp_predclass_probs']  = pp_predclass_probs.detach().cpu().tolist()
@@ -438,7 +486,6 @@ class Trainer:
         self.batch_d['pp_letter_diff']      = pp_letter_diff.tolist()
         self.batch_d['pp_letter_percent']   = pp_letter_percent.tolist()
         self.batch_d['contradiction_score'] = contradiction_scores.cpu().tolist()
-
         return rewards
 
     def _get_pp_logp(self, pp_output):
@@ -645,6 +692,63 @@ class Trainer:
                 self._add_batch_vars_to_batch_d(raw, data, pp_l)
                 self.data_d[split].append(self.batch_d)
                 logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
+
+    def eval_ref_model(self, split):
+        notebook_launcher(self._eval_function, args=(split, True), num_processes=1, use_fp16=False)
+
+    def _eval_function(self, split, eval_ref_model=False):
+        """Run eval loop for dataset and split"""
+        self._reset_batch_dicts()
+        model = self.ref_pp_model if eval_ref_model else self.pp_model
+        if model.training:             model.eval()
+        if self.vm_model.training:     self.vm_model.eval()
+        if eval_ref_model:
+            self.accelerator_eval = Accelerator(cpu=self.use_cpu)
+            self._cfg.device = self.accelerator_eval.device
+            self.vm_model,model,self.sts_model = self.accelerator.prepare(self.vm_model,model,self.sts_model)
+
+        # The "train_eval" dataloader is the same as train but a bigger batch size and explicitly no shuffling
+        dl_key = "train_eval" if split == "train" else split
+        dl_raw = self.ds.dld_raw[dl_key]
+        dl_tkn = self.ds.dld_tkn[dl_key]
+        with torch.no_grad():
+            for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
+                self._reset_batch_dicts()
+                for k, v in data.items():
+                    # Eval data isn't loaded on GPU by default unlike train data. This is because train dataloader goes
+                    # through accelerator `prepare` function, but eval dataloaders don't. So here we load the data onto GPU
+                    if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
+
+                pp_output = model.generate(
+                    input_ids=data['input_ids'], attention_mask=data['attention_mask'],
+                    **eval_generate_parameters,   remove_invalid_values=False,
+                    pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
+                pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
+
+                # repeat each value `num_return_sequences` times for all k, v in data.items
+
+
+                reward = self._reward_fn(data, raw, pp_l)
+                pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
+                pp_predclass = torch.argmax(pp_probs, axis=1)
+                pp_truelabel_probs   = torch.gather(pp_probs, 1, data['label'][:,None]).squeeze()
+                pp_predclass_probs   = torch.gather(pp_probs, 1, pp_predclass[ :,None]).squeeze()
+                label_flip = ((pp_predclass != data['label']) * 1)
+
+
+                self._add_batch_vars_to_batch_d_eval(raw, data, pp_l) # this assumes pp_l is same length as orig_l, which won't be case.
+                self.data_d[split].append(self.batch_d)          # might need a new container for this.
+
+    def _add_batch_vars_to_batch_d_eval(self,  raw, data, pp_l):
+        self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
+            'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
+            'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
+            "orig_l": raw['text'],
+            "orig_label": data['label'].cpu().tolist(),
+            "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
+            'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
+            "pp_l": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
+        })
 
     def _compute_and_log_eval_metrics(self):
         """Calculate eval metrics for each split and log to wandb, then empty data_d"""

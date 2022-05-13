@@ -32,7 +32,7 @@ class Config:
 
         ### Important parameters
         self.seed = 420
-        self.use_small_ds = False
+        self.use_small_ds = True
         self.sampling_strategy = "sample"  # "sample" or "greedy"
         self.lr = 4e-5
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
@@ -40,22 +40,26 @@ class Config:
         self.reward_clip_min = 0
         self.reward_base = 0
         self.reward_vm_multiplier = 12
-        self.sts_threshold = 0.6
+        self.sts_threshold = 0.7
         self.contradiction_threshold = 0.2
         self.pp_letter_diff_threshold = 30
 
         self.reward_penalty_type = "ref_logp"  # "kl_div" or "ref_logp"
         self.kl_coef = 0.2              # only used if reward_penalty_type == "kl_div"
         self.ref_logp_coef = 0.05       # only used if reward_penalty_type == "ref_logp"
+        self.max_pp_length = 48
         self.pp = {
             "do_sample": False if self.sampling_strategy == "greedy" else True,
             "min_length": 4,
-            "max_length": 48,
+            "max_length": self.max_pp_length,
             "temperature": 0.7,
             "top_p": 0.98,
             "length_penalty" : 1.,
             "repetition_penalty": 1.
         }
+        self.n_eval_seq = 8
+        self.eval_decode_method = "sampling"
+        self.eval_gen_params = self._get_eval_gen_params()
 
         # Other parameters (usually left untouched)
         self.orig_max_length = 32  # longest for pegasus is 60, longest for Parrot is 32
@@ -125,6 +129,17 @@ class Config:
         elif self.dataset_name == "financial":                    self.vm_name = "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
 
 
+    def _get_eval_gen_params(self):
+        common_params = dict(num_return_sequences=self.n_eval_seq, max_length=self.pp['max_length'])
+        sampling_params = dict(top_p=0.95, temperature=0.8, length_penalty=1)
+        eval_gen_params = dict(
+            beam_search         = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq),
+            diverse_beam_search = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq, diversity_penalty=1000., num_beam_groups=int(self.n_eval_seq/2)),
+            sampling            = dict(**common_params, do_sample=True,  num_beams=1,               **sampling_params),
+            beam_sampling       = dict(**common_params, do_sample=True,  num_beams=self.n_eval_seq, **sampling_params)  # SLOW
+        )
+        return eval_gen_params[self.eval_decode_method]
+
     def adjust_config_for_simple_dataset(self):
         """Adjust config for the simple dataset."""
         self.dataset_name = "simple"
@@ -143,10 +158,10 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.batch_size_train = 32
-        self.batch_size_eval = 32
+        self.batch_size_train = 4
+        self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 10
+        self.n_train_epochs = 25
         self.eval_freq = 1
         self._select_vm_model()
         return self
