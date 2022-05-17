@@ -15,7 +15,7 @@ from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_
 # Cell
 import torch, numpy as np, pandas as pd, gc,sys, warnings
 from torch.utils.data import DataLoader, RandomSampler
-from datasets import load_dataset, load_metric, load_from_disk, DatasetDict
+from datasets import load_dataset, load_metric, load_from_disk, DatasetDict, Dataset
 from transformers import (AutoModelForSeq2SeqLM, AutoModelForSequenceClassification,
                           AutoTokenizer, AdamW, SchedulerType, get_scheduler)
 from torch.distributions import Categorical
@@ -75,6 +75,8 @@ class Trainer:
         # Raw observation data (lists of dicts, later becomes pandas df)
         self.data_d = dict()
         for split in self._cfg.splits + ['training_step']:   self.data_d[split] = []
+        # Data containers and data loaders
+        self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
 
     def _setup_gradient_accumulation_variables(self):
         """acc_global_l is a list of all batch sizes encountered during training.
@@ -103,13 +105,13 @@ class Trainer:
             else:                              assert len(self.acc_current_l) == self._cfg.acc_steps
         self.acc_current_n_examples = sum(self.acc_current_l)
 
-    def _eval_save_log_test_set(self):
-        """Eval on test set, convert to df, save to file, and log to wandb summary"""
-        self._eval_dl(split='test')
-        self.data_d["test"] = self._convert_data_d_to_df("test")
-        self._set_df_colorder("test")
-        self.data_d["test"].to_csv(f"{self._cfg.path_run}test.csv", index=False)
-        self._add_wandb_run_summary_statistics()
+#     def _eval_save_log_test_set(self):
+#         """Eval on test set, convert to df, save to file, and log to wandb summary"""
+#         self._eval_dl(split='test')
+#         self.data_d["test"] = self._convert_data_d_to_df("test")
+#         self._set_df_colorder("test")
+#         self.data_d["test"].to_csv(f"{self._cfg.path_run}test.csv", index=False)
+#         self._add_wandb_run_summary_statistics()
 
     def _training_function(self):
         self.accelerator = Accelerator(cpu=self.use_cpu)
@@ -124,10 +126,10 @@ class Trainer:
         # initial eval (at epoch 0)
         if self.initial_eval:
             logger.info("Launching initial eval run: train")
-            self._eval_dl(split='train')
+            self._eval_function(split='train')
             logger.info("Launching initial eval run: valid")
-            self._eval_dl(split='valid')
-            self._compute_and_log_eval_metrics()
+            self._eval_function(split='valid')
+            #self._compute_and_log_eval_metrics()
 
         for self.epoch in range(1, self._cfg.n_train_epochs+1):
             logger.info(f"Now on epoch {self.epoch} of {self._cfg.n_train_epochs}")
@@ -159,11 +161,11 @@ class Trainer:
             if self.epoch % self._cfg.eval_freq == 0:
                 self.eval_num += 1
                 with timecode() as time_eval_train:
-                    self._eval_dl(split='train') # or train_eval?
+                    self._eval_function(split='train')
                 with timecode() as time_eval_valid:
-                    self._eval_dl(split='valid')
-                with timecode() as time_eval_compute_metrics:
-                    self._compute_and_log_eval_metrics()
+                    self._eval_function(split='valid')
+                #with timecode() as time_eval_compute_metrics:
+                #    self._compute_and_log_eval_metrics()
                 with timecode() as time_eval_gc_collect:
                     gc.collect()
                 with timecode() as time_eval_empty_cache:
@@ -173,10 +175,12 @@ class Trainer:
                            'time/eval_valid_thoroughput': len(self.ds.dsd_tkn['valid']) / time_eval_valid.t,
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
-                           'time/eval_compute_metrics': time_eval_compute_metrics.t,
+                           #'time/eval_compute_metrics': time_eval_compute_metrics.t,
                            'epoch': self.epoch}, commit=True)
 
-        self._eval_save_log_test_set()
+        #self._eval_save_log_test_set()
+
+        #self._eval_function(split='test')
 
     def _training_step(self, data, raw):
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
@@ -188,10 +192,6 @@ class Trainer:
             pp_output, pp_l = self._pp_model_forward(data)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
-
-        # autocast is used by accelerate to allow mixed-precision loss functions.
-        # drop it if we deprecate fp16 support (because it isn't supported for models like PEGASUS)
-        #with self.accelerator.autocast():
 
         with timecode() as self.batch_time_d['time_loss_fn']:
             loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
@@ -360,7 +360,7 @@ class Trainer:
         with timecode() as self.batch_time_d['time_ref_logprobs']:
             ref_logp = self._get_ref_logprobs(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
 
-        kl_div =  torch.clip(pp_logp - ref_logp, min=0)  # sometimes this is negative, not sure why.
+        kl_div =  torch.clip(pp_logp - ref_logp, min=0)  # sometimes this is negative, not sure why, so will clip to 0 in those cases
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
             if   self._cfg.reward_penalty_type == "kl_div":
                 reward_penalty = - (self._cfg.kl_coef       * kl_div)       # KL div is positive, this term is negative
@@ -383,6 +383,7 @@ class Trainer:
         return loss_batch
 
     def _get_vm_scores(self, pp_l, labels, orig_truelabel_probs):
+        """Victim model probability differences between orig and pp"""
         pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
         pp_predclass = torch.argmax(pp_probs, axis=1)
         pp_truelabel_probs   = torch.gather(pp_probs, 1, labels[:,None]).squeeze()
@@ -390,6 +391,16 @@ class Trainer:
         label_flip = ((pp_predclass != labels) * 1)
         vm_scores = (orig_truelabel_probs - pp_truelabel_probs)
         return dict(pp_truelabel_probs=pp_truelabel_probs, pp_predclass=pp_predclass, pp_predclass_probs=pp_predclass_probs, vm_scores=vm_scores, label_flip=label_flip)
+
+    def _get_sts_scores(self, pp_l, orig_sts_embeddings, eval_mode=False):
+        """Calculate STS scores when there is one orig and a list of pp_l"""
+        if not orig_sts_embeddings.is_cuda: orig_sts_embeddings = orig_sts_embeddings.to(self._cfg.device)
+        pp_sts_embeddings = self.sts_model.encode(pp_l, convert_to_tensor=True, device=self._cfg.device, show_progress_bar=False)
+        # pytorch_cos_sim returns a cosine similarity matrix if we have one paraphrse, with which we want the diagonal
+        # else it returns a list.
+        if eval_mode:            sts_scores = pytorch_cos_sim(orig_sts_embeddings, pp_sts_embeddings).cpu().tolist()    # eval case
+        else:                    sts_scores = pytorch_cos_sim(orig_sts_embeddings, pp_sts_embeddings).diagonal()        # training case
+        return sts_scores
 
     def _get_pp_letter_diff(self, pp_l, orig_n_letters):
         pp_n_letters = np.array([len(o) for o in pp_l])
@@ -401,13 +412,6 @@ class Trainer:
     def _get_contradiction_scores(self, orig_l, pp_l):
         contradiction_scores = get_nli_probs(orig_l, pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:,  self._cfg.contra_label]
         return contradiction_scores
-
-    def _get_sts_scores_one_to_many(self, pp_l, orig_sts_embeddings):
-        """Calculate STS scores when there is one orig and a list of pp_l"""
-        orig_sts_embeddings = orig_sts_embeddings.to(self._cfg.device)
-        pp_sts_embeddings = self.sts_model.encode(pp_l, convert_to_tensor=True, device=self._cfg.device, show_progress_bar=False)
-        sts_scores = pytorch_cos_sim(orig_sts_embeddings, pp_sts_embeddings).cpu().tolist()
-        return sts_scores
 
     def _is_valid_pp(self, sts_score, pp_letter_diff, contradiction_score):
         if sts_score           < self._cfg.sts_threshold:                              return False
@@ -429,62 +433,34 @@ class Trainer:
         rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
         return rewards
 
-
     def _reward_fn(self, data, raw, pp_l):
         """Used for training, need 1-1 """
-        # Victim model probability differences between orig and pp
-        # #TODO: update this whole function
         with timecode() as self.batch_time_d['time_vm_scores']:
-            pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
-            pp_predclass = torch.argmax(pp_probs, axis=1)
-            pp_truelabel_probs   = torch.gather(pp_probs, 1, data['label'][:,None]).squeeze()
-            pp_predclass_probs   = torch.gather(pp_probs, 1, pp_predclass[ :,None]).squeeze()
-            label_flip = ((pp_predclass != data['label']) * 1)
-            vm_scores = (data['orig_truelabel_probs'] - pp_truelabel_probs)
+            vm_d = self._get_vm_scores(pp_l, data['label'], data['orig_truelabel_probs'])
+            vm_scores = vm_d['vm_scores']
 
-        # STS scores
         with timecode() as self.batch_time_d['time_sts_scores']:
-            pp_embeddings  = self.sts_model.encode(pp_l, batch_size=len(raw), convert_to_tensor=True, show_progress_bar=False, device=self._cfg.device)
-            # This returns a cosine similarity matrix, of which we just want the diagonal
-            sts_scores = pytorch_cos_sim(data['orig_sts_embeddings'], pp_embeddings).diagonal()
+            sts_scores = self._get_sts_scores(pp_l, data['orig_sts_embeddings'], eval_mode=False)
 
         with timecode() as self.batch_time_d['time_pp_letter_diff']:
-            pp_letters = np.array([len(o) for o in pp_l])
-            orig_letters = data['n_letters'].cpu().numpy()
-            pp_letter_diff    = orig_letters - pp_letters
-            pp_letter_percent = pp_letters / orig_letters
-
+            pp_diff_d = self._get_pp_letter_diff(pp_l, data['n_letters'].cpu().tolist())
+            pp_letter_diff = pp_diff_d['pp_letter_diff']
 
         with timecode() as self.batch_time_d['time_contradiction_scores']:
-            contradiction_scores = get_nli_probs(raw['text'], pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:,  self._cfg.contra_label]
+            contradiction_scores = self._get_contradiction_scores(raw['text'], pp_l)
 
-        # Reward calculation
+        rewards = self._get_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
 
-        def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
-            if sts_score           < self._cfg.sts_threshold:                              return 0
-            if contradiction_score > self._cfg.contradiction_threshold:                    return 0
-            if pp_letter_diff >   self._cfg.pp_letter_diff_threshold:                      return 0
-            if pp_letter_diff < - self._cfg.pp_letter_diff_threshold:                      return 0
-            reward = self._cfg.reward_base + vm_score * self._cfg.reward_vm_multiplier
-            return min(max(self._cfg.reward_clip_min, reward), self._cfg.reward_clip_max)
-
-
-        def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores):
-            if self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
-            return torch.tensor([reward_fn(vm, sts, ldiff, contra) for vm,sts,ldiff,contra in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)],
-                                device=self._cfg.device)
-
-        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
-        self.batch_d['pp_truelabel_probs']  = pp_truelabel_probs.detach().cpu().tolist()
-        self.batch_d['pp_predclass']        = pp_predclass.detach().cpu().tolist()
-        self.batch_d['pp_predclass_probs']  = pp_predclass_probs.detach().cpu().tolist()
-        self.batch_d['label_flip']          = label_flip.detach().cpu().tolist()
+        self.batch_d['pp_truelabel_probs']  = vm_d['pp_truelabel_probs'].detach().cpu().tolist()
+        self.batch_d['pp_predclass']        = vm_d['pp_predclass'].detach().cpu().tolist()
+        self.batch_d['pp_predclass_probs']  = vm_d['pp_predclass_probs'].detach().cpu().tolist()
+        self.batch_d['label_flip']          = vm_d['label_flip'].detach().cpu().tolist()
         self.batch_d['label_flip_fraction'] = np.mean(self.batch_d['label_flip'])
         self.batch_d['reward']              = rewards.detach().cpu().tolist()
         self.batch_d['vm_score']            = vm_scores.detach().cpu().tolist()
         self.batch_d['sts_score']           = sts_scores.detach().cpu().tolist()
         self.batch_d['pp_letter_diff']      = pp_letter_diff.tolist()
-        self.batch_d['pp_letter_percent']   = pp_letter_percent.tolist()
+        self.batch_d['pp_letter_percent']   = pp_diff_d['pp_letter_percent'].tolist()
         self.batch_d['contradiction_score'] = contradiction_scores.cpu().tolist()
         return rewards
 
@@ -664,41 +640,40 @@ class Trainer:
             (torch.sum(allprobs > (1/self._cfg.vocab_size)) / allprobs.shape[0]).item()
         return token_prob_d
 
-    def _eval_dl(self, split):
-        """Get evaluation metrics for a dataloader"""
-        # Put models in eval mode and do the forward pass
-        # Current logic: push all batches together into one big list.
-        self._reset_batch_dicts()
-        if self.pp_model.training: self.pp_model.eval()
-        if self.vm_model.training: self.vm_model.eval()
-        # The "train_eval" dataloader is the same as train but a bigger batch size and explicitly no shuffling
-        dl_key = "train_eval" if split == "train" else split
-        dl_raw = self.ds.dld_raw[dl_key]
-        dl_tkn = self.ds.dld_tkn[dl_key]
-        with torch.no_grad():
-            for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
-                logger.debug(f"EVAL: {split} with dl_key {dl_key}")
-                logger.debug(f"Elements in data_d[{split}]: {len(self.data_d[split])}")
-                logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
-                assert data['input_ids'].shape[0] == len(raw['text_with_prefix'])
-                self._reset_batch_dicts()
-                assert len(self.batch_d) == len(self.batch_time_d) == len(self.batch_wandb_d) == 0
-                for k, v in data.items():
-                    # Eval data isn't loaded on GPU by default unlike train data. This is because train dataloader goes
-                    # through accelerator `prepare` function, but eval dataloaders don't. So here we load the data onto GPU
-                    if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
-                pp_output, pp_l = self._pp_model_forward(data)
-                _ = self._loss_fn(data, raw, pp_output, pp_l)
-                self._add_batch_vars_to_batch_d(raw, data, pp_l)
-                self.data_d[split].append(self.batch_d)
-                logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
+#     def _eval_dl(self, split):
+#         """Get evaluation metrics for a dataloader"""
+#         # Put models in eval mode and do the forward pass
+#         # Current logic: push all batches together into one big list.
+#         self._reset_batch_dicts()
+#         if self.pp_model.training: self.pp_model.eval()
+#         if self.vm_model.training: self.vm_model.eval()
+#         # The "train_eval" dataloader is the same as train but a bigger batch size and explicitly no shuffling
+#         dl_key = "train_eval" if split == "train" else split
+#         dl_raw = self.ds.dld_raw[dl_key]
+#         dl_tkn = self.ds.dld_tkn[dl_key]
+#         with torch.no_grad():
+#             for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
+#                 logger.debug(f"EVAL: {split} with dl_key {dl_key}")
+#                 logger.debug(f"Elements in data_d[{split}]: {len(self.data_d[split])}")
+#                 logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
+#                 assert data['input_ids'].shape[0] == len(raw['text_with_prefix'])
+#                 self._reset_batch_dicts()
+#                 assert len(self.batch_d) == len(self.batch_time_d) == len(self.batch_wandb_d) == 0
+#                 for k, v in data.items():
+#                     # Eval data isn't loaded on GPU by default unlike train data. This is because train dataloader goes
+#                     # through accelerator `prepare` function, but eval dataloaders don't. So here we load the data onto GPU
+#                     if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
+#                 pp_output, pp_l = self._pp_model_forward(data)
+#                 _ = self._loss_fn(data, raw, pp_output, pp_l)
+#                 self._add_batch_vars_to_batch_d(raw, data, pp_l)
+#                 self.data_d[split].append(self.batch_d)
+#                 logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
 
     def eval_ref_model(self, split):
         notebook_launcher(self._eval_function, args=(split, True), num_processes=1, use_fp16=False)
 
     def _eval_function(self, split, eval_ref_model=False):
-        """Run eval loop for dataset and split"""
-        self._reset_batch_dicts()
+        ## Setup
         model = self.ref_pp_model if eval_ref_model else self.pp_model
         if model.training:             model.eval()
         if self.vm_model.training:     self.vm_model.eval()
@@ -706,38 +681,134 @@ class Trainer:
             self.accelerator_eval = Accelerator(cpu=self.use_cpu)
             self._cfg.device = self.accelerator_eval.device
             self.vm_model,model,self.sts_model = self.accelerator.prepare(self.vm_model,model,self.sts_model)
-
-        # The "train_eval" dataloader is the same as train but a bigger batch size and explicitly no shuffling
+        eval_batch_results = list()  # each eval batch appended to here, list of dicts
         dl_key = "train_eval" if split == "train" else split
         dl_raw = self.ds.dld_raw[dl_key]
         dl_tkn = self.ds.dld_tkn[dl_key]
-        with torch.no_grad():
-            for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
-                self._reset_batch_dicts()
-                for k, v in data.items():
-                    # Eval data isn't loaded on GPU by default unlike train data. This is because train dataloader goes
-                    # through accelerator `prepare` function, but eval dataloaders don't. So here we load the data onto GPU
-                    if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
 
-                pp_output = model.generate(
-                    input_ids=data['input_ids'], attention_mask=data['attention_mask'],
-                    **eval_generate_parameters,   remove_invalid_values=False,
-                    pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
-                pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
+        ## Loop through batches in eval set
+        for eval_batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
+            pp_output = model.generate(input_ids=data['input_ids'].to(self._cfg.device), attention_mask=data['attention_mask'].to(self._cfg.device),
+                                          **self._cfg.eval_gen_params,   remove_invalid_values=False,
+                                          pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
+            pp_l = self.pp_tokenizer.batch_decode(pp_output, skip_special_tokens=True)
+            pp_l_nested = [pp_l[i:i+self._cfg.n_eval_seq] for i in range(0, len(pp_l), self._cfg.n_eval_seq)]  # put paraphrases in nested lists
+            assert all([len(l) == self._cfg.n_eval_seq for l in pp_l_nested])  # make sure we generate the same number of paraphrases for each
+            eval_batch_results.append({'idx': raw['idx'], 'orig': raw['text'], 'pp_l':pp_l_nested, 'orig_n_letters': data['n_letters'].tolist(),
+                                  'label': raw['label'], 'orig_truelabel_probs': data['orig_truelabel_probs'].tolist(), 'orig_sts_embeddings': data['orig_sts_embeddings'] })
 
-                # repeat each value `num_return_sequences` times for all k, v in data.items
+        ## Convert eval batches to dataframes and create paraphrase identifier `pp_idx`
+        df = pd.DataFrame(eval_batch_results)
+        df = df.apply(pd.Series.explode).reset_index(drop=True)  # This dataframe has one row per original example
+        def get_pp_idx(row): return ["orig_" + str(row['idx']) + "-epoch_" + str(self.epoch) +  "-pp_" +  str(pp_i) for pp_i in range(1, len(row['pp_l'])+1)]
+        df['pp_idx'] = df.apply(get_pp_idx, axis=1)
+
+        ## Create seperate dataframe for sts scores and expand original dataframe
+        df_sts = df[['pp_idx', 'pp_l', 'orig_sts_embeddings']]
+        df1 = df.drop(columns='orig_sts_embeddings')
+        scalar_cols = [o for o in df1.columns if o not in ['pp_l', 'pp_idx']]
+        df_expanded = unpack_nested_lists_in_df(df1, scalar_cols=scalar_cols) # This dataframe has one row per paraphrase
+
+        ## Add vm_scores, sts_scores, pp_letter_diff, contradiction scores
+        ds_expanded = Dataset.from_pandas(df_expanded)
+        def add_vm_scores_eval(batch):
+            output = self._get_vm_scores(pp_l=batch['pp_l'], labels=torch.tensor(batch['label'], device = self._cfg.device),
+                                            orig_truelabel_probs=torch.tensor(batch['orig_truelabel_probs'], device=self._cfg.device))
+            for k, v in output.items(): batch[k] = v.cpu().tolist()
+            return batch
+        def add_pp_letter_diff(batch):
+            output = self._get_pp_letter_diff(pp_l=batch['pp_l'], orig_n_letters=batch['orig_n_letters'])
+            for k, v in output.items(): batch[k] = v.tolist()
+            return batch
+        def add_contradiction_score(batch):
+            batch['contradiction_scores'] = self._get_contradiction_scores(orig_l=batch['orig'], pp_l=batch['pp_l']).cpu().tolist()
+            return batch
+        ds_expanded = ds_expanded.map(add_vm_scores_eval,        batched=True)
+        ds_expanded = ds_expanded.map(add_pp_letter_diff,        batched=True)
+        ds_expanded = ds_expanded.map(add_contradiction_score,   batched=True)
+        def add_sts_scores_eval(row):  return self._get_sts_scores(row['pp_l'], row['orig_sts_embeddings'], eval_mode=True)[0]
+        df_sts['sts_scores'] = df_sts.apply(add_sts_scores_eval, axis=1)
+
+        ## Merge together results
+        df_sts = df_sts.drop(columns = ['pp_l','orig_sts_embeddings'])
+        df_sts_expanded = df_sts.apply(pd.Series.explode).reset_index(drop=True)
+        ds_expanded = Dataset.from_pandas(ds_expanded.to_pandas().merge(df_sts_expanded, how='left', on='pp_idx').reset_index(drop=True))
+
+        ## Calculate rewards and identify adversarial examples
+        def add_reward(batch):
+            batch['reward'] = self._get_reward(vm_scores=batch['vm_scores'], sts_scores=batch['sts_scores'],
+                      pp_letter_diff=batch['pp_letter_diff'], contradiction_scores=batch['contradiction_scores']).cpu().tolist()
+            return batch
+        ds_expanded = ds_expanded.map(add_reward,   batched=True)
+        def add_is_valid_pp(example):
+            example['is_valid_pp'] = self._is_valid_pp(sts_score=example['sts_scores'],
+                 pp_letter_diff=example['pp_letter_diff'], contradiction_score=example['contradiction_scores'])*1
+            return example
+        ds_expanded = ds_expanded.map(add_is_valid_pp,   batched=False)
+        def add_is_adv_example(batch):
+            batch['is_adv_example'] = (np.array(batch['is_valid_pp']) * np.array(batch['label_flip'])).tolist()
+            return batch
+        ds_expanded = ds_expanded.map(add_is_adv_example,   batched=True)
+
+        ## Calculate summary statistics
+        df_expanded = ds_expanded.to_pandas()
+        eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward', 'vm_scores', 'sts_scores',  'pp_letter_diff', 'contradiction_scores']
+        agg_metrics = ['mean','std']  # not going to use the median
+        # avg across each orig
+        df_grp_stats = df_expanded[['idx'] + eval_metric_cols].groupby('idx').agg(agg_metrics)
+        df_grp_stats.columns = df_grp_stats.columns = ["-".join(a) for a in df_grp_stats.columns.to_flat_index()]
+        # avg across whole dataset
+        df_overall_stats = df_expanded[eval_metric_cols].groupby(lambda _ : True).agg(agg_metrics).reset_index(drop=True)
+        df_overall_stats.columns = df_overall_stats.columns = ["-".join(a) + "-" + split for a in df_overall_stats.columns.to_flat_index()]
+        df_overall_metrics = df_overall_stats.iloc[0].to_dict()   ## WANDB this
+        df_overall_metrics['any_adv_example_proportion' + "-" + split] = np.mean((df_grp_stats['is_adv_example-mean'] > 0 ) * 1)
+        # add epoch key
+        df_expanded['epoch'] = self.epoch
+        df_overall_metrics['epoch'] = self.epoch
+
+        ## If we are doing eval during training (i.e. over train/valid sets at the end of an epoch) we log results to wandb
+        if split in ['train', 'valid'] and not eval_ref_model:
+            wandb_eval_d = dict()
+            mean_only = ['label_flip', 'is_valid_pp', 'is_adv_example']
+            mean_and_std = ['reward', 'vm_scores', 'sts_scores', 'pp_letter_diff', 'contradiction_scores']
+            for k in mean_only + mean_and_std:
+                name = k + "-mean"
+                wandb_eval_d[name + "-"+ split + "-hist"] = Histogram(df_grp_stats[name].tolist())
+            for k in mean_and_std:
+                name = k + "-std"
+                wandb_eval_d[name + "-" + split + "-hist"] = Histogram(df_grp_stats[name].tolist())
+            wandb_eval_d = merge_dicts(df_overall_metrics, wandb_eval_d)
+            wandb.log(wandb_eval_d, commit=True)
+        ## If we are evaluating the test set we need to add metrics to the summary
+        elif split == "test" and not eval_ref_model:
+            ### NOT DONE YET
+            raise NotImplementedError()
+        ## If we are evaluating baselines we don't log to wandb but instead write to a local csv.
+        elif eval_ref_model:
+            ### NOT FINALISED YET
+            raise NotImplementedError()
+            results = merge_dicts(cfg.eval_gen_params, df_overall_metrics)
+            ref_model_keys = ['datetime_run', 'dataset_name', "split", 'pp_name', 'sts_name',
+                              'nli_name', 'vm_name', 'seed', 'use_small_ds',  'reward_fn',
+            'reward_clip_max', 'reward_clip_min', 'reward_base', 'reward_vm_multiplier',
+             'sts_threshold', 'contradiction_threshold', 'pp_letter_diff_threshold',
+             'max_pp_length', 'n_eval_seq', 'eval_decode_method', 'orig_max_length']#, 'batch_size_train', 'batch_size_eval', 'lr', 'acc_steps', ]
+            d = vars(cfg)
+            ref_model_d = dict((k, d[k]) for k in ref_model_keys if k in d)
+            results = merge_dicts(ref_model_d, results)
+            results_df = pd.Series(results).to_frame().T
+            append_df_to_csv(results_df, f"{cfg.path_ref_pp_baselines}results.csv")
 
 
-                reward = self._reward_fn(data, raw, pp_l)
-                pp_probs = get_vm_probs(pp_l, self._cfg, self.vm_tokenizer, self.vm_model, return_predclass=False)
-                pp_predclass = torch.argmax(pp_probs, axis=1)
-                pp_truelabel_probs   = torch.gather(pp_probs, 1, data['label'][:,None]).squeeze()
-                pp_predclass_probs   = torch.gather(pp_probs, 1, pp_predclass[ :,None]).squeeze()
-                label_flip = ((pp_predclass != data['label']) * 1)
+        # When to log to wandb?
+            # During each epoch of training loop for train and valid set
+            # Not for ref_model. Just save to CSV
+            # Not for test set. Just save to csv
 
+        ## Append paraphrase-level dataframe to file
+        fname = f"{self._cfg.path_run}{split}{'_ref_model' if eval_ref_model else ''}.csv"
+        append_df_to_csv(df_expanded, path = fname)
 
-                self._add_batch_vars_to_batch_d_eval(raw, data, pp_l) # this assumes pp_l is same length as orig_l, which won't be case.
-                self.data_d[split].append(self.batch_d)          # might need a new container for this.
 
     def _add_batch_vars_to_batch_d_eval(self,  raw, data, pp_l):
         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
@@ -750,23 +821,23 @@ class Trainer:
             "pp_l": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
         })
 
-    def _compute_and_log_eval_metrics(self):
-        """Calculate eval metrics for each split and log to wandb, then empty data_d"""
-        wandb_d = dict(epoch=self.epoch)
-        eval_splits = ["training_step", 'train', "valid"] if self.epoch != 0 else ['train', 'valid']
-        for split in eval_splits:
-            # data d -> data frame
-            self.data_d[split] = self._convert_data_d_to_df(split)
-            self._set_df_colorder(split)
-            # calc metrics
-            df = self.data_d[split][['epoch'] + self._cfg.metrics]
-            if split == "training_step": df = df.query("epoch == @self.epoch")
-            d = df.mean()[self._cfg.metrics].to_dict()
-            wandb_d = merge_dicts(wandb_d, {f"{k}_{split}": v for k, v in d.items()})
-            # df append to file + empty data_d
-            append_df_to_csv(self.data_d[split], path = f"{self._cfg.path_run}{split}.csv")
-            self.data_d[split] = []
-        wandb.log(wandb_d, commit=True)
+#     def _compute_and_log_eval_metrics(self):
+#         """Calculate eval metrics for each split and log to wandb, then empty data_d"""
+#         wandb_d = dict(epoch=self.epoch)
+#         eval_splits = ["training_step", 'train', "valid"] if self.epoch != 0 else ['train', 'valid']
+#         for split in eval_splits:
+#             # data d -> data frame
+#             self.data_d[split] = self._convert_data_d_to_df(split)
+#             self._set_df_colorder(split)
+#             # calc metrics
+#             df = self.data_d[split][['epoch'] + self._cfg.metrics]
+#             if split == "training_step": df = df.query("epoch == @self.epoch")
+#             d = df.mean()[self._cfg.metrics].to_dict()
+#             wandb_d = merge_dicts(wandb_d, {f"{k}_{split}": v for k, v in d.items()})
+#             # df append to file + empty data_d
+#             append_df_to_csv(self.data_d[split], path = f"{self._cfg.path_run}{split}.csv")
+#             self.data_d[split] = []
+#         wandb.log(wandb_d, commit=True)
 
     def _set_df_colorder(self, data_d_key):
         colorder_eval=['idx','epoch', 'orig_l',  'pp_l','orig_truelabel_probs','pp_truelabel_probs',

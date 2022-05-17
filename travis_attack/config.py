@@ -18,7 +18,7 @@ class Config:
         # 2. prithivida/parrot_paraphraser_on_T5 (850 MB)
         # 3. ramsrigouthamg/t5-large-paraphraser-diverse-high-quality (2.75 GB)
         self.pp_name = "prithivida/parrot_paraphraser_on_T5"
-        self.dataset_name = "rotten_tomatoes"
+        self.dataset_name = "simple"
         # STS options
         # 1. sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
         # 2. sentence-transformers/paraphrase-MiniLM-L12-v2
@@ -32,7 +32,7 @@ class Config:
 
         ### Important parameters
         self.seed = 420
-        self.use_small_ds = True
+        self.use_small_ds = False
         self.sampling_strategy = "sample"  # "sample" or "greedy"
         self.lr = 4e-5
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
@@ -107,6 +107,7 @@ class Config:
         self.n_wkrs = 0
 
         ## Globals
+        self.datetime_run = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
         self.splits = ['train', 'valid', 'test']
         self.metrics = [ 'loss', 'pp_logp', 'ref_logp', 'kl_div', 'reward_with_penalty', 'reward', 'vm_score', "sts_score", 'label_flip', 'contradiction_score', 'pp_letter_diff']
         self.path_data = "./data/"
@@ -114,7 +115,9 @@ class Config:
         self.path_run = None  # keep as None; this is automatically filled out by Trainer class
         self.path_data_cache = "/data/tproth/.cache/huggingface/datasets/"
         self.path_logs = f"./logs/"
-        self.path_logfile = self.path_logs + f"run_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.txt"
+        self.path_logfile = self.path_logs + f"run_{self.datetime_run}.txt"
+        self.path_ref_pp_baselines = "./baselines/ref_pp_baselines/"
+
 
         # Adjust config depending on dataset.
         if self.dataset_name   == "simple":           self.adjust_config_for_simple_dataset()
@@ -147,9 +150,9 @@ class Config:
         self.label_cname = 'label'
         self.batch_size_train = 4
         self.batch_size_eval = 4
-        self.acc_steps = 2
-        self.n_train_epochs = 10
-        self.eval_freq = 5
+        self.acc_steps = 1
+        self.n_train_epochs = 5
+        self.eval_freq = 1
         self._select_vm_model()
         return self
 
@@ -161,7 +164,7 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 25
+        self.n_train_epochs = 5
         self.eval_freq = 1
         self._select_vm_model()
         return self

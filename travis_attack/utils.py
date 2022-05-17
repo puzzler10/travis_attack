@@ -2,12 +2,13 @@
 
 __all__ = ['logger', 'set_seed', 'set_session_options', 'setup_logging', 'setup_parser', 'timecode',
            'print_device_info', 'dump_tensors', 'Monitor', 'show_gpu', 'round_t', 'merge_dicts', 'display_all',
-           'unpack_nested_lists_in_df', 'append_df_to_csv', 'robust_rmtree', 'test_pp_model', 'start_wandb_run',
-           'resume_wandb_run', 'table2df']
+           'print_important_cfg_vars', 'unpack_nested_lists_in_df', 'append_df_to_csv', 'robust_rmtree',
+           'test_pp_model', 'start_wandb_run', 'resume_wandb_run', 'table2df']
 
 # Cell
 import torch, numpy as np, pandas as pd, time, GPUtil, wandb, os, sys, shutil, subprocess, argparse
 from timeit import default_timer as timer
+from pprint import pprint
 from threading import Thread
 import logging
 logger = logging.getLogger("travis_attack.utils")
@@ -204,6 +205,18 @@ def display_all(df):
         with pd.option_context("display.max_columns", 1000):
             with pd.option_context("max_colwidth", 480):
                 display(df)
+
+# Cell
+def print_important_cfg_vars(cfg):
+    d = vars(cfg)
+    ignore_keys = ['dl_batch_sizes', 'orig_cname', 'label_cname', 'n_shards', 'shard_contiguous', 'save_model_while_training', 'save_model_freq', 'devicenum',
+                    'splits', 'metrics','vm_num_labels','vocab_size', 'contra_label','dl_n_batches','dl_leftover_batch_size','acc_leftover_batches',
+                  'bucket_by_length', 'embedding_padding_multiple', 'n_train_steps', 'pin_memory', 'pad_token_embeddings', 'remove_long_orig_examples',
+                  'remove_misclassified_examples',  'reward_clip_min', 'reward_base', 'shuffle_train', 'wandb', 'zero_grad_with_none', 'unfreeze_last_n_layers',
+                  'datetime_run', 'device',  'n_wkrs', 'orig_padding_multiple', 'run_id', 'run_name']
+    ignore_keys = ignore_keys + [o for o in d.keys() if "path_" in o]
+    d1 = {k:v for k,v in d.items() if k not in ignore_keys}
+    pprint(d1, sort_dicts=False)
 
 # Cell
 def unpack_nested_lists_in_df(df, scalar_cols=[]):
