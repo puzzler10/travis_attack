@@ -22,7 +22,7 @@ from torch.distributions import Categorical
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import pytorch_cos_sim
 from collections import defaultdict
-from accelerate import Accelerator, notebook_launcher
+#from accelerate import Accelerator, notebook_launcher
 from cachetools import cached, LRUCache
 from types import MethodType
 from timeit import default_timer as timer
@@ -58,7 +58,8 @@ class Trainer:
         ## we set num_processes=1 because we are running on 1 GPU only and we must specify the argument
         # we can't use FP16 with PEGASUS model, so full precision is needed.
         #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1)
-        notebook_launcher(self._training_function, args=(), num_processes=1, use_fp16=False)
+        # notebook_launcher(self._training_function, args=(), num_processes=1, use_fp16=False)
+        self._training_function()
 
     def _reset_batch_dicts(self):
         # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
@@ -71,10 +72,11 @@ class Trainer:
         if self._cfg.wandb['log_grads']: wandb.watch(self.pp_model, log='gradients', log_freq=self._cfg.wandb['log_grads_freq'])
 
     def _setup_data_stores(self):
-        """Setup dict `self.data_d` to store observations. Setup column names for wandb tables. """
+        """Setup dict `self.data_d` to store observations."""
         # Raw observation data (lists of dicts, later becomes pandas df)
-        self.data_d = dict()
-        for split in self._cfg.splits + ['training_step']:   self.data_d[split] = []
+        self.data_d = dict(training_step=[])
+
+        #for split in self._cfg.splits + ['training_step']:   self.data_d[split] = []
         # Data containers and data loaders
         self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
 
@@ -114,10 +116,10 @@ class Trainer:
 #         self._add_wandb_run_summary_statistics()
 
     def _training_function(self):
-        self.accelerator = Accelerator(cpu=self.use_cpu)
-        self._cfg.device = self.accelerator.device
-        self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'] = self.accelerator.prepare(
-            self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'])
+        #self.accelerator = Accelerator(cpu=self.use_cpu)
+        #self._cfg.device = self.accelerator.device
+        #self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'] = self.accelerator.prepare(
+        #    self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'])
 
         logger.debug(show_gpu(f'GPU memory usage after loading models:'))
         progress_bar = tqdm(range(self._cfg.n_train_steps))
@@ -188,8 +190,12 @@ class Trainer:
         """
         if not self.pp_model.training: self.pp_model.train()
         if not self.vm_model.training: self.vm_model.train()
+        for k, v in data.items():
+            if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
+
         with timecode() as self.batch_time_d['time_generate_pp']:
-            pp_output, pp_l = self._pp_model_forward(data)
+            pp_output, pp_l = self._generate_train_pp(data)
+            self._update_batch_size_and_length_variables(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
 
@@ -197,7 +203,8 @@ class Trainer:
             loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
 
         with timecode() as self.batch_time_d['time_backwards']:
-            self.accelerator.backward(loss_batch)
+            loss_batch.backward()
+#            self.accelerator.backward(loss_batch)
 
         with timecode() as self.batch_time_d['time_calc_gradient_norm']:
             self.grad_norm =  self._get_gradient_update_norm()
@@ -307,16 +314,18 @@ class Trainer:
                 df_shape = (self._cfg.ds_length["train"],                       df.shape[1])
             else:
                 df_shape = (self._cfg.ds_length["train"] * self._cfg.eval_freq, df.shape[1])
-        elif data_d_key in ["train", "valid", "test"]:
-                 df_shape = (self._cfg.ds_length[data_d_key],                   df.shape[1])
+#         elif data_d_key in ["train", "valid", "test"]:
+#                  df_shape = (self._cfg.ds_length[data_d_key],                   df.shape[1])
         assert df_expanded.shape == df_shape
         return df_expanded
 
-    def _pp_model_forward(self, data):
-        pp_output, pp_l = self._get_paraphrases(data['input_ids'], data['attention_mask'])
+    def _generate_train_pp(self, data):
+        pp_output = self.pp_model.generate_with_grad(input_ids=data['input_ids'], attention_mask=data['attention_mask'],
+                        num_return_sequences=1, num_beams=1,**self._cfg.gen_params_train, return_dict_in_generate=True,
+                        output_scores=True, remove_invalid_values=False, pad_token_id = self.pp_tokenizer.pad_token_id,
+                        eos_token_id = self.pp_tokenizer.eos_token_id)
+        pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
        # self._assert_start_and_end_tokens_are_correct(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
-        # Keep the below line here because then both training and eval can access it
-        self._update_batch_size_and_length_variables(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
         return pp_output, pp_l
 
     def _assert_start_and_end_tokens_are_correct(self, orig_ids, pp_ids):
@@ -342,14 +351,6 @@ class Trainer:
         self.pp_batch_size       = pp_ids.shape[0]
         self.pp_length           = pp_ids.shape[1]
 
-    def _get_paraphrases(self, orig_ids, attention_mask):
-        """Wrapper for generating paraphrases (pp's)."""
-        pp_output = self.pp_model.generate_with_grad(input_ids=orig_ids, attention_mask=attention_mask, num_return_sequences=1, num_beams=1,
-                                                     **self._cfg.pp, return_dict_in_generate=True, output_scores=True, remove_invalid_values=False,
-                                                     pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
-        pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
-        return pp_output, pp_l
-
     def _loss_fn(self, data, raw, pp_output, pp_l):
         with timecode() as self.batch_time_d['time_reward_fn']:
             reward = self._reward_fn(data, raw, pp_l)
@@ -358,7 +359,7 @@ class Trainer:
             pp_logp = self._get_pp_logp(pp_output)
 
         with timecode() as self.batch_time_d['time_ref_logprobs']:
-            ref_logp = self._get_ref_logprobs(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
+            ref_logp = self._get_ref_logp(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
 
         kl_div =  torch.clip(pp_logp - ref_logp, min=0)  # sometimes this is negative, not sure why, so will clip to 0 in those cases
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
@@ -487,7 +488,7 @@ class Trainer:
 #         # Not a 100% test but very likely to identify
 #         idx_neginf = torch.nonzero(torch.isneginf(scores_stacked))
 #         assert len(idx_neginf[idx_neginf[:,2] == self.pp_tokenizer.eos_token_id, :]) == \
-#                   (self._cfg.pp["min_length"] -1) * self.orig_batch_size
+#                   (self._cfg.gen_params_train["min_length"] -1) * self.orig_batch_size
 #         del idx_neginf
 
         ### Take log softmax of scores and then extract those that correspond
@@ -549,7 +550,7 @@ class Trainer:
                         self._get_token_probability_metrics(scores_log_softmax, attention_mask, k=3))
         return logprobs_normalised
 
-    def _get_ref_logprobs(self, orig_ids, pp_ids):
+    def _get_ref_logp(self, orig_ids, pp_ids):
      #   orig_input_ids = self.pp_tokenizer(orig_l, return_tensors='pt', padding=True, truncation=True).input_ids
        # pp_input_ids   = self.pp_tokenizer(pp_l,   return_tensors='pt', padding=True, truncation=True).input_ids
         decoder_start_token_ids = torch.tensor([self.ref_pp_model.config.decoder_start_token_id], device=self._cfg.device).repeat(self.orig_batch_size, 1)
@@ -677,10 +678,10 @@ class Trainer:
         model = self.ref_pp_model if eval_ref_model else self.pp_model
         if model.training:             model.eval()
         if self.vm_model.training:     self.vm_model.eval()
-        if eval_ref_model:
-            self.accelerator_eval = Accelerator(cpu=self.use_cpu)
-            self._cfg.device = self.accelerator_eval.device
-            self.vm_model,model,self.sts_model = self.accelerator.prepare(self.vm_model,model,self.sts_model)
+     #   if eval_ref_model:
+     #       self.accelerator_eval = Accelerator(cpu=self.use_cpu)
+     #       self._cfg.device = self.accelerator_eval.device
+     #       self.vm_model,model,self.sts_model = self.accelerator.prepare(self.vm_model,model,self.sts_model)
         eval_batch_results = list()  # each eval batch appended to here, list of dicts
         dl_key = "train_eval" if split == "train" else split
         dl_raw = self.ds.dld_raw[dl_key]
@@ -689,7 +690,7 @@ class Trainer:
         ## Loop through batches in eval set
         for eval_batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
             pp_output = model.generate(input_ids=data['input_ids'].to(self._cfg.device), attention_mask=data['attention_mask'].to(self._cfg.device),
-                                          **self._cfg.eval_gen_params,   remove_invalid_values=False,
+                                          **self._cfg.gen_params_eval,   remove_invalid_values=False,
                                           pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
             pp_l = self.pp_tokenizer.batch_decode(pp_output, skip_special_tokens=True)
             pp_l_nested = [pp_l[i:i+self._cfg.n_eval_seq] for i in range(0, len(pp_l), self._cfg.n_eval_seq)]  # put paraphrases in nested lists
@@ -787,7 +788,7 @@ class Trainer:
         elif eval_ref_model:
             ### NOT FINALISED YET
             raise NotImplementedError()
-            results = merge_dicts(cfg.eval_gen_params, df_overall_metrics)
+            results = merge_dicts(self._cfg.gen_params_eval, df_overall_metrics)
             ref_model_keys = ['datetime_run', 'dataset_name', "split", 'pp_name', 'sts_name',
                               'nli_name', 'vm_name', 'seed', 'use_small_ds',  'reward_fn',
             'reward_clip_max', 'reward_clip_min', 'reward_base', 'reward_vm_multiplier',
@@ -849,17 +850,17 @@ class Trainer:
             colorder_training_step = colorder_eval + [o for o in self.data_d['training_step'].columns if 'time_' in o]
             assert len(set(colorder_training_step).difference(set(self.data_d[data_d_key].columns))) == 0
             self.data_d[data_d_key] = self.data_d[data_d_key][colorder_training_step]
-        else:
-            assert len(set(colorder_eval).difference(set(self.data_d[data_d_key].columns))) == 0
-            self.data_d[data_d_key] = self.data_d[data_d_key][colorder_eval]
+#         else:
+#             assert len(set(colorder_eval).difference(set(self.data_d[data_d_key].columns))) == 0
+#             self.data_d[data_d_key] = self.data_d[data_d_key][colorder_eval]
 
-    def _add_wandb_run_summary_statistics(self):
-        """Compute test metrics for the run and log them to the wandb run summary pane. """
-        ## Summary statistics of the test set
-        # From the last epoch atm because we don't have early stopping
-        test_metrics = self.data_d['test'].filter(self._cfg.metrics, axis=1).mean()
-        for metric, val in zip(test_metrics.index, test_metrics):
-            self.run.summary[f"{metric}_avg_test"] = val
+#     def _add_wandb_run_summary_statistics(self):
+#         """Compute test metrics for the run and log them to the wandb run summary pane. """
+#         ## Summary statistics of the test set
+#         # From the last epoch atm because we don't have early stopping
+#         test_metrics = self.data_d['test'].filter(self._cfg.metrics, axis=1).mean()
+#         for metric, val in zip(test_metrics.index, test_metrics):
+#             self.run.summary[f"{metric}_avg_test"] = val
 
     def _get_gradient_update_norm(self):
         total_norm = 0

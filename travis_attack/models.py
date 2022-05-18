@@ -31,8 +31,8 @@ def _prepare_pp_tokenizer_and_model(cfg):
     return pp_tokenizer, pp_model
 
 def _load_pp_model(cfg):
-    if cfg.using_t5():  pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True)
-    else:               pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10)
+    if cfg.using_t5():  pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True).to(cfg.device)
+    else:               pp_model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pp_name, local_files_only=True, max_position_embeddings = cfg.orig_max_length + 10).to(cfg.device)
     return pp_model
 
 def _prepare_vm_tokenizer_and_model(cfg):
@@ -45,7 +45,7 @@ def _prepare_vm_tokenizer_and_model(cfg):
     return vm_tokenizer, vm_model
 
 def _prepare_sts_model(cfg):
-    sts_model = SentenceTransformer(cfg.sts_name)
+    sts_model = SentenceTransformer(cfg.sts_name).to(cfg.device)
     return sts_model
 
 def _prepare_nli_tokenizer_and_model(cfg):
