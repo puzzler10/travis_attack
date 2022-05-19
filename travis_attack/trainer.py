@@ -22,7 +22,6 @@ from torch.distributions import Categorical
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import pytorch_cos_sim
 from collections import defaultdict
-#from accelerate import Accelerator, notebook_launcher
 from cachetools import cached, LRUCache
 from types import MethodType
 from timeit import default_timer as timer
@@ -43,7 +42,7 @@ from IPython.core.debugger import set_trace
 class Trainer:
     def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model,
                  sts_model, nli_tokenizer, nli_model, optimizer,
-                 ds, initial_eval=True, log_code=True, use_cpu=False):
+                 ds, initial_eval=True, log_code=True):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.epoch,self.acc_num,self.global_step,self.eval_num,self.param_norm = 0,0,0,0,0
@@ -55,10 +54,7 @@ class Trainer:
 
     def train(self):
         self._setup_wandb_run()
-        ## we set num_processes=1 because we are running on 1 GPU only and we must specify the argument
-        # we can't use FP16 with PEGASUS model, so full precision is needed.
         #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1)
-        # notebook_launcher(self._training_function, args=(), num_processes=1, use_fp16=False)
         self._training_function()
 
     def _reset_batch_dicts(self):
@@ -66,18 +62,12 @@ class Trainer:
         # there will be overlap between them.
         self.batch_d,self.batch_time_d,self.batch_wandb_d = dict(),dict(),dict()
 
-    def _setup_wandb_run(self, log_code=True):
+    def _setup_wandb_run(self):
         """Init wandb run, set up paths, create dir for model artifacts if needed, """
         self.run, self._cfg = start_wandb_run(self._cfg, log_code=self.log_code)
         if self._cfg.wandb['log_grads']: wandb.watch(self.pp_model, log='gradients', log_freq=self._cfg.wandb['log_grads_freq'])
 
     def _setup_data_stores(self):
-        """Setup dict `self.data_d` to store observations."""
-        # Raw observation data (lists of dicts, later becomes pandas df)
-        self.data_d = dict(training_step=[])
-
-        #for split in self._cfg.splits + ['training_step']:   self.data_d[split] = []
-        # Data containers and data loaders
         self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
 
     def _setup_gradient_accumulation_variables(self):
@@ -116,12 +106,6 @@ class Trainer:
 #         self._add_wandb_run_summary_statistics()
 
     def _training_function(self):
-        #self.accelerator = Accelerator(cpu=self.use_cpu)
-        #self._cfg.device = self.accelerator.device
-        #self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'] = self.accelerator.prepare(
-        #    self.vm_model,self.pp_model,self.ref_pp_model,self.sts_model,self.optimizer,self.ds.dld_tkn['train'])
-
-        logger.debug(show_gpu(f'GPU memory usage after loading models:'))
         progress_bar = tqdm(range(self._cfg.n_train_steps))
         self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
 
@@ -137,6 +121,7 @@ class Trainer:
             logger.info(f"Now on epoch {self.epoch} of {self._cfg.n_train_epochs}")
             if not self.pp_model.training: self.pp_model.train()
             with timecode() as time_train_one_epoch:
+                self.train_batch_results = []  # each train batch appended to here, list of dicts
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
                     self._reset_batch_dicts()
                     self._training_step(data, raw)
@@ -144,7 +129,6 @@ class Trainer:
                     self.acc_num = (self.acc_num + 1) % self._cfg.acc_steps
                     self.global_step += 1
                     progress_bar.update(1)
-
 
             wandb.log({'time/train_one_epoch_time': time_train_one_epoch.t,
                        'time/train_one_epoch_thoroughput': len(self.ds.dsd_tkn['train']) / time_train_one_epoch.t,
@@ -154,10 +138,17 @@ class Trainer:
                 plt = self._plot_grad_flow(self.pp_model.named_parameters())
                 wandb.log({"gradient flow": wandb.Image(plt)})  # doesn't work as a non-image (i.e. plotly)
                 del plt
-            #gc.collect()
-            #torch.cuda.empty_cache()
 
             if self._cfg.save_model_while_training and (self.epoch + 1) % self._cfg.save_model_freq == 0:  save_model(epoch)
+
+            ## Save to csv
+#             df1 = self._convert_batch_list_to_df(self.train_batch_results)
+#             df1 = self._set_df_colorder(df1)
+#             append_df_to_csv(df1, path = f"{self._cfg.path_run}training_step.csv")
+            df = pd.DataFrame(self.train_batch_results)
+            df = df.apply(pd.Series.explode).reset_index(drop=True)
+            df = self._set_df_colorder(df, is_eval=False)
+            append_df_to_csv(df, path = f"{self._cfg.path_run}training_step.csv")
 
             # Evaluation loop
             if self.epoch % self._cfg.eval_freq == 0:
@@ -204,7 +195,6 @@ class Trainer:
 
         with timecode() as self.batch_time_d['time_backwards']:
             loss_batch.backward()
-#            self.accelerator.backward(loss_batch)
 
         with timecode() as self.batch_time_d['time_calc_gradient_norm']:
             self.grad_norm =  self._get_gradient_update_norm()
@@ -218,7 +208,7 @@ class Trainer:
                 with timecode() as self.batch_time_d['time_opt_step']: pass
 
         self._prepare_train_batch_d(raw, data, pp_l)
-        self.data_d['training_step'].append(self.batch_d)
+        self.train_batch_results.append(self.batch_d)
         self._wandb_log_training_step()
 
     def _opt_step_and_calc_param_norm(self):
@@ -242,11 +232,11 @@ class Trainer:
         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
             'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
-            "orig_l": raw['text'],
-            "orig_label": data['label'].cpu().tolist(),
+            "orig": raw['text'],
+            "label": data['label'].cpu().tolist(),
             "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
-            "pp_l": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
+            "pp": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
         })
 
     def _prepare_train_batch_d(self, raw, data, pp_l):
@@ -257,10 +247,10 @@ class Trainer:
 
     def _wandb_log_training_step(self):
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, {
-            'vm_scores_hist':       Histogram(self.batch_d['vm_score']),
-            'vm_scores_mean':       np.mean(  self.batch_d['vm_score']),
-            'sts_scores_hist':      Histogram(self.batch_d['sts_score']),
-            'sts_scores_mean':      np.mean(  self.batch_d['sts_score']),
+            'vm_scores_hist':       Histogram(self.batch_d['vm_scores']),
+            'vm_scores_mean':       np.mean(  self.batch_d['vm_scores']),
+            'sts_scores_hist':      Histogram(self.batch_d['sts_scores']),
+            'sts_scores_mean':      np.mean(  self.batch_d['sts_scores']),
             'rewards_hist':         Histogram(self.batch_d['reward']),
             'rewards_mean':         np.mean(  self.batch_d['reward']),
             'pp_logp_hist':         Histogram(self.batch_d['pp_logp']),
@@ -278,46 +268,37 @@ class Trainer:
             'pp_letter_diff_mean':     np.mean(  self.batch_d['pp_letter_diff']),
             'pp_letter_percent_hist':  Histogram(self.batch_d['pp_letter_percent']),
             'pp_letter_percent_mean':  np.mean(  self.batch_d['pp_letter_percent']),
-            'contradiction_score_hist':     Histogram(self.batch_d['contradiction_score']),
-            'contradiction_score_mean':     np.mean(  self.batch_d['contradiction_score']),
+            'contradiction_scores_hist':     Histogram(self.batch_d['contradiction_scores']),
+            'contradiction_score_mean':     np.mean(  self.batch_d['contradiction_scores']),
             'acc_batch_sizes':      Histogram(self.acc_current_l),
             "gradient_norm":        self.grad_norm,
             "parameter_norm":       self.param_norm
         })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
-        not_for_wandb_keys = ['orig_l', 'orig_label','orig_truelabel_probs', 'pp_l', 'loss', 'pp_logp','ref_logp', 'kl_div', 'reward_with_penalty', 'reward_penalty',
-                              'reward', 'sts_score', 'vm_score', 'pp_letter_diff', 'pp_letter_percent','contradiction_score',
+        not_for_wandb_keys = ['orig', 'label','orig_truelabel_probs', 'pp', 'loss', 'pp_logp','ref_logp', 'kl_div', 'reward_with_penalty', 'reward_penalty',
+                              'reward', 'sts_scores', 'vm_scores', 'pp_letter_diff', 'pp_letter_percent','contradiction_scores',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
         wandb.log(self.batch_wandb_d, commit=True)
 
-    def _convert_data_d_to_df(self, data_d_key):
-        df = pd.DataFrame(self.data_d[data_d_key])
-        ### Check all lists have the same number of elements in their row
-        # last batch will have different number of elements to the batch size
-        nonscalar_cols = df.columns[[o == np.dtype('object') for o in df.head(1).dtypes]].tolist()
-        df_nonscalar_cols = df[nonscalar_cols]
-        # sometimes if we have one element in the last batch, the tolist() function returns a scalar instead of a list
-        # so we handle that case here
-        def scalar2list(x): return x if type(x) == list else [x]
-        if len(df_nonscalar_cols.iloc[-1]["idx"]) == 1: df_nonscalar_cols.iloc[-1] = df_nonscalar_cols.iloc[-1].apply(scalar2list)
-        df_lengths = df_nonscalar_cols.applymap(len)
-        assert df_lengths.eq(df_lengths.iloc[:,0], axis=0).all(None)
+#     def _convert_batch_list_to_df(self, batch_list):
+#         df = pd.DataFrame(batch_list)
+#         ### Check all lists have the same number of elements in their row
+#         # last batch will have different number of elements to the batch size
+#         nonscalar_cols = df.columns[[o == np.dtype('object') for o in df.head(1).dtypes]].tolist()
+#         df_nonscalar_cols = df[nonscalar_cols]
+#         # sometimes if we have one element in the last batch, the tolist() function returns a scalar instead of a list
+#         # so we handle that case here
+#         def scalar2list(x): return x if type(x) == list else [x]
+#         if len(df_nonscalar_cols.iloc[-1]["idx"]) == 1: df_nonscalar_cols.iloc[-1] = df_nonscalar_cols.iloc[-1].apply(scalar2list)
+#         df_lengths = df_nonscalar_cols.applymap(len)
+#         assert df_lengths.eq(df_lengths.iloc[:,0], axis=0).all(None)
 
-        ### Put in dataframes
-        # expand lists and broadcast scalars
-        scalar_cols = df.columns[[o != np.dtype('object') for o in df.head(1).dtypes]].tolist()
-        df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
-        # check shape of new dataframe is correct
-        if data_d_key == "training_step":
-            if self.epoch == 0:
-                df_shape = (self._cfg.ds_length["train"],                       df.shape[1])
-            else:
-                df_shape = (self._cfg.ds_length["train"] * self._cfg.eval_freq, df.shape[1])
-#         elif data_d_key in ["train", "valid", "test"]:
-#                  df_shape = (self._cfg.ds_length[data_d_key],                   df.shape[1])
-        assert df_expanded.shape == df_shape
-        return df_expanded
+#         ### Put in dataframes
+#         # expand lists and broadcast scalars
+#         scalar_cols = df.columns[[o != np.dtype('object') for o in df.head(1).dtypes]].tolist()
+#         df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
+#         return df_expanded
 
     def _generate_train_pp(self, data):
         pp_output = self.pp_model.generate_with_grad(input_ids=data['input_ids'], attention_mask=data['attention_mask'],
@@ -325,23 +306,7 @@ class Trainer:
                         output_scores=True, remove_invalid_values=False, pad_token_id = self.pp_tokenizer.pad_token_id,
                         eos_token_id = self.pp_tokenizer.eos_token_id)
         pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
-       # self._assert_start_and_end_tokens_are_correct(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
         return pp_output, pp_l
-
-    def _assert_start_and_end_tokens_are_correct(self, orig_ids, pp_ids):
-        """Make sure input sequences (orig) and output sequences (pp) start and end with the
-        right special tokens (depends on tokenizer)"""
-        # Input
-        if self.start_end_token_d['input_start_id'] is not None:
-            assert torch.all(orig_ids[:,0] == self.start_end_token_d['input_start_id'])
-        # can probs rewrite this to make it nicer but it's fine for now
-        assert torch.all(torch.logical_or(orig_ids[:,-1] == self.start_end_token_d['input_end_id'][0],
-                                          orig_ids[:,-1] == self.start_end_token_d['input_end_id'][1]))
-
-        # Output
-        assert torch.all(pp_ids[:,0] == self.start_end_token_d['output_start_id'])
-        assert torch.all(torch.logical_or(pp_ids[:,-1] == self.start_end_token_d['output_end_id'][0],
-                                          pp_ids[:,-1] == self.start_end_token_d['output_end_id'][1]))
 
     def _update_batch_size_and_length_variables(self, orig_ids, pp_ids):
         # Update variables
@@ -458,11 +423,11 @@ class Trainer:
         self.batch_d['label_flip']          = vm_d['label_flip'].detach().cpu().tolist()
         self.batch_d['label_flip_fraction'] = np.mean(self.batch_d['label_flip'])
         self.batch_d['reward']              = rewards.detach().cpu().tolist()
-        self.batch_d['vm_score']            = vm_scores.detach().cpu().tolist()
-        self.batch_d['sts_score']           = sts_scores.detach().cpu().tolist()
+        self.batch_d['vm_scores']            = vm_scores.detach().cpu().tolist()
+        self.batch_d['sts_scores']           = sts_scores.detach().cpu().tolist()
         self.batch_d['pp_letter_diff']      = pp_letter_diff.tolist()
         self.batch_d['pp_letter_percent']   = pp_diff_d['pp_letter_percent'].tolist()
-        self.batch_d['contradiction_score'] = contradiction_scores.cpu().tolist()
+        self.batch_d['contradiction_scores'] = contradiction_scores.cpu().tolist()
         return rewards
 
     def _get_pp_logp(self, pp_output):
@@ -482,15 +447,6 @@ class Trainer:
         assert torch.all(~torch.isnan(scores_stacked))
         assert torch.all(~torch.isposinf(scores_stacked))
 
-#         # Rough check that every time the eos token occurs before min_length it is -inf for all elements in batch
-#         # We do min_length - 1 because sequences are allowed to have length min_length so that idx
-#         # shouldn't be set to -inf
-#         # Not a 100% test but very likely to identify
-#         idx_neginf = torch.nonzero(torch.isneginf(scores_stacked))
-#         assert len(idx_neginf[idx_neginf[:,2] == self.pp_tokenizer.eos_token_id, :]) == \
-#                   (self._cfg.gen_params_train["min_length"] -1) * self.orig_batch_size
-#         del idx_neginf
-
         ### Take log softmax of scores and then extract those that correspond
         # to the generated sequences
         scores_log_softmax = scores_stacked.log_softmax(2)
@@ -502,15 +458,6 @@ class Trainer:
         self._check_scores_log_softmax_sums(scores_log_softmax)
         # probs should be 1-1 with the filtered tkns: check shape to confirm
         assert seq_token_log_probs.shape == seq_without_first_tkn.shape
-        # Check that the last token probability corresponds to a possible end token
-        # this has to be tested before the attention mask is multiplied with it because if the
-        # padding token is 0 then this will be 0 too (and not the same as scores_log_softmax)
-     #   output_end_ids = self.start_end_token_d['output_end_id']
-     #   assert all([o in scores_log_softmax[:, -1, output_end_ids] for o in seq_token_log_probs[:,-1]])
-     #   del output_end_ids
-        ## THIS ONE IS LONG - a test rather than assert
-        # check_seq_token_log_prob_values_are_correct(seq_without_first_tkn, scores_log_softmax,
-        #                                             seq_token_log_probs)
 
         ### Generate attention mask to identify padding tokens. Then apply it to the
         # sequence probabilities so that we don't consider probability of padding tokens
@@ -521,15 +468,13 @@ class Trainer:
         attention_mask = self.pp_model._prepare_attention_mask_for_generation(
             seq_without_first_tkn, self.pp_tokenizer.pad_token_id, self.pp_tokenizer.eos_token_id
         )
-        seq_token_log_probs = torch.nan_to_num(seq_token_log_probs, nan=None, posinf=None, neginf=-20)
+        seq_token_log_probs = torch.nan_to_num(seq_token_log_probs, nan=None, posinf=None, neginf=-50)
         seq_token_log_probs = seq_token_log_probs * attention_mask
         ### TESTS
         assert seq_token_log_probs.shape == attention_mask.shape == seq_token_log_probs.shape
         # check attention mask only has 0 for padding tokens and not eos tokens or anything else
         assert all(seq_without_first_tkn[attention_mask == 0] == self.pp_tokenizer.pad_token_id)
         check_no_nans_or_infs(seq_token_log_probs)
-        # check that we aren't picking extrememly rare tokens
-        # assert torch.all(seq_token_log_probs  > -10)
 
         ### Get sequence probabilities by summing up token log probabilities
         seq_log_prob = seq_token_log_probs.sum(-1)
@@ -551,8 +496,6 @@ class Trainer:
         return logprobs_normalised
 
     def _get_ref_logp(self, orig_ids, pp_ids):
-     #   orig_input_ids = self.pp_tokenizer(orig_l, return_tensors='pt', padding=True, truncation=True).input_ids
-       # pp_input_ids   = self.pp_tokenizer(pp_l,   return_tensors='pt', padding=True, truncation=True).input_ids
         decoder_start_token_ids = torch.tensor([self.ref_pp_model.config.decoder_start_token_id], device=self._cfg.device).repeat(self.orig_batch_size, 1)
         pp_ids = torch.cat([decoder_start_token_ids, pp_ids], 1)
         logprobs = []
@@ -580,17 +523,6 @@ class Trainer:
         assert sums.shape[1] == self.pp_length - 1
         # check that they sum to 1 along the self.pp_length axis (or close enough at least)
         assert torch.allclose(sums, torch.ones(sums.size(), device=self._cfg.device), atol = 5e-2)
-
-    def _check_seq_token_log_prob_values_are_correct(self, seq_without_first_tkn, scores_log_softmax, seq_token_log_probs):
-        """Just enumerates and checks values
-        Quite slow for large batches so run as a test rather than an assert in every batch.
-        """
-        l = []
-        for i_ex in range(self.orig_batch_size):
-            for i_step in range(self.pp_length - 1):
-                i_tkn = seq_without_first_tkn[i_ex][i_step].item()
-                l.append(scores_log_softmax[i_ex,i_step, i_tkn] == seq_token_log_probs[i_ex,i_step])
-        assert all(l)
 
     def _get_entropy_hist(self, scores_stacked, attention_mask):
         ent = Categorical(logits = scores_stacked).entropy().detach()
@@ -641,47 +573,11 @@ class Trainer:
             (torch.sum(allprobs > (1/self._cfg.vocab_size)) / allprobs.shape[0]).item()
         return token_prob_d
 
-#     def _eval_dl(self, split):
-#         """Get evaluation metrics for a dataloader"""
-#         # Put models in eval mode and do the forward pass
-#         # Current logic: push all batches together into one big list.
-#         self._reset_batch_dicts()
-#         if self.pp_model.training: self.pp_model.eval()
-#         if self.vm_model.training: self.vm_model.eval()
-#         # The "train_eval" dataloader is the same as train but a bigger batch size and explicitly no shuffling
-#         dl_key = "train_eval" if split == "train" else split
-#         dl_raw = self.ds.dld_raw[dl_key]
-#         dl_tkn = self.ds.dld_tkn[dl_key]
-#         with torch.no_grad():
-#             for self.batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
-#                 logger.debug(f"EVAL: {split} with dl_key {dl_key}")
-#                 logger.debug(f"Elements in data_d[{split}]: {len(self.data_d[split])}")
-#                 logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loading data: '))
-#                 assert data['input_ids'].shape[0] == len(raw['text_with_prefix'])
-#                 self._reset_batch_dicts()
-#                 assert len(self.batch_d) == len(self.batch_time_d) == len(self.batch_wandb_d) == 0
-#                 for k, v in data.items():
-#                     # Eval data isn't loaded on GPU by default unlike train data. This is because train dataloader goes
-#                     # through accelerator `prepare` function, but eval dataloaders don't. So here we load the data onto GPU
-#                     if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
-#                 pp_output, pp_l = self._pp_model_forward(data)
-#                 _ = self._loss_fn(data, raw, pp_output, pp_l)
-#                 self._add_batch_vars_to_batch_d(raw, data, pp_l)
-#                 self.data_d[split].append(self.batch_d)
-#                 logger.debug(show_gpu(f'EVAL, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after loss_fn pass: '))
-
-    def eval_ref_model(self, split):
-        notebook_launcher(self._eval_function, args=(split, True), num_processes=1, use_fp16=False)
-
     def _eval_function(self, split, eval_ref_model=False):
         ## Setup
         model = self.ref_pp_model if eval_ref_model else self.pp_model
         if model.training:             model.eval()
         if self.vm_model.training:     self.vm_model.eval()
-     #   if eval_ref_model:
-     #       self.accelerator_eval = Accelerator(cpu=self.use_cpu)
-     #       self._cfg.device = self.accelerator_eval.device
-     #       self.vm_model,model,self.sts_model = self.accelerator.prepare(self.vm_model,model,self.sts_model)
         eval_batch_results = list()  # each eval batch appended to here, list of dicts
         dl_key = "train_eval" if split == "train" else split
         dl_raw = self.ds.dld_raw[dl_key]
@@ -695,43 +591,43 @@ class Trainer:
             pp_l = self.pp_tokenizer.batch_decode(pp_output, skip_special_tokens=True)
             pp_l_nested = [pp_l[i:i+self._cfg.n_eval_seq] for i in range(0, len(pp_l), self._cfg.n_eval_seq)]  # put paraphrases in nested lists
             assert all([len(l) == self._cfg.n_eval_seq for l in pp_l_nested])  # make sure we generate the same number of paraphrases for each
-            eval_batch_results.append({'idx': raw['idx'], 'orig': raw['text'], 'pp_l':pp_l_nested, 'orig_n_letters': data['n_letters'].tolist(),
+            eval_batch_results.append({'idx': raw['idx'], 'orig': raw['text'], 'pp':pp_l_nested, 'orig_n_letters': data['n_letters'].tolist(),
                                   'label': raw['label'], 'orig_truelabel_probs': data['orig_truelabel_probs'].tolist(), 'orig_sts_embeddings': data['orig_sts_embeddings'] })
 
         ## Convert eval batches to dataframes and create paraphrase identifier `pp_idx`
         df = pd.DataFrame(eval_batch_results)
         df = df.apply(pd.Series.explode).reset_index(drop=True)  # This dataframe has one row per original example
-        def get_pp_idx(row): return ["orig_" + str(row['idx']) + "-epoch_" + str(self.epoch) +  "-pp_" +  str(pp_i) for pp_i in range(1, len(row['pp_l'])+1)]
+        def get_pp_idx(row): return ["orig_" + str(row['idx']) + "-epoch_" + str(self.epoch) +  "-pp_" +  str(pp_i) for pp_i in range(1, len(row['pp'])+1)]
         df['pp_idx'] = df.apply(get_pp_idx, axis=1)
 
         ## Create seperate dataframe for sts scores and expand original dataframe
-        df_sts = df[['pp_idx', 'pp_l', 'orig_sts_embeddings']]
+        df_sts = df[['pp_idx', 'pp', 'orig_sts_embeddings']]
         df1 = df.drop(columns='orig_sts_embeddings')
-        scalar_cols = [o for o in df1.columns if o not in ['pp_l', 'pp_idx']]
+        scalar_cols = [o for o in df1.columns if o not in ['pp', 'pp_idx']]
         df_expanded = unpack_nested_lists_in_df(df1, scalar_cols=scalar_cols) # This dataframe has one row per paraphrase
 
         ## Add vm_scores, sts_scores, pp_letter_diff, contradiction scores
         ds_expanded = Dataset.from_pandas(df_expanded)
         def add_vm_scores_eval(batch):
-            output = self._get_vm_scores(pp_l=batch['pp_l'], labels=torch.tensor(batch['label'], device = self._cfg.device),
+            output = self._get_vm_scores(pp_l=batch['pp'], labels=torch.tensor(batch['label'], device = self._cfg.device),
                                             orig_truelabel_probs=torch.tensor(batch['orig_truelabel_probs'], device=self._cfg.device))
             for k, v in output.items(): batch[k] = v.cpu().tolist()
             return batch
         def add_pp_letter_diff(batch):
-            output = self._get_pp_letter_diff(pp_l=batch['pp_l'], orig_n_letters=batch['orig_n_letters'])
+            output = self._get_pp_letter_diff(pp_l=batch['pp'], orig_n_letters=batch['orig_n_letters'])
             for k, v in output.items(): batch[k] = v.tolist()
             return batch
         def add_contradiction_score(batch):
-            batch['contradiction_scores'] = self._get_contradiction_scores(orig_l=batch['orig'], pp_l=batch['pp_l']).cpu().tolist()
+            batch['contradiction_scores'] = self._get_contradiction_scores(orig_l=batch['orig'], pp_l=batch['pp']).cpu().tolist()
             return batch
         ds_expanded = ds_expanded.map(add_vm_scores_eval,        batched=True)
         ds_expanded = ds_expanded.map(add_pp_letter_diff,        batched=True)
         ds_expanded = ds_expanded.map(add_contradiction_score,   batched=True)
-        def add_sts_scores_eval(row):  return self._get_sts_scores(row['pp_l'], row['orig_sts_embeddings'], eval_mode=True)[0]
+        def add_sts_scores_eval(row):  return self._get_sts_scores(row['pp'], row['orig_sts_embeddings'], eval_mode=True)[0]
         df_sts['sts_scores'] = df_sts.apply(add_sts_scores_eval, axis=1)
 
         ## Merge together results
-        df_sts = df_sts.drop(columns = ['pp_l','orig_sts_embeddings'])
+        df_sts = df_sts.drop(columns = ['pp','orig_sts_embeddings'])
         df_sts_expanded = df_sts.apply(pd.Series.explode).reset_index(drop=True)
         ds_expanded = Dataset.from_pandas(ds_expanded.to_pandas().merge(df_sts_expanded, how='left', on='pp_idx').reset_index(drop=True))
 
@@ -807,52 +703,44 @@ class Trainer:
             # Not for test set. Just save to csv
 
         ## Append paraphrase-level dataframe to file
+        df_expanded = self._set_df_colorder(df_expanded, is_eval=True)
         fname = f"{self._cfg.path_run}{split}{'_ref_model' if eval_ref_model else ''}.csv"
         append_df_to_csv(df_expanded, path = fname)
-
 
     def _add_batch_vars_to_batch_d_eval(self,  raw, data, pp_l):
         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
             'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
-            "orig_l": raw['text'],
-            "orig_label": data['label'].cpu().tolist(),
+            "orig": raw['text'],
+            "label": data['label'].cpu().tolist(),
             "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
-            "pp_l": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
+            "pp": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
         })
 
-#     def _compute_and_log_eval_metrics(self):
-#         """Calculate eval metrics for each split and log to wandb, then empty data_d"""
-#         wandb_d = dict(epoch=self.epoch)
-#         eval_splits = ["training_step", 'train', "valid"] if self.epoch != 0 else ['train', 'valid']
-#         for split in eval_splits:
-#             # data d -> data frame
-#             self.data_d[split] = self._convert_data_d_to_df(split)
-#             self._set_df_colorder(split)
-#             # calc metrics
-#             df = self.data_d[split][['epoch'] + self._cfg.metrics]
-#             if split == "training_step": df = df.query("epoch == @self.epoch")
-#             d = df.mean()[self._cfg.metrics].to_dict()
-#             wandb_d = merge_dicts(wandb_d, {f"{k}_{split}": v for k, v in d.items()})
-#             # df append to file + empty data_d
-#             append_df_to_csv(self.data_d[split], path = f"{self._cfg.path_run}{split}.csv")
-#             self.data_d[split] = []
-#         wandb.log(wandb_d, commit=True)
+    def _set_df_colorder(self, df, is_eval=False):
+        if is_eval:
+            colorder_eval = [
+               'idx', 'epoch', 'orig', 'pp', 'pp_idx', 'is_adv_example', 'is_valid_pp', 'label_flip', 'reward',
+                'vm_scores','sts_scores', 'contradiction_scores', 'pp_letter_diff',
+                'label', 'orig_truelabel_probs', 'pp_truelabel_probs', 'pp_predclass', 'pp_predclass_probs',
+                'orig_n_letters','pp_letter_percent'
+            ]
+            df = df[colorder_eval]
+        else:
+            colorder_train=[
+                'idx','epoch', 'orig',  'pp','orig_truelabel_probs','pp_truelabel_probs',
+                'pp_predclass_probs','label','pp_predclass','label_flip', 'vm_scores','sts_scores',
+                'pp_letter_diff', 'pp_letter_percent',  'contradiction_scores', 'reward', 'pp_logp','ref_logp',
+                'kl_div', 'reward_penalty',  'reward_with_penalty','loss','batch_num',
+                'global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
+                'orig_length','orig_batch_size','pp_length','pp_batch_size'
+            ]
+            colorder_train= colorder_train + [o for o in df.columns if 'time_' in o]
+            assert len(set(colorder_train).difference(set(df.columns))) == 0
+            df = df[colorder_train]
+        return df
 
-    def _set_df_colorder(self, data_d_key):
-        colorder_eval=['idx','epoch', 'orig_l',  'pp_l','orig_truelabel_probs','pp_truelabel_probs',
-        'pp_predclass_probs','orig_label','pp_predclass','label_flip', 'vm_score','sts_score', 'pp_letter_diff', 'pp_letter_percent',
-        'contradiction_score', 'reward', 'pp_logp','ref_logp', 'kl_div', 'reward_penalty',  'reward_with_penalty','loss','batch_num',
-                       'global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
-                       'orig_length','orig_batch_size','pp_length','pp_batch_size']
-        if data_d_key == "training_step":
-            colorder_training_step = colorder_eval + [o for o in self.data_d['training_step'].columns if 'time_' in o]
-            assert len(set(colorder_training_step).difference(set(self.data_d[data_d_key].columns))) == 0
-            self.data_d[data_d_key] = self.data_d[data_d_key][colorder_training_step]
-#         else:
-#             assert len(set(colorder_eval).difference(set(self.data_d[data_d_key].columns))) == 0
-#             self.data_d[data_d_key] = self.data_d[data_d_key][colorder_eval]
 
 #     def _add_wandb_run_summary_statistics(self):
 #         """Compute test metrics for the run and log them to the wandb run summary pane. """

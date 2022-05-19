@@ -47,7 +47,7 @@ def postprocess_df(df, filter_idx=None, num_proc=min(8, psutil.cpu_count())):
     df = df.sort_values(by=['idx', "epoch"], axis=0)
     if filter_idx is not None:   df = df.query("idx <= @filter_idx")  # for testing purposes
     # Getting weird behaviour with group_by's so binning some of the numeric values
-    for col in ['sts_score','vm_score','reward', 'pp_truelabel_probs']:  df.loc[:, col] = df.loc[:, col].round(5)
+    for col in ['sts_scores','vm_scores','reward', 'pp_truelabel_probs']:  df.loc[:, col] = df.loc[:, col].round(5)
     # Add metrics
     df = _add_number_of_unique_pps_per_idx(df)
     df = _add_number_of_pp_changes_per_idx(df)
@@ -56,13 +56,13 @@ def postprocess_df(df, filter_idx=None, num_proc=min(8, psutil.cpu_count())):
     return df
 
 def _add_number_of_unique_pps_per_idx(df):
-    df_grp = df.groupby("idx").agg({"pp_l":"nunique"})
-    df_grp= df_grp.rename(columns = {"pp_l":"idx_n_unique_pp"})
+    df_grp = df.groupby("idx").agg({"pp":"nunique"})
+    df_grp= df_grp.rename(columns = {"pp":"idx_n_unique_pp"})
     df = df.merge(df_grp, left_on='idx', right_index=True, how='left')
     return df
 
 def _add_number_of_pp_changes_per_idx(df):
-    df['pp_changed'] = df.sort_values(["idx","epoch"]).groupby('idx')['pp_l'].shift().ne(df['pp_l']).astype(int)
+    df['pp_changed'] = df.sort_values(["idx","epoch"]).groupby('idx')['pp'].shift().ne(df['pp']).astype(int)
     df_grp = df.groupby('idx').agg({'pp_changed': 'sum'})
     df_grp= df_grp.rename(columns = {"pp_changed":"idx_n_pp_changes"})
     df_grp['idx_n_pp_changes'] -= 1  # The first paraphrase isn't a change
@@ -78,8 +78,8 @@ def _add_epoch_of_first_label_flip(df):
     return df
 
 def _add_text_metrics(df, num_proc=min(8, psutil.cpu_count())):
-    df = _add_text_metrics_for_column(df, "orig_l", suffix="orig", num_proc=num_proc)
-    df = _add_text_metrics_for_column(df, "pp_l",   suffix="pp",   num_proc=num_proc)
+    df = _add_text_metrics_for_column(df, "orig", suffix="orig", num_proc=num_proc)
+    df = _add_text_metrics_for_column(df, "pp",   suffix="pp",   num_proc=num_proc)
     logger.info("Calculating metric differences between orig and pp")
     for k in _get_text_metrics("some arbritary text here").keys():  df[f"{k}_diff"] = df[f"{k}_orig"] - df[f"{k}_pp"]
     df = _add_text_pair_metrics(df, num_proc=num_proc)
@@ -112,13 +112,13 @@ def _get_text_metrics(text):
 # Cell
 def _add_text_pair_metrics(df, num_proc):
     logger.info("Calculating text pair statistics for (orig, pp) unique pairs")
-    ds_pairs = Dataset.from_pandas(df[['orig_l','pp_l']].drop_duplicates())
+    ds_pairs = Dataset.from_pandas(df[['orig','pp']].drop_duplicates())
     ds_pairs = _get_text_pair_metrics_for_ds(ds_pairs, num_proc=num_proc)
-    df = pd.merge(df, pd.DataFrame(ds_pairs), how='left', on=['orig_l', 'pp_l'])
+    df = pd.merge(df, pd.DataFrame(ds_pairs), how='left', on=['orig', 'pp'])
     return df
 
 def _get_text_pair_metrics_for_ds(ds, num_proc):
-    return ds.map(_get_text_pair_metrics, input_columns = ["orig_l", "pp_l"], batched=False, num_proc=num_proc)
+    return ds.map(_get_text_pair_metrics, input_columns = ["orig", "pp"], batched=False, num_proc=num_proc)
 
 def _get_text_pair_metrics(orig, pp):
     d = _get_removals_insertions_unchanged_phrases(orig, pp)
