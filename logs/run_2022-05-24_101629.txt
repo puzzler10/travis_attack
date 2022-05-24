@@ -1,0 +1,52 @@
+05-24 10:16 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-24 10:21 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to True
+05-24 10:21 travis_attack.data DEBUG    Dataset lengths: {'train': 163, 'test': 21, 'valid': 20}
+05-24 10:21 travis_attack.data DEBUG    Total training epochs:210
+05-24 10:21 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 3, 'test': 1, 'valid': 0, 'train_eval': 3}
+05-24 10:21 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 3], 'test': [4, 4, 4, 4, 4, 1], 'valid': [4, 4, 4, 4, 4], 'train_eval': [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3]}
+05-24 10:54 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-24 10:54 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to True
+05-24 10:54 travis_attack.data DEBUG    Dataset lengths: {'train': 29, 'test': 2, 'valid': 6}
+05-24 10:54 travis_attack.data DEBUG    Total training epochs:8
+05-24 10:54 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 5, 'test': 2, 'valid': 2, 'train_eval': 1}
+05-24 10:54 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [8, 8, 8, 5], 'test': [2], 'valid': [4, 2], 'train_eval': [4, 4, 4, 4, 4, 4, 4, 1]}
+05-24 10:54 wandb.jupyter ERROR    Failed to detect the name of this notebook, you can set it manually with the WANDB_NOTEBOOK_NAME environment variable to enable code saving.
+05-24 10:58 travis_attack.trainer INFO     Launching initial eval run: train
+05-24 11:00 travis_attack.trainer INFO     Launching initial eval run: train
+05-24 11:00 travis_attack.trainer INFO     Launching initial eval run: valid
+05-24 11:00 travis_attack.trainer INFO     Launching initial eval run: test
+05-24 11:00 travis_attack.trainer INFO     Now on epoch 1 of 2
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  31.6% (7280 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  35.2% (8114 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  35.2% (8114 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  35.6% (8210 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  40.5% (9342 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  41.0% (9438 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 3, GPU memory usage after forward pass:  41.0% (9438 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 3, GPU memory usage after backwards pass:  41.0% (9438 out of 23040)
+05-24 11:00 travis_attack.trainer INFO     Now on epoch 2 of 2
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  33.9% (7816 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  40.3% (9290 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  40.3% (9290 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  40.3% (9290 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  41.2% (9482 out of 23040)
+05-24 11:00 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  41.2% (9482 out of 23040)
+05-24 11:01 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 3, GPU memory usage after forward pass:  41.2% (9482 out of 23040)
+05-24 11:01 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 3, GPU memory usage after backwards pass:  41.2% (9482 out of 23040)
+05-24 11:10 travis_attack.insights INFO     Dataframes have shapes ['training_step: (58, 49)', 'train: (696, 20)', 'valid: (144, 20)', 'test: (32, 20)']
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column orig
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column pp
+05-24 11:10 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-24 11:10 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column orig
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column pp
+05-24 11:10 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-24 11:10 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column orig
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column pp
+05-24 11:10 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-24 11:10 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column orig
+05-24 11:10 travis_attack.insights INFO     Adding text metrics for column pp
+05-24 11:10 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-24 11:10 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs

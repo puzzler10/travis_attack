@@ -18,7 +18,7 @@ class Config:
         # 2. prithivida/parrot_paraphraser_on_T5 (850 MB)
         # 3. ramsrigouthamg/t5-large-paraphraser-diverse-high-quality (2.75 GB)
         self.pp_name = "prithivida/parrot_paraphraser_on_T5"
-        self.dataset_name = "simple"
+        self.dataset_name = "rotten_tomatoes"
         # STS options
         # 1. sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
         # 2. sentence-transformers/paraphrase-MiniLM-L12-v2
@@ -32,7 +32,7 @@ class Config:
 
         ### Important parameters
         self.seed = 420
-        self.use_small_ds = False
+        self.use_small_ds = True
         self.lr = 1e-5
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
         self.reward_clip_max = 3
@@ -44,19 +44,19 @@ class Config:
         self.pp_letter_diff_threshold = 30
 
         self.reward_penalty_type = "kl_div"  # "kl_div" or "ref_logp"
-        self.kl_coef = 0.2              # only used if reward_penalty_type == "kl_div"
+        self.kl_coef = 0.15             # only used if reward_penalty_type == "kl_div"
         self.ref_logp_coef = 0.05       # only used if reward_penalty_type == "ref_logp"
         self.max_pp_length = 48
         self.decode_method_train = "sample"  # "sample" or "greedy"
         self.decode_method_eval = "diverse_beam_search"
         self.gen_params_train = {
-            "do_sample": False if self.decode_method_train == "greedy" else True,
             "min_length": 4,
             "max_length": self.max_pp_length,
-            "temperature": 1.3,
-            "top_p": 0.98,
-            "length_penalty" : 1.,
-            "repetition_penalty": 1.
+            "do_sample": True        if self.decode_method_train == "sample" else False,
+            "temperature": 1.3       if self.decode_method_train == "sample" else None,
+            "top_p": 0.98            if self.decode_method_train == "sample" else None,
+            "length_penalty" : 1.    if self.decode_method_train == "sample" else None,
+            "repetition_penalty": 1. if self.decode_method_train == "greedy" else None
         }
         self.n_eval_seq = 8
         self.gen_params_eval = self._get_gen_params_eval()
@@ -101,15 +101,14 @@ class Config:
 
         ## Globals
         self.datetime_run = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-        self.splits = ['train', 'valid', 'test']
-        #self.metrics = [ 'loss', 'pp_logp', 'ref_logp', 'kl_div', 'reward_with_penalty', 'reward', 'vm_score', "sts_score", 'label_flip', 'contradiction_score', 'pp_letter_diff']
         self.path_data = "./data/"
         self.path_checkpoints = "../model_checkpoints/travis_attack/"
-        self.path_run = None  # keep as None; this is automatically filled out by Trainer class
+        self.path_run = None  # keep as None; this is automatically filled out by trainer (code in utils)
         self.path_data_cache = "/data/tproth/.cache/huggingface/datasets/"
         self.path_logs = f"./logs/"
         self.path_logfile = self.path_logs + f"run_{self.datetime_run}.txt"
         self.path_ref_pp_baselines = "./baselines/ref_pp_baselines/"
+        self.path_results = "./results/"
 
 
         # Adjust config depending on dataset.
@@ -127,12 +126,16 @@ class Config:
 
     def _get_gen_params_eval(self):
         common_params = dict(num_return_sequences=self.n_eval_seq, max_length=self.max_pp_length)
-        sampling_params = dict(top_p=0.95, temperature=0.8, length_penalty=1)
         gen_params_eval = dict(
-            beam_search         = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq),
-            diverse_beam_search = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq, diversity_penalty=1000., num_beam_groups=int(self.n_eval_seq/2)),
-            sampling            = dict(**common_params, do_sample=True,  num_beams=1,               **sampling_params)
-            #beam_sampling       = dict(**common_params, do_sample=True,  num_beams=self.n_eval_seq, **sampling_params)  # SLOW
+            beam_search         = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
+                                       top_p=None, temperature=None, length_penalty=None,
+                                       diversity_penalty=None, num_beam_groups=None),
+            diverse_beam_search = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
+                                       top_p=None, temperature=None, length_penalty=None,
+                                       diversity_penalty=1000., num_beam_groups=int(self.n_eval_seq/2),),
+            sampling            = dict(**common_params, do_sample=True,  num_beams=1,
+                                       top_p=0.95, temperature=0.8, length_penalty=1,
+                                       diversity_penalty=None, num_beam_groups=None)
         )
         return gen_params_eval[self.decode_method_eval]
 
@@ -144,7 +147,7 @@ class Config:
         self.batch_size_train = 2
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 6
+        self.n_train_epochs = 2
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -154,10 +157,10 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.batch_size_train = 4
+        self.batch_size_train = 8
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 5
+        self.n_train_epochs = 2
         self.eval_freq = 1
         self._select_vm_model()
         return self

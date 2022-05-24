@@ -117,7 +117,7 @@ class ProcessedDataset:
         self.cnames_dsd_tkn = [o for o in dsd.column_names['train'] if o not in ['text', 'text_with_prefix']]
         self.dsd_raw = dsd.remove_columns([o for o in  dsd['train'].column_names if o not in self.cnames_dsd_raw])
         self.dsd_tkn = dsd.remove_columns(["text", 'text_with_prefix'])
-        for s in self._cfg.splits: assert len(self.dsd_raw[s]) == len(self.dsd_tkn[s])  # check ds has same number of elements in raw and tkn
+        for s in ['train', 'valid', 'test']: assert len(self.dsd_raw[s]) == len(self.dsd_tkn[s])  # check ds has same number of elements in raw and tkn
         self._cache_processed_ds()
         self._prep_dataloaders()
 

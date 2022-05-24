@@ -25,12 +25,8 @@ def set_seed(seed):
 def set_session_options():
     """Sets some useful options for the sesson"""
     os.environ["TOKENIZERS_PARALLELISM"] = "true"  # set to false if not working
-    os.environ["WANDB_NOTEBOOK_NAME"] = "run"  # some value to stop the error from coming up
     pd.set_option("display.max_colwidth", 400)
     pd.options.mode.chained_assignment = None
-    # stop truncation of tables in wandb dashboard
-    wandb.Table.MAX_ARTIFACT_ROWS = 1000000
-    wandb.Table.MAX_ROWS = 1000000
 
 # Cell
 def setup_logging(cfg, disable_other_loggers=True):

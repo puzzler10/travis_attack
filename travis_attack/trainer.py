@@ -42,7 +42,7 @@ from IPython.core.debugger import set_trace
 class Trainer:
     def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model,
                  sts_model, nli_tokenizer, nli_model, optimizer,
-                 ds, initial_eval=True, log_code=True):
+                 ds, initial_eval=True):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.epoch,self.acc_num,self.global_step,self.eval_num,self.param_norm = 0,0,0,0,0
@@ -51,11 +51,14 @@ class Trainer:
         self._setup_data_stores()
         self._setup_gradient_accumulation_variables()
         self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
+        self.early_stopping_flag = False
 
     def train(self):
         self._setup_wandb_run()
         #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1)
         self._training_function()
+
+    def _is_last_epoch(self): return self.early_stopping_flag or self.epoch == self._cfg.n_train_epochs
 
     def _reset_batch_dicts(self):
         # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
@@ -64,11 +67,13 @@ class Trainer:
 
     def _setup_wandb_run(self):
         """Init wandb run, set up paths, create dir for model artifacts if needed, """
-        self.run, self._cfg = start_wandb_run(self._cfg, log_code=self.log_code)
+        self.run, self._cfg = start_wandb_run(self._cfg, log_code=True)
         if self._cfg.wandb['log_grads']: wandb.watch(self.pp_model, log='gradients', log_freq=self._cfg.wandb['log_grads_freq'])
 
     def _setup_data_stores(self):
         self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
+        self.orig_baselines = dict()    # keys are idx, values are mean reward per (orig, pp_l) during training eval
+        self.initial_metric_d = dict(train=dict(), valid=dict(), test=dict())  # used for wandb metrics at the end
 
     def _setup_gradient_accumulation_variables(self):
         """acc_global_l is a list of all batch sizes encountered during training.
@@ -97,14 +102,6 @@ class Trainer:
             else:                              assert len(self.acc_current_l) == self._cfg.acc_steps
         self.acc_current_n_examples = sum(self.acc_current_l)
 
-#     def _eval_save_log_test_set(self):
-#         """Eval on test set, convert to df, save to file, and log to wandb summary"""
-#         self._eval_dl(split='test')
-#         self.data_d["test"] = self._convert_data_d_to_df("test")
-#         self._set_df_colorder("test")
-#         self.data_d["test"].to_csv(f"{self._cfg.path_run}test.csv", index=False)
-#         self._add_wandb_run_summary_statistics()
-
     def _training_function(self):
         progress_bar = tqdm(range(self._cfg.n_train_steps))
         self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
@@ -115,7 +112,8 @@ class Trainer:
             self._eval_function(split='train')
             logger.info("Launching initial eval run: valid")
             self._eval_function(split='valid')
-            #self._compute_and_log_eval_metrics()
+            logger.info("Launching initial eval run: test")
+            self._eval_function(split='test')
 
         for self.epoch in range(1, self._cfg.n_train_epochs+1):
             logger.info(f"Now on epoch {self.epoch} of {self._cfg.n_train_epochs}")
@@ -141,7 +139,7 @@ class Trainer:
 
             if self._cfg.save_model_while_training and (self.epoch + 1) % self._cfg.save_model_freq == 0:  save_model(epoch)
 
-            ## Save to csv
+            ## Save training step examples to csv
 #             df1 = self._convert_batch_list_to_df(self.train_batch_results)
 #             df1 = self._set_df_colorder(df1)
 #             append_df_to_csv(df1, path = f"{self._cfg.path_run}training_step.csv")
@@ -157,8 +155,6 @@ class Trainer:
                     self._eval_function(split='train')
                 with timecode() as time_eval_valid:
                     self._eval_function(split='valid')
-                #with timecode() as time_eval_compute_metrics:
-                #    self._compute_and_log_eval_metrics()
                 with timecode() as time_eval_gc_collect:
                     gc.collect()
                 with timecode() as time_eval_empty_cache:
@@ -168,12 +164,10 @@ class Trainer:
                            'time/eval_valid_thoroughput': len(self.ds.dsd_tkn['valid']) / time_eval_valid.t,
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
-                           #'time/eval_compute_metrics': time_eval_compute_metrics.t,
                            'epoch': self.epoch}, commit=True)
-
-        #self._eval_save_log_test_set()
-
-        #self._eval_function(split='test')
+            if self._is_last_epoch(): # add early stopping criteria here later
+                self._eval_function(split='test')
+                self._update_wandb_summary()
 
     def _training_step(self, data, raw):
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
@@ -185,7 +179,13 @@ class Trainer:
             if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
 
         with timecode() as self.batch_time_d['time_generate_pp']:
-            pp_output, pp_l = self._generate_train_pp(data)
+            pp_output = self.pp_model.generate_with_grad(
+                input_ids=data['input_ids'], attention_mask=data['attention_mask'],
+                num_return_sequences=1, num_beams=1, **self._cfg.gen_params_train,
+                return_dict_in_generate=True, output_scores=True, remove_invalid_values=False,
+                pad_token_id = self.pp_tokenizer.pad_token_id, eos_token_id = self.pp_tokenizer.eos_token_id
+            )
+            pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
             self._update_batch_size_and_length_variables(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
 
         logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
@@ -262,6 +262,8 @@ class Trainer:
             'reward_penalty_hist':               Histogram(self.batch_d['reward_penalty']),
             'reward_penalty_mean':               np.mean(  self.batch_d['reward_penalty']),
             'reward_with_penalty_hist':          Histogram(self.batch_d['reward_with_penalty']),
+            'reward_baseline_adjusted_mean':          np.mean(  self.batch_d['reward_baseline_adjusted']),
+            'reward_baseline_adjusted_hist':          Histogram(  self.batch_d['reward_baseline_adjusted']),
             'reward_with_penalty_mean':          np.mean(  self.batch_d['reward_with_penalty']),
             'loss_hist'   :         Histogram(self.batch_d['loss']),
             'pp_letter_diff_hist':     Histogram(self.batch_d['pp_letter_diff']),
@@ -269,13 +271,14 @@ class Trainer:
             'pp_letter_percent_hist':  Histogram(self.batch_d['pp_letter_percent']),
             'pp_letter_percent_mean':  np.mean(  self.batch_d['pp_letter_percent']),
             'contradiction_scores_hist':     Histogram(self.batch_d['contradiction_scores']),
-            'contradiction_score_mean':     np.mean(  self.batch_d['contradiction_scores']),
+            'contradiction_scores_mean':     np.mean(  self.batch_d['contradiction_scores']),
             'acc_batch_sizes':      Histogram(self.acc_current_l),
             "gradient_norm":        self.grad_norm,
             "parameter_norm":       self.param_norm
         })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
-        not_for_wandb_keys = ['orig', 'label','orig_truelabel_probs', 'pp', 'loss', 'pp_logp','ref_logp', 'kl_div', 'reward_with_penalty', 'reward_penalty',
+        not_for_wandb_keys = ['orig', 'label','orig_truelabel_probs', 'pp', 'loss', 'pp_logp','ref_logp', 'kl_div',
+                              'reward_with_penalty', 'reward_penalty', 'reward_baseline_adjusted',
                               'reward', 'sts_scores', 'vm_scores', 'pp_letter_diff', 'pp_letter_percent','contradiction_scores',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
@@ -299,14 +302,6 @@ class Trainer:
 #         scalar_cols = df.columns[[o != np.dtype('object') for o in df.head(1).dtypes]].tolist()
 #         df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
 #         return df_expanded
-
-    def _generate_train_pp(self, data):
-        pp_output = self.pp_model.generate_with_grad(input_ids=data['input_ids'], attention_mask=data['attention_mask'],
-                        num_return_sequences=1, num_beams=1,**self._cfg.gen_params_train, return_dict_in_generate=True,
-                        output_scores=True, remove_invalid_values=False, pad_token_id = self.pp_tokenizer.pad_token_id,
-                        eos_token_id = self.pp_tokenizer.eos_token_id)
-        pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
-        return pp_output, pp_l
 
     def _update_batch_size_and_length_variables(self, orig_ids, pp_ids):
         # Update variables
@@ -333,16 +328,19 @@ class Trainer:
             elif self._cfg.reward_penalty_type == "ref_logp":
                 reward_penalty =    self._cfg.ref_logp_coef * ref_logp      # ref_logp is negative, this term is negative
 
+            baselines = torch.tensor([self.orig_baselines[idx] for idx in raw['idx']], device=self._cfg.device)  # this term >= 0
             reward_with_penalty = torch.clip(reward + reward_penalty, min=0)
-            loss       = -reward_with_penalty * pp_logp
+            reward_baseline_adjusted = torch.clip(reward_with_penalty - baselines, min=0)
+            loss       = -reward_baseline_adjusted * pp_logp
             loss_sum   = torch.sum(loss)  # we scale it later
             loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
 
         self.batch_d['pp_logp']     =                      pp_logp.detach().cpu().tolist()
         self.batch_d['ref_logp']    =                     ref_logp.detach().cpu().tolist()
-        self.batch_d['kl_div']      =                 kl_div.detach().cpu().tolist()
+        self.batch_d['kl_div']      =                       kl_div.detach().cpu().tolist()
         self.batch_d['reward_penalty'] =            reward_penalty.detach().cpu().tolist()
         self.batch_d['reward_with_penalty'] =  reward_with_penalty.detach().cpu().tolist()
+        self.batch_d['reward_baseline_adjusted'] = reward_baseline_adjusted.detach().cpu().tolist()
         self.batch_d['loss']       =                          loss.detach().cpu().tolist()
         self.batch_d['loss_sum']   =                      loss_sum.detach().cpu().tolist()
         self.batch_d['loss_batch']   =                  loss_batch.detach().cpu().tolist()
@@ -573,19 +571,17 @@ class Trainer:
             (torch.sum(allprobs > (1/self._cfg.vocab_size)) / allprobs.shape[0]).item()
         return token_prob_d
 
-    def _eval_function(self, split, eval_ref_model=False):
+    def _eval_function(self, split):
         ## Setup
-        model = self.ref_pp_model if eval_ref_model else self.pp_model
-        if model.training:             model.eval()
+        if self.pp_model.training:     self.pp_model.eval()
         if self.vm_model.training:     self.vm_model.eval()
-        eval_batch_results = list()  # each eval batch appended to here, list of dicts
         dl_key = "train_eval" if split == "train" else split
         dl_raw = self.ds.dld_raw[dl_key]
         dl_tkn = self.ds.dld_tkn[dl_key]
-
+        eval_batch_results = list()  # each eval batch appended to here, list of dicts
         ## Loop through batches in eval set
         for eval_batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
-            pp_output = model.generate(input_ids=data['input_ids'].to(self._cfg.device), attention_mask=data['attention_mask'].to(self._cfg.device),
+            pp_output = self.pp_model.generate(input_ids=data['input_ids'].to(self._cfg.device), attention_mask=data['attention_mask'].to(self._cfg.device),
                                           **self._cfg.gen_params_eval,   remove_invalid_values=False,
                                           pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
             pp_l = self.pp_tokenizer.batch_decode(pp_output, skip_special_tokens=True)
@@ -647,24 +643,53 @@ class Trainer:
             return batch
         ds_expanded = ds_expanded.map(add_is_adv_example,   batched=True)
 
-        ## Calculate summary statistics
+        ### Calculate summary statistics
         df_expanded = ds_expanded.to_pandas()
         eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward', 'vm_scores', 'sts_scores',  'pp_letter_diff', 'contradiction_scores']
-        agg_metrics = ['mean','std']  # not going to use the median
-        # avg across each orig
+        agg_metrics = ['mean','std']  # using mean in favour of median
+        ## avg across each orig
         df_grp_stats = df_expanded[['idx'] + eval_metric_cols].groupby('idx').agg(agg_metrics)
         df_grp_stats.columns = df_grp_stats.columns = ["-".join(a) for a in df_grp_stats.columns.to_flat_index()]
+        # For training set save mean reward as the REINFORCE baseline
+        if split == "train": self.orig_baselines = df_grp_stats['reward-mean'].to_dict()  # idx is extracted as the index automatically
+
         # avg across whole dataset
         df_overall_stats = df_expanded[eval_metric_cols].groupby(lambda _ : True).agg(agg_metrics).reset_index(drop=True)
-        df_overall_stats.columns = df_overall_stats.columns = ["-".join(a) + "-" + split for a in df_overall_stats.columns.to_flat_index()]
-        df_overall_metrics = df_overall_stats.iloc[0].to_dict()   ## WANDB this
-        df_overall_metrics['any_adv_example_proportion' + "-" + split] = np.mean((df_grp_stats['is_adv_example-mean'] > 0 ) * 1)
-        # add epoch key
-        df_expanded['epoch'] = self.epoch
-        df_overall_metrics['epoch'] = self.epoch
+        df_overall_stats.columns = ["-".join(a) for a in df_overall_stats.columns.to_flat_index()]
+        overall_metrics_d = df_overall_stats.iloc[0].to_dict()   ## WANDB this
+        overall_metrics_d['any_adv_example_proportion'] = np.mean((df_grp_stats['is_adv_example-mean'] > 0 ) * 1)
+        overall_metrics_d_split = {f"{k}-{split}" : v  for k,v in overall_metrics_d.items()}
 
-        ## If we are doing eval during training (i.e. over train/valid sets at the end of an epoch) we log results to wandb
-        if split in ['train', 'valid'] and not eval_ref_model:
+        # Save baseline metric values if it is the first epoch (for comparison later)
+        if self.epoch == 0: self.initial_metric_d[split] = copy.deepcopy(overall_metrics_d)
+        # add keys
+        df_expanded['epoch'] = self.epoch
+        overall_metrics_d['epoch'] = self.epoch
+        overall_metrics_d_split['epoch'] = self.epoch
+
+
+        def save_eval_stats_to_csv(split, overall_metrics_d):
+            overall_metrics_d['split'] = split
+            ref_model_keys = [
+                'datetime_run', 'run_name', 'dataset_name', 'epoch',  'seed',
+                'decode_method_train', 'decode_method_eval', 'gen_params_train', 'gen_params_eval',
+                'reward_fn','reward_clip_max', 'reward_clip_min', 'reward_base', 'reward_vm_multiplier',
+                'sts_threshold', 'contradiction_threshold', 'pp_letter_diff_threshold',
+                'pp_name', 'sts_name','nli_name', 'vm_name', 'orig_max_length', 'use_small_ds',
+                'batch_size_train', 'batch_size_eval', 'lr', 'acc_steps'
+            ]
+            d = vars(self._cfg)
+            ref_model_d = dict((k, d[k]) for k in ref_model_keys if k in d)
+            results = merge_dicts(ref_model_d, overall_metrics_d)
+            results_df = pd.json_normalize(results, sep='.')  # flatten nested dict
+            results_df.insert(3, 'split', results_df.pop('split'))
+            results_df.insert(4, 'epoch', results_df.pop('epoch'))
+            results_df.insert(1, 'run_name', results_df.pop('run_name'))
+            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results.csv")
+
+        ## For train and eval we calc + log histograms to wandb. We dont need that for test.
+        if split in ['train', 'valid']:
+            ## Log histograms to wandb
             wandb_eval_d = dict()
             mean_only = ['label_flip', 'is_valid_pp', 'is_adv_example']
             mean_and_std = ['reward', 'vm_scores', 'sts_scores', 'pp_letter_diff', 'contradiction_scores']
@@ -674,37 +699,19 @@ class Trainer:
             for k in mean_and_std:
                 name = k + "-std"
                 wandb_eval_d[name + "-" + split + "-hist"] = Histogram(df_grp_stats[name].tolist())
-            wandb_eval_d = merge_dicts(df_overall_metrics, wandb_eval_d)
+            wandb_eval_d = merge_dicts(overall_metrics_d_split, wandb_eval_d)
             wandb.log(wandb_eval_d, commit=True)
-        ## If we are evaluating the test set we need to add metrics to the summary
-        elif split == "test" and not eval_ref_model:
-            ### NOT DONE YET
-            raise NotImplementedError()
-        ## If we are evaluating baselines we don't log to wandb but instead write to a local csv.
-        elif eval_ref_model:
-            ### NOT FINALISED YET
-            raise NotImplementedError()
-            results = merge_dicts(self._cfg.gen_params_eval, df_overall_metrics)
-            ref_model_keys = ['datetime_run', 'dataset_name', "split", 'pp_name', 'sts_name',
-                              'nli_name', 'vm_name', 'seed', 'use_small_ds',  'reward_fn',
-            'reward_clip_max', 'reward_clip_min', 'reward_base', 'reward_vm_multiplier',
-             'sts_threshold', 'contradiction_threshold', 'pp_letter_diff_threshold',
-             'max_pp_length', 'n_eval_seq', 'eval_decode_method', 'orig_max_length']#, 'batch_size_train', 'batch_size_eval', 'lr', 'acc_steps', ]
-            d = vars(cfg)
-            ref_model_d = dict((k, d[k]) for k in ref_model_keys if k in d)
-            results = merge_dicts(ref_model_d, results)
-            results_df = pd.Series(results).to_frame().T
-            append_df_to_csv(results_df, f"{cfg.path_ref_pp_baselines}results.csv")
+        elif split == "test":
+            wandb.log(overall_metrics_d_split, commit=True)
 
 
-        # When to log to wandb?
-            # During each epoch of training loop for train and valid set
-            # Not for ref_model. Just save to CSV
-            # Not for test set. Just save to csv
 
-        ## Append paraphrase-level dataframe to file
+        ## Save eval stats to CSV
+        save_eval_stats_to_csv(split, overall_metrics_d)
+
+        ## Save paraphrase-level dataframe to csv
         df_expanded = self._set_df_colorder(df_expanded, is_eval=True)
-        fname = f"{self._cfg.path_run}{split}{'_ref_model' if eval_ref_model else ''}.csv"
+        fname = f"{self._cfg.path_run}{split}.csv"
         append_df_to_csv(df_expanded, path = fname)
 
     def _add_batch_vars_to_batch_d_eval(self,  raw, data, pp_l):
@@ -732,7 +739,7 @@ class Trainer:
                 'idx','epoch', 'orig',  'pp','orig_truelabel_probs','pp_truelabel_probs',
                 'pp_predclass_probs','label','pp_predclass','label_flip', 'vm_scores','sts_scores',
                 'pp_letter_diff', 'pp_letter_percent',  'contradiction_scores', 'reward', 'pp_logp','ref_logp',
-                'kl_div', 'reward_penalty',  'reward_with_penalty','loss','batch_num',
+                'kl_div', 'reward_penalty',  'reward_with_penalty', 'reward_baseline_adjusted', 'loss','batch_num',
                 'global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
                 'orig_length','orig_batch_size','pp_length','pp_batch_size'
             ]
@@ -741,14 +748,12 @@ class Trainer:
             df = df[colorder_train]
         return df
 
-
-#     def _add_wandb_run_summary_statistics(self):
-#         """Compute test metrics for the run and log them to the wandb run summary pane. """
-#         ## Summary statistics of the test set
-#         # From the last epoch atm because we don't have early stopping
-#         test_metrics = self.data_d['test'].filter(self._cfg.metrics, axis=1).mean()
-#         for metric, val in zip(test_metrics.index, test_metrics):
-#             self.run.summary[f"{metric}_avg_test"] = val
+    def _update_wandb_summary(self):
+        for split in ['train', 'valid', 'test']:
+            self.run.summary['baseline_'+ split] = self.initial_metric_d[split]
+            self.run.summary['change_'  + split] = dict()
+            for k,initial_value in self.initial_metric_d[split].items():
+                self.run.summary['change_'+ split][k] = self.run.summary[k + "-" + split] - initial_value
 
     def _get_gradient_update_norm(self):
         total_norm = 0
