@@ -27,30 +27,32 @@ class Config:
         # 1. microsoft/deberta-base-mnli (~512 MB)
         # 2. howey/electra-small-mnli
         self.nli_name = "howey/electra-small-mnli"
+        self.cola_name = "textattack/albert-base-v2-CoLA"
         self._select_vm_model()
 
 
         ### Important parameters
-        self.seed = 420
-        self.use_small_ds = True
-        self.lr = 1e-5
+        self.seed = 421
+        self.use_small_ds = False
+        self.lr = 8e-5
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
-        self.reward_clip_max = 3
+        self.reward_clip_max = 3.5
         self.reward_clip_min = 0
         self.reward_base = 0
         self.reward_vm_multiplier = 12
-        self.sts_threshold = 0.7
+        self.sts_threshold = 0.8
+        self.acceptability_threshold = 0.5  # min "acceptable" prob required.
         self.contradiction_threshold = 0.2
         self.pp_letter_diff_threshold = 30
 
         self.reward_penalty_type = "kl_div"  # "kl_div" or "ref_logp"
-        self.kl_coef = 0.15             # only used if reward_penalty_type == "kl_div"
+        self.kl_coef = 0.25             # only used if reward_penalty_type == "kl_div"
         self.ref_logp_coef = 0.05       # only used if reward_penalty_type == "ref_logp"
         self.max_pp_length = 48
         self.decode_method_train = "sample"  # "sample" or "greedy"
         self.decode_method_eval = "diverse_beam_search"
         self.gen_params_train = {
-            "min_length": 4,
+            "min_length": 3,
             "max_length": self.max_pp_length,
             "do_sample": True        if self.decode_method_train == "sample" else False,
             "temperature": 1.3       if self.decode_method_train == "sample" else None,
@@ -58,8 +60,13 @@ class Config:
             "length_penalty" : 1.    if self.decode_method_train == "sample" else None,
             "repetition_penalty": 1. if self.decode_method_train == "greedy" else None
         }
-        self.n_eval_seq = 8
+        self.n_eval_seq = 16
         self.gen_params_eval = self._get_gen_params_eval()
+
+        # Early stopping (determined during eval on valid set)
+        self.early_stopping = True
+        self.early_stopping_tol = 0.7
+        self.early_stopping_metric = "reward_pp-mean"
 
         # Other parameters (usually left untouched)
         self.orig_max_length = 32  # longest for pegasus is 60, longest for Parrot is 32
@@ -144,10 +151,10 @@ class Config:
         self.dataset_name = "simple"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.batch_size_train = 2
+        self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 2
+        self.n_train_epochs = 5
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -157,10 +164,10 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.batch_size_train = 8
-        self.batch_size_eval = 4
+        self.batch_size_train = 32
+        self.batch_size_eval = 16
         self.acc_steps = 2
-        self.n_train_epochs = 2
+        self.n_train_epochs = 100
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -184,7 +191,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 100
+        self.n_shards = 50
         self.shard_contiguous = False
         return self
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[2]:
 
 
 ## Imports and environment variables 
@@ -18,10 +18,10 @@ import logging
 logger = logging.getLogger("run")
 
 import warnings
-warnings.filterwarnings("ignore", message="Passing `max_length` to BeamSearchScorer is deprecated")  # works anyway for diverse beam search 
+warnings.filterwarnings("ignore", message="Passing `max_length` to BeamSearchScorer is deprecated")  # we ignore the warning because it works anyway for diverse beam search 
 
 
-# In[ ]:
+# In[4]:
 
 
 cfg = Config()  # default values
@@ -30,36 +30,36 @@ if not in_jupyter():  # override with any -- options when running with command l
     newargs = vars(parser.parse_args())
     for k,v in newargs.items(): 
         if v is not None: 
-            if k in cfg.pp.keys():  cfg.pp[k] = v
+            if k in cfg.gen_params_train.keys():  cfg.gen_params_train[k] = v
             else:                   setattr(cfg, k, v)
 if cfg.use_small_ds:  cfg = cfg.small_ds()
 set_seed(cfg.seed)
 set_session_options()
 setup_logging(cfg, disable_other_loggers=True)
-vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model, nli_tokenizer, nli_model, cfg = prepare_models(cfg)
+vm_tokenizer,vm_model,pp_tokenizer,pp_model,ref_pp_model,sts_model,nli_tokenizer,nli_model,cola_tokenizer,cola_model,cfg = prepare_models(cfg)
 optimizer = get_optimizer(cfg, pp_model)
 ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=False)
 
 
-# In[ ]:
+# In[5]:
 
 
 cfg.wandb['mode'] = 'online'
-trainer = Trainer(cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model, nli_tokenizer, nli_model, optimizer,
+trainer = Trainer(cfg, vm_tokenizer,vm_model,pp_tokenizer,pp_model,ref_pp_model,sts_model,nli_tokenizer,nli_model,cola_tokenizer,cola_model, optimizer,
          ds, initial_eval=True)
 
 #print_important_cfg_vars(cfg)
 trainer.train()
 
 
-# In[6]:
+# In[7]:
 
 
 #df = pd.read_csv(cfg.path_results + "run_results.csv")
 #display_all(df)
 
 
-# In[7]:
+# In[8]:
 
 
 # df = pd.read_csv(f'{cfg.path_run}training_step.csv')
@@ -67,13 +67,19 @@ trainer.train()
 # df.columns
 
 
-# In[8]:
+# In[9]:
 
 
 #trainer.run.finish()
 
 
-# In[10]:
+# In[11]:
+
+
+#cfg.path_run
+
+
+# In[12]:
 
 
 df_d = get_training_dfs(cfg.path_run, postprocessed=False)

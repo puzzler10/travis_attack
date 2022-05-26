@@ -47,7 +47,7 @@ def postprocess_df(df, filter_idx=None, num_proc=min(8, psutil.cpu_count())):
     df = df.sort_values(by=['idx', "epoch"], axis=0)
     if filter_idx is not None:   df = df.query("idx <= @filter_idx")  # for testing purposes
     # Getting weird behaviour with group_by's so binning some of the numeric values
-    for col in ['sts_scores','vm_scores','reward', 'pp_truelabel_probs']:  df.loc[:, col] = df.loc[:, col].round(5)
+    for col in ['sts_scores','vm_scores','reward_pp', 'pp_truelabel_probs']:  df.loc[:, col] = df.loc[:, col].round(5)
     # Add metrics
     df = _add_number_of_unique_pps_per_idx(df)
     df = _add_number_of_pp_changes_per_idx(df)
@@ -66,7 +66,7 @@ def _add_number_of_pp_changes_per_idx(df):
     df_grp = df.groupby('idx').agg({'pp_changed': 'sum'})
     df_grp= df_grp.rename(columns = {"pp_changed":"idx_n_pp_changes"})
     df_grp['idx_n_pp_changes'] -= 1  # The first paraphrase isn't a change
-    df = df.drop('pp_changed', 1) # don't need this anymore
+    df = df.drop('pp_changed', axis=1) # don't need this anymore
     df = df.merge(df_grp, left_on='idx', right_index=True, how='left')
     return df
 

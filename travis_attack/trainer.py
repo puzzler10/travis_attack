@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from .utils import (timecode, show_gpu, merge_dicts, unpack_nested_lists_in_df,
                                  display_all, append_df_to_csv, start_wandb_run)
 from .tests import check_no_nans_or_infs
-from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids, get_nli_probs
+from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids, get_nli_probs, get_cola_probs
 
 
 # Cell
@@ -40,9 +40,8 @@ from IPython.core.debugger import set_trace
 
 # Cell
 class Trainer:
-    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model,
-                 sts_model, nli_tokenizer, nli_model, optimizer,
-                 ds, initial_eval=True):
+    def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model,
+                 nli_tokenizer, nli_model, cola_tokenizer, cola_model, optimizer, ds, initial_eval=True):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.epoch,self.acc_num,self.global_step,self.eval_num,self.param_norm = 0,0,0,0,0
@@ -58,7 +57,7 @@ class Trainer:
         #%lprun -f _training_function -f  get_pp_logp -f training_step -f  reward_fn -f  loss_fn -f eval_dl  notebook_launcher(_training_function, args=(pp_model, vm_model, dld_tkn, dld_raw, optimizer), num_processes=1)
         self._training_function()
 
-    def _is_last_epoch(self): return self.early_stopping_flag or self.epoch == self._cfg.n_train_epochs
+    def _is_last_epoch(self): return (self.early_stopping_flag and self._cfg.early_stopping) or (self.epoch == self._cfg.n_train_epochs)
 
     def _reset_batch_dicts(self):
         # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
@@ -74,6 +73,7 @@ class Trainer:
         self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
         self.orig_baselines = dict()    # keys are idx, values are mean reward per (orig, pp_l) during training eval
         self.initial_metric_d = dict(train=dict(), valid=dict(), test=dict())  # used for wandb metrics at the end
+        self.best_eval_valid_metric = -99999   # used for early stopping, updated every eval
 
     def _setup_gradient_accumulation_variables(self):
         """acc_global_l is a list of all batch sizes encountered during training.
@@ -165,7 +165,7 @@ class Trainer:
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
                            'epoch': self.epoch}, commit=True)
-            if self._is_last_epoch(): # add early stopping criteria here later
+            if self._is_last_epoch():
                 self._eval_function(split='test')
                 self._update_wandb_summary()
 
@@ -251,20 +251,17 @@ class Trainer:
             'vm_scores_mean':       np.mean(  self.batch_d['vm_scores']),
             'sts_scores_hist':      Histogram(self.batch_d['sts_scores']),
             'sts_scores_mean':      np.mean(  self.batch_d['sts_scores']),
-            'rewards_hist':         Histogram(self.batch_d['reward']),
-            'rewards_mean':         np.mean(  self.batch_d['reward']),
             'pp_logp_hist':         Histogram(self.batch_d['pp_logp']),
             'pp_logp_mean':         np.mean(  self.batch_d['pp_logp']),
             'ref_logp_hist':        Histogram(self.batch_d['ref_logp']),
             'ref_logp_mean':        np.mean(  self.batch_d['ref_logp']),
-            'kl_div_hist' :         Histogram(self.batch_d['kl_div']),
-            'kl_div_mean':          np.mean(  self.batch_d['kl_div']),
-            'reward_penalty_hist':               Histogram(self.batch_d['reward_penalty']),
-            'reward_penalty_mean':               np.mean(  self.batch_d['reward_penalty']),
-            'reward_with_penalty_hist':          Histogram(self.batch_d['reward_with_penalty']),
-            'reward_baseline_adjusted_mean':          np.mean(  self.batch_d['reward_baseline_adjusted']),
-            'reward_baseline_adjusted_hist':          Histogram(  self.batch_d['reward_baseline_adjusted']),
-            'reward_with_penalty_mean':          np.mean(  self.batch_d['reward_with_penalty']),
+            'diff_logp_hist' :         Histogram(self.batch_d['diff_logp']),
+            'reward_pp_hist':         Histogram(self.batch_d['reward_pp']),
+            'reward_pp_mean':         np.mean(  self.batch_d['reward_pp']),
+            'reward_pp_minus_baseline_hist':          Histogram(  self.batch_d['reward_pp_minus_baseline']),
+            'reward_pp_minus_baseline_mean':          np.mean(    self.batch_d['reward_pp_minus_baseline']),
+            'reward_pp_minus_baseline_with_penalty_hist':          Histogram(self.batch_d['reward_pp_minus_baseline_with_penalty']),
+            'reward_pp_minus_baseline_with_penalty_mean':          np.mean(  self.batch_d['reward_pp_minus_baseline_with_penalty']),
             'loss_hist'   :         Histogram(self.batch_d['loss']),
             'pp_letter_diff_hist':     Histogram(self.batch_d['pp_letter_diff']),
             'pp_letter_diff_mean':     np.mean(  self.batch_d['pp_letter_diff']),
@@ -272,14 +269,16 @@ class Trainer:
             'pp_letter_percent_mean':  np.mean(  self.batch_d['pp_letter_percent']),
             'contradiction_scores_hist':     Histogram(self.batch_d['contradiction_scores']),
             'contradiction_scores_mean':     np.mean(  self.batch_d['contradiction_scores']),
+            'acceptability_scores_hist':     Histogram(self.batch_d['acceptability_scores']),
+            'acceptability_scores_mean':     np.mean(  self.batch_d['acceptability_scores']),
             'acc_batch_sizes':      Histogram(self.acc_current_l),
             "gradient_norm":        self.grad_norm,
             "parameter_norm":       self.param_norm
         })
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
-        not_for_wandb_keys = ['orig', 'label','orig_truelabel_probs', 'pp', 'loss', 'pp_logp','ref_logp', 'kl_div',
-                              'reward_with_penalty', 'reward_penalty', 'reward_baseline_adjusted',
-                              'reward', 'sts_scores', 'vm_scores', 'pp_letter_diff', 'pp_letter_percent','contradiction_scores',
+        not_for_wandb_keys = ['orig', 'label','orig_truelabel_probs', 'pp', 'loss', 'pp_logp','ref_logp','diff_logp',
+                              'reward_pp_minus_baseline_with_penalty', 'reward_pp_minus_baseline',
+                              'reward_pp', 'sts_scores', 'vm_scores', 'pp_letter_diff', 'pp_letter_percent','contradiction_scores', 'acceptability_scores',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
         wandb.log(self.batch_wandb_d, commit=True)
@@ -312,35 +311,37 @@ class Trainer:
         self.pp_length           = pp_ids.shape[1]
 
     def _loss_fn(self, data, raw, pp_output, pp_l):
-        with timecode() as self.batch_time_d['time_reward_fn']:
-            reward = self._reward_fn(data, raw, pp_l)
-
-        with timecode() as self.batch_time_d['time_pp_logp']:
-            pp_logp = self._get_pp_logp(pp_output)
-
-        with timecode() as self.batch_time_d['time_ref_logprobs']:
-            ref_logp = self._get_ref_logp(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
-
-        kl_div =  torch.clip(pp_logp - ref_logp, min=0)  # sometimes this is negative, not sure why, so will clip to 0 in those cases
+        with timecode() as self.batch_time_d['time_pp_logp']:        pp_logp = self._get_pp_logp(pp_output)
+        with timecode() as self.batch_time_d['time_ref_logprobs']:  ref_logp = self._get_ref_logp(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
+        diff_logp =  pp_logp - ref_logp  # One score per batch item here. Sometimes negative.
+        kl_div = torch.clip(torch.mean(diff_logp), min=0) # Get KL div by taking mean of logprob differences. Then we clip it so it has min 0 (just in case).
         with timecode() as self.batch_time_d['time_loss_fn_loss_calc']:
-            if   self._cfg.reward_penalty_type == "kl_div":
-                reward_penalty = - (self._cfg.kl_coef       * kl_div)       # KL div is positive, this term is negative
-            elif self._cfg.reward_penalty_type == "ref_logp":
-                reward_penalty =    self._cfg.ref_logp_coef * ref_logp      # ref_logp is negative, this term is negative
+            if   self._cfg.reward_penalty_type == "kl_div":   reward_penalty = - (self._cfg.kl_coef       * kl_div)   # both kl_div and kl_coef >=0 so this term is negative
+            elif self._cfg.reward_penalty_type == "ref_logp": reward_penalty =    self._cfg.ref_logp_coef * torch.mean(ref_logp)      # ref_logp is negative, ref_logp_coef >= 0, so this term is negative
+        with timecode() as self.batch_time_d['time_reward_fn']: reward_pp = self._reward_fn(data, raw, pp_l)
+        baselines = torch.tensor([self.orig_baselines[idx] for idx in raw['idx']], device=self._cfg.device)  # this term >= 0
 
-            baselines = torch.tensor([self.orig_baselines[idx] for idx in raw['idx']], device=self._cfg.device)  # this term >= 0
-            reward_with_penalty = torch.clip(reward + reward_penalty, min=0)
-            reward_baseline_adjusted = torch.clip(reward_with_penalty - baselines, min=0)
-            loss       = -reward_baseline_adjusted * pp_logp
-            loss_sum   = torch.sum(loss)  # we scale it later
-            loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
+        # Calculations
+        reward_pp_minus_baseline = torch.clip(reward_pp - baselines, min=0)
+        reward_pp_minus_baseline_with_penalty = torch.clip(reward_pp_minus_baseline + reward_penalty, min=0)
+        loss       = -reward_pp_minus_baseline_with_penalty * pp_logp
+        loss_sum   = torch.sum(loss)  # we scale it later
+        loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
+
+#         print("Paraphrase rewards:", reward_pp, torch.mean(reward_pp))
+#         print("Baselines:", baselines, torch.mean(baselines))
+#         print("Paraphrase rewards minus baseline:", reward_pp_minus_baseline, torch.mean(reward_pp_minus_baseline))
+#         print("Reward penalty:",reward_penalty )
+#         print("Paraphrase rewards minus baseline with penalty:", reward_pp_minus_baseline_with_penalty, torch.mean(reward_pp_minus_baseline_with_penalty))
+
 
         self.batch_d['pp_logp']     =                      pp_logp.detach().cpu().tolist()
         self.batch_d['ref_logp']    =                     ref_logp.detach().cpu().tolist()
+        self.batch_d['diff_logp'] =                      diff_logp.detach().cpu().tolist()
         self.batch_d['kl_div']      =                       kl_div.detach().cpu().tolist()
+        self.batch_d['reward_pp_minus_baseline'] = reward_pp_minus_baseline.detach().cpu().tolist()
         self.batch_d['reward_penalty'] =            reward_penalty.detach().cpu().tolist()
-        self.batch_d['reward_with_penalty'] =  reward_with_penalty.detach().cpu().tolist()
-        self.batch_d['reward_baseline_adjusted'] = reward_baseline_adjusted.detach().cpu().tolist()
+        self.batch_d['reward_pp_minus_baseline_with_penalty'] =  reward_pp_minus_baseline_with_penalty.detach().cpu().tolist()
         self.batch_d['loss']       =                          loss.detach().cpu().tolist()
         self.batch_d['loss_sum']   =                      loss_sum.detach().cpu().tolist()
         self.batch_d['loss_batch']   =                  loss_batch.detach().cpu().tolist()
@@ -374,27 +375,33 @@ class Trainer:
         return dict(pp_letter_diff=pp_letter_diff, pp_letter_percent=pp_letter_percent)
 
     def _get_contradiction_scores(self, orig_l, pp_l):
-        contradiction_scores = get_nli_probs(orig_l, pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:,  self._cfg.contra_label]
+        contradiction_scores = get_nli_probs(orig_l, pp_l, self._cfg, self.nli_tokenizer, self.nli_model)[:, self._cfg.contra_label]
         return contradiction_scores
 
-    def _is_valid_pp(self, sts_score, pp_letter_diff, contradiction_score):
+    def _get_acceptability_scores(self, pp_l):
+        acceptability_scores = get_cola_probs(pp_l, self._cfg, self.cola_tokenizer, self.cola_model)[:, self._cfg.cola_positive_label]   # acceptable class
+        return acceptability_scores
+
+    def _is_valid_pp(self, sts_score, pp_letter_diff, contradiction_score, acceptability_score):
         if sts_score           < self._cfg.sts_threshold:                              return False
+        if acceptability_score < self._cfg.acceptability_threshold:                    return False
         if contradiction_score > self._cfg.contradiction_threshold:                    return False
         if pp_letter_diff >   self._cfg.pp_letter_diff_threshold:                      return False
         if pp_letter_diff < - self._cfg.pp_letter_diff_threshold:                      return False
         return True
 
-    def _get_reward(self, vm_scores, sts_scores, pp_letter_diff, contradiction_scores):
-        def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score):
-            if not self._is_valid_pp(sts_score, pp_letter_diff, contradiction_score): return 0
+    def _get_reward(self, vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores):
+        def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score, acceptability_score):
+            if not self._is_valid_pp(sts_score, pp_letter_diff, contradiction_score, acceptability_score): return 0.
             reward = self._cfg.reward_base + vm_score * self._cfg.reward_vm_multiplier
             return min(max(self._cfg.reward_clip_min, reward), self._cfg.reward_clip_max)
 
-        def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores):
+        def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores):
             if self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
-            return torch.tensor([reward_fn(vm, sts, ldiff, contra) for vm,sts,ldiff,contra in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)],
-                                device=self._cfg.device)
-        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
+            return torch.tensor([
+                reward_fn(vm, sts, ldiff, contra, acpt) for vm,sts,ldiff,contra,acpt in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores)
+            ], device=self._cfg.device)
+        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores)
         return rewards
 
     def _reward_fn(self, data, raw, pp_l):
@@ -402,30 +409,27 @@ class Trainer:
         with timecode() as self.batch_time_d['time_vm_scores']:
             vm_d = self._get_vm_scores(pp_l, data['label'], data['orig_truelabel_probs'])
             vm_scores = vm_d['vm_scores']
-
-        with timecode() as self.batch_time_d['time_sts_scores']:
-            sts_scores = self._get_sts_scores(pp_l, data['orig_sts_embeddings'], eval_mode=False)
-
+        with timecode() as self.batch_time_d['time_sts_scores']: sts_scores = self._get_sts_scores(pp_l, data['orig_sts_embeddings'], eval_mode=False)
         with timecode() as self.batch_time_d['time_pp_letter_diff']:
             pp_diff_d = self._get_pp_letter_diff(pp_l, data['n_letters'].cpu().tolist())
             pp_letter_diff = pp_diff_d['pp_letter_diff']
+        with timecode() as self.batch_time_d['time_contradiction_scores']:  contradiction_scores = self._get_contradiction_scores(raw['text'], pp_l)
+        with timecode() as self.batch_time_d['time_acceptability_scores']:  acceptability_scores = self._get_acceptability_scores(pp_l)
 
-        with timecode() as self.batch_time_d['time_contradiction_scores']:
-            contradiction_scores = self._get_contradiction_scores(raw['text'], pp_l)
-
-        rewards = self._get_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores)
+        rewards = self._get_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores)
 
         self.batch_d['pp_truelabel_probs']  = vm_d['pp_truelabel_probs'].detach().cpu().tolist()
         self.batch_d['pp_predclass']        = vm_d['pp_predclass'].detach().cpu().tolist()
         self.batch_d['pp_predclass_probs']  = vm_d['pp_predclass_probs'].detach().cpu().tolist()
         self.batch_d['label_flip']          = vm_d['label_flip'].detach().cpu().tolist()
         self.batch_d['label_flip_fraction'] = np.mean(self.batch_d['label_flip'])
-        self.batch_d['reward']              = rewards.detach().cpu().tolist()
+        self.batch_d['reward_pp']              = rewards.detach().cpu().tolist()
         self.batch_d['vm_scores']            = vm_scores.detach().cpu().tolist()
         self.batch_d['sts_scores']           = sts_scores.detach().cpu().tolist()
         self.batch_d['pp_letter_diff']      = pp_letter_diff.tolist()
         self.batch_d['pp_letter_percent']   = pp_diff_d['pp_letter_percent'].tolist()
         self.batch_d['contradiction_scores'] = contradiction_scores.cpu().tolist()
+        self.batch_d['acceptability_scores'] = acceptability_scores.cpu().tolist()
         return rewards
 
     def _get_pp_logp(self, pp_output):
@@ -616,9 +620,14 @@ class Trainer:
         def add_contradiction_score(batch):
             batch['contradiction_scores'] = self._get_contradiction_scores(orig_l=batch['orig'], pp_l=batch['pp']).cpu().tolist()
             return batch
+        def add_acceptability_score(batch):
+            batch['acceptability_scores'] = self._get_acceptability_scores(pp_l=batch['pp']).cpu().tolist()
+            return batch
+
         ds_expanded = ds_expanded.map(add_vm_scores_eval,        batched=True)
         ds_expanded = ds_expanded.map(add_pp_letter_diff,        batched=True)
         ds_expanded = ds_expanded.map(add_contradiction_score,   batched=True)
+        ds_expanded = ds_expanded.map(add_acceptability_score,   batched=True)
         def add_sts_scores_eval(row):  return self._get_sts_scores(row['pp'], row['orig_sts_embeddings'], eval_mode=True)[0]
         df_sts['sts_scores'] = df_sts.apply(add_sts_scores_eval, axis=1)
 
@@ -629,13 +638,14 @@ class Trainer:
 
         ## Calculate rewards and identify adversarial examples
         def add_reward(batch):
-            batch['reward'] = self._get_reward(vm_scores=batch['vm_scores'], sts_scores=batch['sts_scores'],
-                      pp_letter_diff=batch['pp_letter_diff'], contradiction_scores=batch['contradiction_scores']).cpu().tolist()
+            batch['reward_pp'] = self._get_reward(vm_scores=batch['vm_scores'], sts_scores=batch['sts_scores'],
+                    pp_letter_diff=batch['pp_letter_diff'], contradiction_scores=batch['contradiction_scores'],
+                    acceptability_scores=batch['acceptability_scores']).cpu().tolist()
             return batch
         ds_expanded = ds_expanded.map(add_reward,   batched=True)
         def add_is_valid_pp(example):
-            example['is_valid_pp'] = self._is_valid_pp(sts_score=example['sts_scores'],
-                 pp_letter_diff=example['pp_letter_diff'], contradiction_score=example['contradiction_scores'])*1
+            example['is_valid_pp'] = self._is_valid_pp(sts_score=example['sts_scores'], pp_letter_diff=example['pp_letter_diff'],
+                contradiction_score=example['contradiction_scores'], acceptability_score=example['acceptability_scores'])*1
             return example
         ds_expanded = ds_expanded.map(add_is_valid_pp,   batched=False)
         def add_is_adv_example(batch):
@@ -645,18 +655,18 @@ class Trainer:
 
         ### Calculate summary statistics
         df_expanded = ds_expanded.to_pandas()
-        eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward', 'vm_scores', 'sts_scores',  'pp_letter_diff', 'contradiction_scores']
+        eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward_pp', 'vm_scores', 'sts_scores',  'pp_letter_diff', 'contradiction_scores', 'acceptability_scores']
         agg_metrics = ['mean','std']  # using mean in favour of median
         ## avg across each orig
         df_grp_stats = df_expanded[['idx'] + eval_metric_cols].groupby('idx').agg(agg_metrics)
         df_grp_stats.columns = df_grp_stats.columns = ["-".join(a) for a in df_grp_stats.columns.to_flat_index()]
         # For training set save mean reward as the REINFORCE baseline
-        if split == "train": self.orig_baselines = df_grp_stats['reward-mean'].to_dict()  # idx is extracted as the index automatically
+        if split == "train": self.orig_baselines = df_grp_stats['reward_pp-mean'].to_dict()  # idx is extracted as the index automatically
 
         # avg across whole dataset
         df_overall_stats = df_expanded[eval_metric_cols].groupby(lambda _ : True).agg(agg_metrics).reset_index(drop=True)
         df_overall_stats.columns = ["-".join(a) for a in df_overall_stats.columns.to_flat_index()]
-        overall_metrics_d = df_overall_stats.iloc[0].to_dict()   ## WANDB this
+        overall_metrics_d = df_overall_stats.iloc[0].to_dict()
         overall_metrics_d['any_adv_example_proportion'] = np.mean((df_grp_stats['is_adv_example-mean'] > 0 ) * 1)
         overall_metrics_d_split = {f"{k}-{split}" : v  for k,v in overall_metrics_d.items()}
 
@@ -666,6 +676,17 @@ class Trainer:
         df_expanded['epoch'] = self.epoch
         overall_metrics_d['epoch'] = self.epoch
         overall_metrics_d_split['epoch'] = self.epoch
+
+        # Check early stopping
+        if split == "valid":
+            this_metric = overall_metrics_d[self._cfg.early_stopping_metric]
+            if this_metric < (self.best_eval_valid_metric * (1 -  self._cfg.early_stopping_tol)):
+                logger.info(f"Early stopping reached since the current metric of {this_metric} is less than\
+                            {self.best_eval_valid_metric * (1 -  self._cfg.early_stopping_tol)} which is\
+                            the tolerance adjusted threshold of the best metric {self.best_eval_valid_metric}")
+                self.early_stopping_flag = True
+            else:
+                self.best_eval_valid_metric =  max(self.best_eval_valid_metric, this_metric)
 
 
         def save_eval_stats_to_csv(split, overall_metrics_d):
@@ -685,14 +706,14 @@ class Trainer:
             results_df.insert(3, 'split', results_df.pop('split'))
             results_df.insert(4, 'epoch', results_df.pop('epoch'))
             results_df.insert(1, 'run_name', results_df.pop('run_name'))
-            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results.csv")
+            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results1.csv")
 
         ## For train and eval we calc + log histograms to wandb. We dont need that for test.
         if split in ['train', 'valid']:
             ## Log histograms to wandb
             wandb_eval_d = dict()
             mean_only = ['label_flip', 'is_valid_pp', 'is_adv_example']
-            mean_and_std = ['reward', 'vm_scores', 'sts_scores', 'pp_letter_diff', 'contradiction_scores']
+            mean_and_std = ['reward_pp', 'vm_scores', 'sts_scores', 'pp_letter_diff', 'contradiction_scores', 'acceptability_scores']
             for k in mean_only + mean_and_std:
                 name = k + "-mean"
                 wandb_eval_d[name + "-"+ split + "-hist"] = Histogram(df_grp_stats[name].tolist())
@@ -703,8 +724,6 @@ class Trainer:
             wandb.log(wandb_eval_d, commit=True)
         elif split == "test":
             wandb.log(overall_metrics_d_split, commit=True)
-
-
 
         ## Save eval stats to CSV
         save_eval_stats_to_csv(split, overall_metrics_d)
@@ -728,8 +747,8 @@ class Trainer:
     def _set_df_colorder(self, df, is_eval=False):
         if is_eval:
             colorder_eval = [
-               'idx', 'epoch', 'orig', 'pp', 'pp_idx', 'is_adv_example', 'is_valid_pp', 'label_flip', 'reward',
-                'vm_scores','sts_scores', 'contradiction_scores', 'pp_letter_diff',
+               'idx', 'epoch', 'orig', 'pp', 'pp_idx', 'is_adv_example', 'is_valid_pp', 'label_flip', 'reward_pp',
+                'vm_scores','sts_scores', 'contradiction_scores', 'acceptability_scores', 'pp_letter_diff',
                 'label', 'orig_truelabel_probs', 'pp_truelabel_probs', 'pp_predclass', 'pp_predclass_probs',
                 'orig_n_letters','pp_letter_percent'
             ]
@@ -738,8 +757,9 @@ class Trainer:
             colorder_train=[
                 'idx','epoch', 'orig',  'pp','orig_truelabel_probs','pp_truelabel_probs',
                 'pp_predclass_probs','label','pp_predclass','label_flip', 'vm_scores','sts_scores',
-                'pp_letter_diff', 'pp_letter_percent',  'contradiction_scores', 'reward', 'pp_logp','ref_logp',
-                'kl_div', 'reward_penalty',  'reward_with_penalty', 'reward_baseline_adjusted', 'loss','batch_num',
+                'pp_letter_diff', 'pp_letter_percent',  'contradiction_scores', 'acceptability_scores', 'pp_logp','ref_logp', 'diff_logp',
+                'kl_div', 'reward_pp', 'reward_pp_minus_baseline', 'reward_penalty', 'reward_pp_minus_baseline_with_penalty',
+                'loss','batch_num',
                 'global_step','acc_num','loss_sum', 'loss_batch', 'label_flip_fraction',
                 'orig_length','orig_batch_size','pp_length','pp_batch_size'
             ]

@@ -1,0 +1,101 @@
+05-25 15:03 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-25 15:04 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to True
+05-25 15:04 travis_attack.data DEBUG    Dataset lengths: {'train': 60, 'test': 4, 'valid': 7}
+05-25 15:04 travis_attack.data DEBUG    Total training epochs:32
+05-25 15:04 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 12, 'test': 4, 'valid': 7, 'train_eval': 12}
+05-25 15:04 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [16, 16, 16, 12], 'test': [4], 'valid': [7], 'train_eval': [16, 16, 16, 12]}
+05-25 15:04 wandb.jupyter ERROR    Failed to detect the name of this notebook, you can set it manually with the WANDB_NOTEBOOK_NAME environment variable to enable code saving.
+05-25 15:04 wandb        DEBUG    no default config file found in config-defaults.yaml
+05-25 15:04 travis_attack.trainer INFO     Launching initial eval run: train
+05-25 15:04 travis_attack.trainer INFO     Launching initial eval run: valid
+05-25 15:04 travis_attack.trainer INFO     Launching initial eval run: test
+05-25 15:04 travis_attack.trainer INFO     Now on epoch 1 of 8
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  61.3% (14133 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  69.8% (16087 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  69.8% (16087 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  71.5% (16463 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after forward pass:  71.9% (16559 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 2, GPU memory usage after backwards pass:  77.5% (17867 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 3, GPU memory usage after forward pass:  79.2% (18245 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 3, GPU memory usage after backwards pass:  82.5% (19015 out of 23040)
+05-25 15:04 travis_attack.trainer INFO     Now on epoch 2 of 8
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  71.8% (16533 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  83.6% (19251 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  83.6% (19251 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  83.6% (19251 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after forward pass:  83.6% (19251 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 2, GPU memory usage after backwards pass:  83.6% (19251 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 3, GPU memory usage after forward pass:  84.1% (19379 out of 23040)
+05-25 15:04 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 3, GPU memory usage after backwards pass:  87.5% (20151 out of 23040)
+05-25 15:05 travis_attack.trainer INFO     Now on epoch 3 of 8
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  75.2% (17337 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  89.7% (20671 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  89.7% (20671 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  89.7% (20671 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after forward pass:  89.7% (20671 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 2, GPU memory usage after backwards pass:  89.7% (20671 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 3, GPU memory usage after forward pass:  89.7% (20671 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 3, GPU memory usage after backwards pass:  90.5% (20851 out of 23040)
+05-25 15:05 travis_attack.trainer INFO     Now on epoch 4 of 8
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after forward pass:  72.3% (16649 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after backwards pass:  84.3% (19417 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 1, GPU memory usage after forward pass:  84.3% (19417 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 1, GPU memory usage after backwards pass:  84.3% (19417 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 2, GPU memory usage after forward pass:  84.3% (19417 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 2, GPU memory usage after backwards pass:  84.3% (19417 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 3, GPU memory usage after forward pass:  84.3% (19417 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 3, GPU memory usage after backwards pass:  85.0% (19589 out of 23040)
+05-25 15:05 travis_attack.trainer INFO     Now on epoch 5 of 8
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after forward pass:  71.8% (16533 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after backwards pass:  83.6% (19251 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 1, GPU memory usage after forward pass:  83.6% (19251 out of 23040)
+05-25 15:05 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 1, GPU memory usage after backwards pass:  83.6% (19251 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 2, GPU memory usage after forward pass:  83.6% (19251 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 2, GPU memory usage after backwards pass:  83.6% (19251 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 3, GPU memory usage after forward pass:  83.6% (19251 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 3, GPU memory usage after backwards pass:  84.9% (19553 out of 23040)
+05-25 15:06 travis_attack.trainer INFO     Now on epoch 6 of 8
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 0, GPU memory usage after forward pass:  70.6% (16267 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 0, GPU memory usage after backwards pass:  81.5% (18781 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 1, GPU memory usage after forward pass:  81.5% (18781 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 1, GPU memory usage after backwards pass:  82.3% (18959 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 2, GPU memory usage after forward pass:  82.3% (18959 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 2, GPU memory usage after backwards pass:  82.3% (18959 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 3, GPU memory usage after forward pass:  82.3% (18959 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 3, GPU memory usage after backwards pass:  84.3% (19417 out of 23040)
+05-25 15:06 travis_attack.trainer INFO     Now on epoch 7 of 8
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 0, GPU memory usage after forward pass:  74.8% (17241 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 0, GPU memory usage after backwards pass:  88.8% (20471 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 1, GPU memory usage after forward pass:  88.8% (20471 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 1, GPU memory usage after backwards pass:  88.8% (20471 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 2, GPU memory usage after forward pass:  88.8% (20471 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 2, GPU memory usage after backwards pass:  88.8% (20471 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 3, GPU memory usage after forward pass:  88.8% (20471 out of 23040)
+05-25 15:06 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 3, GPU memory usage after backwards pass:  90.6% (20865 out of 23040)
+05-25 15:06 travis_attack.trainer INFO     Now on epoch 8 of 8
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 0, GPU memory usage after forward pass:  72.3% (16649 out of 23040)
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 0, GPU memory usage after backwards pass:  84.3% (19417 out of 23040)
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 1, GPU memory usage after forward pass:  84.3% (19417 out of 23040)
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 1, GPU memory usage after backwards pass:  84.3% (19417 out of 23040)
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 2, GPU memory usage after forward pass:  84.3% (19417 out of 23040)
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 2, GPU memory usage after backwards pass:  84.3% (19417 out of 23040)
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 3, GPU memory usage after forward pass:  84.3% (19417 out of 23040)
+05-25 15:07 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 3, GPU memory usage after backwards pass:  86.6% (19953 out of 23040)
+05-25 15:07 root         ERROR    No traceback has been produced, nothing to debug.
+05-25 15:07 travis_attack.insights INFO     Dataframes have shapes ['training_step: (480, 52)', 'train: (4320, 21)', 'valid: (504, 21)', 'test: (64, 21)']
+05-25 15:07 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 15:07 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 15:07 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 15:07 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-25 15:07 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 15:07 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 15:07 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 15:07 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-25 15:08 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 15:08 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 15:08 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 15:08 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-25 15:08 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 15:08 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 15:08 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 15:08 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs

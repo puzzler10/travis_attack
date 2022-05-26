@@ -1,0 +1,45 @@
+05-25 14:43 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+05-25 14:44 travis_attack.data INFO     Will load dataset simple with use_small_ds set to False
+05-25 14:44 travis_attack.data DEBUG    Dataset lengths: {'train': 4, 'valid': 4, 'test': 4}
+05-25 14:44 travis_attack.data DEBUG    Total training epochs:5
+05-25 14:44 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 0, 'valid': 0, 'test': 0, 'train_eval': 0}
+05-25 14:44 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [4], 'valid': [4], 'test': [4], 'train_eval': [4]}
+05-25 14:49 wandb.jupyter ERROR    Failed to detect the name of this notebook, you can set it manually with the WANDB_NOTEBOOK_NAME environment variable to enable code saving.
+05-25 14:49 wandb        DEBUG    no default config file found in config-defaults.yaml
+05-25 14:49 travis_attack.trainer INFO     Launching initial eval run: train
+05-25 14:53 wandb        DEBUG    no default config file found in config-defaults.yaml
+05-25 14:53 travis_attack.trainer INFO     Launching initial eval run: train
+05-25 14:53 travis_attack.trainer INFO     Launching initial eval run: valid
+05-25 14:53 travis_attack.trainer INFO     Launching initial eval run: test
+05-25 14:53 travis_attack.trainer INFO     Now on epoch 1 of 5
+05-25 14:53 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  49.1% (11305 out of 23040)
+05-25 14:53 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  54.4% (12545 out of 23040)
+05-25 14:53 travis_attack.trainer INFO     Now on epoch 2 of 5
+05-25 14:53 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  53.1% (12227 out of 23040)
+05-25 14:53 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  57.2% (13177 out of 23040)
+05-25 14:53 travis_attack.trainer INFO     Now on epoch 3 of 5
+05-25 14:53 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  61.4% (14151 out of 23040)
+05-25 14:53 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  65.4% (15067 out of 23040)
+05-25 14:54 travis_attack.trainer INFO     Now on epoch 4 of 5
+05-25 14:54 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after forward pass:  61.3% (14129 out of 23040)
+05-25 14:54 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after backwards pass:  65.2% (15029 out of 23040)
+05-25 14:54 travis_attack.trainer INFO     Now on epoch 5 of 5
+05-25 14:54 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after forward pass:  61.3% (14117 out of 23040)
+05-25 14:54 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after backwards pass:  65.2% (15011 out of 23040)
+05-25 14:54 travis_attack.insights INFO     Dataframes have shapes ['training_step: (20, 52)', 'train: (192, 21)', 'valid: (192, 21)', 'test: (64, 21)']
+05-25 14:54 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 14:54 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 14:54 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 14:54 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-25 14:54 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 14:54 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 14:54 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 14:54 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-25 14:55 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 14:55 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 14:55 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 14:55 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+05-25 14:55 travis_attack.insights INFO     Adding text metrics for column orig
+05-25 14:55 travis_attack.insights INFO     Adding text metrics for column pp
+05-25 14:55 travis_attack.insights INFO     Calculating metric differences between orig and pp
+05-25 14:55 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs

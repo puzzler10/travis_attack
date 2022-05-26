@@ -197,7 +197,7 @@ def merge_dicts(d1, d2):
 
 # Cell
 def display_all(df):
-    with pd.option_context("display.max_rows", 1000):
+    with pd.option_context("display.max_rows", 3000):
         with pd.option_context("display.max_columns", 1000):
             with pd.option_context("max_colwidth", 480):
                 display(df)
