@@ -122,14 +122,10 @@ def pp_model_freeze_layers(cfg, pp_model):
     return pp_model
 
 
-def save_pp_model(pp_model, optimizer, path_run, epoch):
+def save_pp_model(pp_model, optimizer, path):
     """Save training state (for both pp_model and optimiser) as a checkpoint at a given epoch. """
-    path = f"{path_run}model_{epoch}"
-    torch.save({
-                'epoch': epoch,
-                'pp_model_state_dict': pp_model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                }, path)
+    torch.save({'pp_model_state_dict': pp_model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()}, path)
 
 def resume_pp_model(pp_model, optimizer, path):
     """Replace the training state with a saved checkpoint.. Reinitialises both pp_model and optimiser state. """

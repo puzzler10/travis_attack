@@ -18,7 +18,7 @@ class Config:
         # 2. prithivida/parrot_paraphraser_on_T5 (850 MB)
         # 3. ramsrigouthamg/t5-large-paraphraser-diverse-high-quality (2.75 GB)
         self.pp_name = "prithivida/parrot_paraphraser_on_T5"
-        self.dataset_name = "rotten_tomatoes"
+        self.dataset_name = "simple"
         # STS options
         # 1. sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
         # 2. sentence-transformers/paraphrase-MiniLM-L12-v2
@@ -34,9 +34,9 @@ class Config:
         ### Important parameters
         self.seed = 421
         self.use_small_ds = False
-        self.lr = 8e-5
+        self.lr = 4e-5
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
-        self.reward_clip_max = 3.5
+        self.reward_clip_max = 4
         self.reward_clip_min = 0
         self.reward_base = 0
         self.reward_vm_multiplier = 12
@@ -49,24 +49,40 @@ class Config:
         self.kl_coef = 0.25             # only used if reward_penalty_type == "kl_div"
         self.ref_logp_coef = 0.05       # only used if reward_penalty_type == "ref_logp"
         self.max_pp_length = 48
+
+        self.n_eval_seq = 48
         self.decode_method_train = "sample"  # "sample" or "greedy"
-        self.decode_method_eval = "diverse_beam_search"
+        self.decode_method_eval = "sample"
         self.gen_params_train = {
-            "min_length": 3,
+            "min_length": 2,
             "max_length": self.max_pp_length,
             "do_sample": True        if self.decode_method_train == "sample" else False,
-            "temperature": 1.3       if self.decode_method_train == "sample" else None,
-            "top_p": 0.98            if self.decode_method_train == "sample" else None,
+            "temperature": 1.1       if self.decode_method_train == "sample" else None,
+            "top_p": 0.95            if self.decode_method_train == "sample" else None,
             "length_penalty" : 1.    if self.decode_method_train == "sample" else None,
             "repetition_penalty": 1. if self.decode_method_train == "greedy" else None
         }
-        self.n_eval_seq = 16
-        self.gen_params_eval = self._get_gen_params_eval()
+        def _get_gen_params_eval():
+            common_params = dict(num_return_sequences=self.n_eval_seq, max_length=self.max_pp_length)
+            gen_params_eval = dict(
+                beam_search         = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
+                                           top_p=None, temperature=None, length_penalty=None,
+                                           diversity_penalty=None, num_beam_groups=None),
+                diverse_beam_search = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
+                                           top_p=None, temperature=None, length_penalty=None,
+                                           diversity_penalty=1., num_beam_groups=self.n_eval_seq),
+                sample              = dict(**common_params, do_sample=True,  num_beams=1,
+                                           top_p=0.95, temperature=0.8, length_penalty=1,
+                                           diversity_penalty=None, num_beam_groups=None)
+            )
+            return gen_params_eval[self.decode_method_eval]
+        self.gen_params_eval = _get_gen_params_eval()
+
 
         # Early stopping (determined during eval on valid set)
         self.early_stopping = True
-        self.early_stopping_tol = 0.7
-        self.early_stopping_metric = "reward_pp-mean"
+        self.early_stopping_min_epochs = 10
+        self.early_stopping_metric = "any_adv_example_proportion"   # don't add -valid to the end of this.
 
         # Other parameters (usually left untouched)
         self.orig_max_length = 32  # longest for pegasus is 60, longest for Parrot is 32
@@ -131,20 +147,7 @@ class Config:
         elif self.dataset_name == "financial":                    self.vm_name = "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
 
 
-    def _get_gen_params_eval(self):
-        common_params = dict(num_return_sequences=self.n_eval_seq, max_length=self.max_pp_length)
-        gen_params_eval = dict(
-            beam_search         = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
-                                       top_p=None, temperature=None, length_penalty=None,
-                                       diversity_penalty=None, num_beam_groups=None),
-            diverse_beam_search = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
-                                       top_p=None, temperature=None, length_penalty=None,
-                                       diversity_penalty=1000., num_beam_groups=int(self.n_eval_seq/2),),
-            sampling            = dict(**common_params, do_sample=True,  num_beams=1,
-                                       top_p=0.95, temperature=0.8, length_penalty=1,
-                                       diversity_penalty=None, num_beam_groups=None)
-        )
-        return gen_params_eval[self.decode_method_eval]
+
 
     def adjust_config_for_simple_dataset(self):
         """Adjust config for the simple dataset."""
@@ -154,7 +157,7 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 5
+        self.n_train_epochs = 6
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -165,7 +168,7 @@ class Config:
         self.orig_cname = "text"
         self.label_cname = 'label'
         self.batch_size_train = 32
-        self.batch_size_eval = 16
+        self.batch_size_eval = 8
         self.acc_steps = 2
         self.n_train_epochs = 100
         self.eval_freq = 1
@@ -191,7 +194,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 50
+        self.n_shards = 20
         self.shard_contiguous = False
         return self
 

@@ -73,7 +73,10 @@ class Trainer:
         self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
         self.orig_baselines = dict()    # keys are idx, values are mean reward per (orig, pp_l) during training eval
         self.initial_metric_d = dict(train=dict(), valid=dict(), test=dict())  # used for wandb metrics at the end
-        self.best_eval_valid_metric = -99999   # used for early stopping, updated every eval
+        # Early stopping
+        self.best_eval_valid_metric,self.best_eval_valid_epoch = -99999,-99999   # tracks best val + epoch so we can load the model later
+        self.eval_valid_metrics = list()  # holds all eval values (used for calculating median)
+        self.best_model_path = ""
 
     def _setup_gradient_accumulation_variables(self):
         """acc_global_l is a list of all batch sizes encountered during training.
@@ -151,23 +154,23 @@ class Trainer:
             # Evaluation loop
             if self.epoch % self._cfg.eval_freq == 0:
                 self.eval_num += 1
-                with timecode() as time_eval_train:
-                    self._eval_function(split='train')
-                with timecode() as time_eval_valid:
-                    self._eval_function(split='valid')
-                with timecode() as time_eval_gc_collect:
-                    gc.collect()
-                with timecode() as time_eval_empty_cache:
-                    torch.cuda.empty_cache()
+                with timecode() as time_eval_train:    self._eval_function(split='train')
+                with timecode() as time_eval_valid:    self._eval_function(split='valid')
+                with timecode() as time_eval_gc_collect:                   gc.collect()
+                with timecode() as time_eval_empty_cache:                  torch.cuda.empty_cache()
                 wandb.log({'time/eval_train_time': time_eval_train.t, 'time/eval_valid_time': time_eval_valid.t,
                            'time/eval_train_thoroughput': len(self.ds.dsd_tkn['train']) / time_eval_train.t,
                            'time/eval_valid_thoroughput': len(self.ds.dsd_tkn['valid']) / time_eval_valid.t,
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
                            'epoch': self.epoch}, commit=True)
+            print(self._is_last_epoch(), self.early_stopping_flag, (self.early_stopping_flag and self._cfg.early_stopping), self.epoch == self._cfg.n_train_epochs)
             if self._is_last_epoch():
+                logger.info(f"Evaluating test set with best model at path : {self.best_model_path}")
+                self.pp_model, self.optimizer = resume_pp_model(self.pp_model, self.optimizer, self.best_model_path)
                 self._eval_function(split='test')
                 self._update_wandb_summary()
+                break
 
     def _training_step(self, data, raw):
         """Forward pass, loss function, backwards pass, parameter update (with gradient accumulation optional),
@@ -655,17 +658,19 @@ class Trainer:
 
         ### Calculate summary statistics
         df_expanded = ds_expanded.to_pandas()
+        # Remove duplicate paraphrases
+        df_expanded = df_expanded.drop_duplicates(subset=df_expanded.columns.difference(['pp_idx', 'sts_scores'])) # sts scores sometimes has rounding errors
         eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward_pp', 'vm_scores', 'sts_scores',  'pp_letter_diff', 'contradiction_scores', 'acceptability_scores']
         agg_metrics = ['mean','std']  # using mean in favour of median
         ## avg across each orig
         df_grp_stats = df_expanded[['idx'] + eval_metric_cols].groupby('idx').agg(agg_metrics)
         df_grp_stats.columns = df_grp_stats.columns = ["-".join(a) for a in df_grp_stats.columns.to_flat_index()]
+        df_grp_stats = df_grp_stats.merge(df_expanded.groupby('idx').size().rename('n_pp').to_frame(), how='left', left_index=True, right_index=True)
         # For training set save mean reward as the REINFORCE baseline
         if split == "train": self.orig_baselines = df_grp_stats['reward_pp-mean'].to_dict()  # idx is extracted as the index automatically
 
-        # avg across whole dataset
-        df_overall_stats = df_expanded[eval_metric_cols].groupby(lambda _ : True).agg(agg_metrics).reset_index(drop=True)
-        df_overall_stats.columns = ["-".join(a) for a in df_overall_stats.columns.to_flat_index()]
+        # average orig-level stats to get whole dataset stats
+        df_overall_stats = df_grp_stats.groupby(lambda _: True).agg('mean').reset_index(drop=True)
         overall_metrics_d = df_overall_stats.iloc[0].to_dict()
         overall_metrics_d['any_adv_example_proportion'] = np.mean((df_grp_stats['is_adv_example-mean'] > 0 ) * 1)
         overall_metrics_d_split = {f"{k}-{split}" : v  for k,v in overall_metrics_d.items()}
@@ -677,17 +682,26 @@ class Trainer:
         overall_metrics_d['epoch'] = self.epoch
         overall_metrics_d_split['epoch'] = self.epoch
 
-        # Check early stopping
+        # Track eval metrics, update the "best" model if needed, check early stopping
         if split == "valid":
             this_metric = overall_metrics_d[self._cfg.early_stopping_metric]
-            if this_metric < (self.best_eval_valid_metric * (1 -  self._cfg.early_stopping_tol)):
-                logger.info(f"Early stopping reached since the current metric of {this_metric} is less than\
-                            {self.best_eval_valid_metric * (1 -  self._cfg.early_stopping_tol)} which is\
-                            the tolerance adjusted threshold of the best metric {self.best_eval_valid_metric}")
-                self.early_stopping_flag = True
-            else:
-                self.best_eval_valid_metric =  max(self.best_eval_valid_metric, this_metric)
+            self.eval_valid_metrics.append(this_metric)
+            logger.info(f"Epoch: {self.epoch}. Min epochs before early stopping activated: {self._cfg.early_stopping_min_epochs}")
+            logger.info(f"Eval metric: {this_metric:.3f} | Running median: {np.median(self.eval_valid_metrics):.3f}")
 
+            if this_metric > self.best_eval_valid_metric:
+                self.best_eval_valid_metric = this_metric
+                self.best_eval_valid_epoch  = self.epoch
+                # Save model and delete previous best model
+                path = f"{self._cfg.path_run}model_{self.epoch}.pt"
+                save_pp_model(self.pp_model, self.optimizer, path)
+                if os.path.exists(self.best_model_path): os.remove(self.best_model_path)
+                self.best_model_path = path
+
+            if self.epoch > self._cfg.early_stopping_min_epochs:  # don't test for early stopping too early because otherwise it stops too soon
+                if this_metric < np.median(self.eval_valid_metrics):
+                    logger.info(f"Early stopping activated.")
+                    self.early_stopping_flag = True
 
         def save_eval_stats_to_csv(split, overall_metrics_d):
             overall_metrics_d['split'] = split
@@ -706,7 +720,7 @@ class Trainer:
             results_df.insert(3, 'split', results_df.pop('split'))
             results_df.insert(4, 'epoch', results_df.pop('epoch'))
             results_df.insert(1, 'run_name', results_df.pop('run_name'))
-            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results1.csv")
+            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results.csv")
 
         ## For train and eval we calc + log histograms to wandb. We dont need that for test.
         if split in ['train', 'valid']:
@@ -720,6 +734,7 @@ class Trainer:
             for k in mean_and_std:
                 name = k + "-std"
                 wandb_eval_d[name + "-" + split + "-hist"] = Histogram(df_grp_stats[name].tolist())
+            wandb_eval_d['n_pp-hist'] = Histogram(df_grp_stats['n_pp'].tolist())
             wandb_eval_d = merge_dicts(overall_metrics_d_split, wandb_eval_d)
             wandb.log(wandb_eval_d, commit=True)
         elif split == "test":
