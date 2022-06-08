@@ -18,7 +18,7 @@ class Config:
         # 2. prithivida/parrot_paraphraser_on_T5 (850 MB)
         # 3. ramsrigouthamg/t5-large-paraphraser-diverse-high-quality (2.75 GB)
         self.pp_name = "prithivida/parrot_paraphraser_on_T5"
-        self.dataset_name = "simple"
+        self.dataset_name = "financial"
         # STS options
         # 1. sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
         # 2. sentence-transformers/paraphrase-MiniLM-L12-v2
@@ -33,7 +33,7 @@ class Config:
 
         ### Important parameters
         self.seed = 421
-        self.use_small_ds = False
+        self.use_small_ds = True
         self.lr = 4e-5
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
         self.reward_clip_max = 4
@@ -46,37 +46,20 @@ class Config:
         self.pp_letter_diff_threshold = 30
 
         self.reward_penalty_type = "kl_div"  # "kl_div" or "ref_logp"
-        self.kl_coef = 0.25             # only used if reward_penalty_type == "kl_div"
-        self.ref_logp_coef = 0.05       # only used if reward_penalty_type == "ref_logp"
-        self.max_pp_length = 48
+        self.kl_coef = 0.25        if self.reward_penalty_type == "kl_div"   else None
+        self.ref_logp_coef = 0.05  if self.reward_penalty_type == "ref_logp" else None
 
+        self.min_pp_length = 2
+        self.max_pp_length = 48
         self.n_eval_seq = 48
         self.decode_method_train = "sample"  # "sample" or "greedy"
         self.decode_method_eval = "sample"
         self.gen_params_train = {
-            "min_length": 2,
-            "max_length": self.max_pp_length,
             "do_sample": True        if self.decode_method_train == "sample" else False,
             "temperature": 1.1       if self.decode_method_train == "sample" else None,
             "top_p": 0.95            if self.decode_method_train == "sample" else None,
-            "length_penalty" : 1.    if self.decode_method_train == "sample" else None,
-            "repetition_penalty": 1. if self.decode_method_train == "greedy" else None
         }
-        def _get_gen_params_eval():
-            common_params = dict(num_return_sequences=self.n_eval_seq, max_length=self.max_pp_length)
-            gen_params_eval = dict(
-                beam_search         = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
-                                           top_p=None, temperature=None, length_penalty=None,
-                                           diversity_penalty=None, num_beam_groups=None),
-                diverse_beam_search = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
-                                           top_p=None, temperature=None, length_penalty=None,
-                                           diversity_penalty=1., num_beam_groups=self.n_eval_seq),
-                sample              = dict(**common_params, do_sample=True,  num_beams=1,
-                                           top_p=0.95, temperature=0.8, length_penalty=1,
-                                           diversity_penalty=None, num_beam_groups=None)
-            )
-            return gen_params_eval[self.decode_method_eval]
-        self.gen_params_eval = _get_gen_params_eval()
+        self.gen_params_eval = self._get_gen_params_eval()
 
 
         # Early stopping (determined during eval on valid set)
@@ -88,8 +71,6 @@ class Config:
         self.orig_max_length = 32  # longest for pegasus is 60, longest for Parrot is 32
         self.pin_memory = True
         self.zero_grad_with_none = False
-        self.pad_token_embeddings = False
-        self.embedding_padding_multiple = 8
         self.orig_padding_multiple = 8   # pad input to multiple of this
         self.bucket_by_length = True
         self.shuffle_train = False
@@ -101,9 +82,6 @@ class Config:
         self.n_shards = None
         self.shard_contiguous = None
 
-        ### Logging parameters
-        self.save_model_while_training = False
-        self.save_model_freq = 10
 
         ### W&B parameters
         self.wandb = dict(
@@ -142,11 +120,24 @@ class Config:
         # Checks
         self._validate_n_epochs()
 
+    def _get_gen_params_eval(self):
+        common_params = dict(num_return_sequences=self.n_eval_seq)
+        gen_params_eval = dict(
+            beam_search         = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
+                                       top_p=None, temperature=None,
+                                       diversity_penalty=None, num_beam_groups=None),
+            diverse_beam_search = dict(**common_params, do_sample=False, num_beams=self.n_eval_seq,
+                                       top_p=None, temperature=None,
+                                       diversity_penalty=1., num_beam_groups=self.n_eval_seq),
+            sample              = dict(**common_params, do_sample=True,  num_beams=1,
+                                       top_p=0.95, temperature=0.8,
+                                       diversity_penalty=None, num_beam_groups=None)
+        )
+        return gen_params_eval[self.decode_method_eval]
+
     def _select_vm_model(self):
         if   self.dataset_name in ["rotten_tomatoes", "simple"]:  self.vm_name = "textattack/distilbert-base-uncased-rotten-tomatoes"
         elif self.dataset_name == "financial":                    self.vm_name = "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
-
-
 
 
     def adjust_config_for_simple_dataset(self):
@@ -183,7 +174,7 @@ class Config:
         self.batch_size_train = 16
         self.batch_size_eval = 32
         self.acc_steps = 2
-        self.n_train_epochs = 4
+        self.n_train_epochs = 10
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -194,7 +185,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 20
+        self.n_shards = 50
         self.shard_contiguous = False
         return self
 

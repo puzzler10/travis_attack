@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[2]:
 
 
 ## Imports and environment variables 
@@ -21,7 +21,13 @@ import warnings
 warnings.filterwarnings("ignore", message="Passing `max_length` to BeamSearchScorer is deprecated")  # we ignore the warning because it works anyway for diverse beam search 
 
 
-# In[ ]:
+# In[21]:
+
+
+"gen_train-temperature".split('-')[1]
+
+
+# In[19]:
 
 
 cfg = Config()  # default values
@@ -29,9 +35,22 @@ if not in_jupyter():  # override with any -- options when running with command l
     parser = setup_parser()
     newargs = vars(parser.parse_args())
     for k,v in newargs.items(): 
-        if v is not None: 
-            if k in cfg.gen_params_train.keys():  cfg.gen_params_train[k] = v
+        if v is not None:
+            if "gen_train" in k: cfg.gen_params_train[k.split('-')[1]] = v
+                
+            if k == "decode_method_eval": 
+                setattr(cfg, k, v) 
+                cfg.gen_params_eval = cfg._get_gen_params_eval()
+                
+            if "gen_eval"  in k: cfg.gen_params_eval[ k.split('-')[1]] = v
+            
             else:                   setattr(cfg, k, v)
+                
+    if   k == "decode_method_train" and v == "greedy": 
+                setattr(cfg, k, v) 
+                cfg.gen_params_train["do_sample"] = False 
+                cfg.gen_params_train['temperature'] = None
+                cfg.gen_params_train['top_p'] = None
 if cfg.use_small_ds:  cfg = cfg.small_ds()
 set_seed(cfg.seed)
 set_session_options()
@@ -41,7 +60,7 @@ optimizer = get_optimizer(cfg, pp_model)
 ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=False)
 
 
-# In[ ]:
+# In[20]:
 
 
 cfg.wandb['mode'] = 'disabled'

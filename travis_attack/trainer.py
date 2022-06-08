@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from .utils import (timecode, show_gpu, merge_dicts, unpack_nested_lists_in_df,
                                  display_all, append_df_to_csv, start_wandb_run)
 from .tests import check_no_nans_or_infs
-from .models import save_pp_model, resume_pp_model, get_vm_probs, get_start_end_special_token_ids, get_nli_probs, get_cola_probs
+from .models import save_pp_model, resume_pp_model, get_vm_probs, get_nli_probs, get_cola_probs
 
 
 # Cell
@@ -41,15 +41,14 @@ from IPython.core.debugger import set_trace
 # Cell
 class Trainer:
     def __init__(self, cfg, vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model,
-                 nli_tokenizer, nli_model, cola_tokenizer, cola_model, optimizer, ds, initial_eval=True):
+                 nli_tokenizer, nli_model, cola_tokenizer, cola_model, optimizer, ds):
         store_attr()
         self._cfg = self.cfg; del self.cfg;
-        self.epoch,self.acc_num,self.global_step,self.eval_num,self.param_norm = 0,0,0,0,0
-        self._reset_batch_dicts()
-        #resume_pp_model(f"{path_checkpoints}devout-durian-172_39")
+        self.epoch,self.acc_num,self.global_step,self.param_norm = 0,0,0,0
+       # self._reset_batch_dicts()
         self._setup_data_stores()
         self._setup_gradient_accumulation_variables()
-        self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
+       # self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
         self.early_stopping_flag = False
 
     def train(self):
@@ -59,10 +58,10 @@ class Trainer:
 
     def _is_last_epoch(self): return (self.early_stopping_flag and self._cfg.early_stopping) or (self.epoch == self._cfg.n_train_epochs)
 
-    def _reset_batch_dicts(self):
-        # train_batch_d holds all info to write to csv, time_d has times, wandb_d has everything to log to wandb
-        # there will be overlap between them.
-        self.batch_d,self.batch_time_d,self.batch_wandb_d = dict(),dict(),dict()
+ #   def _reset_batch_dicts(self):
+        ## batch_d holds all info during training step to write to csv, time_d has times, wandb_d has everything to log to wandb
+        ## there will be overlap between them.
+        #self.batch_d,self.batch_time_d,self.batch_wandb_d = dict(),dict(),dict()
 
     def _setup_wandb_run(self):
         """Init wandb run, set up paths, create dir for model artifacts if needed, """
@@ -70,7 +69,7 @@ class Trainer:
         if self._cfg.wandb['log_grads']: wandb.watch(self.pp_model, log='gradients', log_freq=self._cfg.wandb['log_grads_freq'])
 
     def _setup_data_stores(self):
-        self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
+     #   self.eval_epoch_df_d = dict(train=[], valid=[], test=[]) # each eval epoch dataframe appended to here
         self.orig_baselines = dict()    # keys are idx, values are mean reward per (orig, pp_l) during training eval
         self.initial_metric_d = dict(train=dict(), valid=dict(), test=dict())  # used for wandb metrics at the end
         # Early stopping
@@ -109,38 +108,31 @@ class Trainer:
         progress_bar = tqdm(range(self._cfg.n_train_steps))
         self.pp_model.zero_grad(set_to_none=self._cfg.zero_grad_with_none)
 
-        # initial eval (at epoch 0)
-        if self.initial_eval:
-            logger.info("Launching initial eval run: train")
-            self._eval_function(split='train')
-            logger.info("Launching initial eval run: valid")
-            self._eval_function(split='valid')
-            logger.info("Launching initial eval run: test")
-            self._eval_function(split='test')
+        # initial eval of untrained model (at epoch 0) for results comparison and to calculate initial baselines for REINFORCE
+        logger.info("Launching initial eval run: train"); self._eval_function(split='train')
+        logger.info("Launching initial eval run: valid"); self._eval_function(split='valid')
+        logger.info("Launching initial eval run: test" ); self._eval_function(split='test')
 
+        # Training loop
         for self.epoch in range(1, self._cfg.n_train_epochs+1):
             logger.info(f"Now on epoch {self.epoch} of {self._cfg.n_train_epochs}")
             if not self.pp_model.training: self.pp_model.train()
             with timecode() as time_train_one_epoch:
                 self.train_batch_results = []  # each train batch appended to here, list of dicts
                 for self.batch_num, (data, raw) in enumerate(zip(self.ds.dld_tkn['train'], self.ds.dld_raw['train'])):
-                    self._reset_batch_dicts()
+                    self.batch_d,self.batch_time_d,self.batch_wandb_d = dict(),dict(),dict()
                     self._training_step(data, raw)
                     if self._batch_for_opt_step(): self._reset_acc_lists()
                     self.acc_num = (self.acc_num + 1) % self._cfg.acc_steps
                     self.global_step += 1
                     progress_bar.update(1)
-
             wandb.log({'time/train_one_epoch_time': time_train_one_epoch.t,
                        'time/train_one_epoch_thoroughput': len(self.ds.dsd_tkn['train']) / time_train_one_epoch.t,
                        'epoch': self.epoch}, commit=True)
-
             if self._cfg.wandb['log_grads'] and self.epoch % self._cfg.wandb_log_grads_freq == 0:
                 plt = self._plot_grad_flow(self.pp_model.named_parameters())
                 wandb.log({"gradient flow": wandb.Image(plt)})  # doesn't work as a non-image (i.e. plotly)
                 del plt
-
-            if self._cfg.save_model_while_training and (self.epoch + 1) % self._cfg.save_model_freq == 0:  save_model(epoch)
 
             ## Save training step examples to csv
 #             df1 = self._convert_batch_list_to_df(self.train_batch_results)
@@ -153,7 +145,6 @@ class Trainer:
 
             # Evaluation loop
             if self.epoch % self._cfg.eval_freq == 0:
-                self.eval_num += 1
                 with timecode() as time_eval_train:    self._eval_function(split='train')
                 with timecode() as time_eval_valid:    self._eval_function(split='valid')
                 with timecode() as time_eval_gc_collect:                   gc.collect()
@@ -164,7 +155,7 @@ class Trainer:
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
                            'epoch': self.epoch}, commit=True)
-            print(self._is_last_epoch(), self.early_stopping_flag, (self.early_stopping_flag and self._cfg.early_stopping), self.epoch == self._cfg.n_train_epochs)
+           # print(self._is_last_epoch(), self.early_stopping_flag, (self.early_stopping_flag and self._cfg.early_stopping), self.epoch == self._cfg.n_train_epochs)
             if self._is_last_epoch():
                 logger.info(f"Evaluating test set with best model at path : {self.best_model_path}")
                 self.pp_model, self.optimizer = resume_pp_model(self.pp_model, self.optimizer, self.best_model_path)
@@ -178,38 +169,28 @@ class Trainer:
         """
         if not self.pp_model.training: self.pp_model.train()
         if not self.vm_model.training: self.vm_model.train()
-        for k, v in data.items():
-            if data[k].device != self._cfg.device: data[k] = data[k].to(self._cfg.device)
-
+        for k in ['input_ids', 'attention_mask', 'label', "orig_truelabel_probs", "orig_sts_embeddings"]: data[k] = data[k].to(self._cfg.device)
         with timecode() as self.batch_time_d['time_generate_pp']:
             pp_output = self.pp_model.generate_with_grad(
                 input_ids=data['input_ids'], attention_mask=data['attention_mask'],
                 num_return_sequences=1, num_beams=1, **self._cfg.gen_params_train,
-                return_dict_in_generate=True, output_scores=True, remove_invalid_values=False,
-                pad_token_id = self.pp_tokenizer.pad_token_id, eos_token_id = self.pp_tokenizer.eos_token_id
-            )
+                min_length=self._cfg.min_pp_length, max_length=self._cfg.max_pp_length,
+                return_dict_in_generate=True, output_scores=True)  # , remove_invalid_values=False
+               # pad_token_id = self.pp_tokenizer.pad_token_id, eos_token_id = self.pp_tokenizer.eos_token_id
             pp_l = self.pp_tokenizer.batch_decode(pp_output.sequences, skip_special_tokens=True)
-            self._update_batch_size_and_length_variables(orig_ids=data['input_ids'], pp_ids=pp_output.sequences)
-
-        logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after forward pass: '))
-
-        with timecode() as self.batch_time_d['time_loss_fn']:
-            loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
-
-        with timecode() as self.batch_time_d['time_backwards']:
-            loss_batch.backward()
-
-        with timecode() as self.batch_time_d['time_calc_gradient_norm']:
-            self.grad_norm =  self._get_gradient_update_norm()
-
-        logger.debug(show_gpu(f'TRAIN, epoch {self.epoch}, batch {self.batch_num}, GPU memory usage after backwards pass: '))
+        # Update_batch_size_and_length_variables
+        self.orig_batch_size,self.orig_length =   data['input_ids'].shape[0],   data['input_ids'].shape[1]
+        self.pp_batch_size,  self.pp_length   = pp_output.sequences.shape[0], pp_output.sequences.shape[1]
+        # Loss function, backwards pass, optimizer step + measure gradient update norm
+        with timecode() as self.batch_time_d['time_loss_fn']:            loss_batch = self._loss_fn(data, raw, pp_output, pp_l)
+        with timecode() as self.batch_time_d['time_backwards']:          loss_batch.backward()
+        with timecode() as self.batch_time_d['time_calc_gradient_norm']: self.grad_norm = self._get_gradient_update_norm()
         with timecode() as self.batch_time_d['time_opt_step_and_calc_param_norm']:
-            if self._batch_for_opt_step():
-                self._opt_step_and_calc_param_norm()
+            if self._batch_for_opt_step():  self._opt_step_and_calc_param_norm()
             else:
                 self.param_norm = 0
-                with timecode() as self.batch_time_d['time_opt_step']: pass
-
+                with timecode() as self.batch_time_d['time_opt_step']: pass  # need some value here
+        # Gather values, append to containers, log to wandb
         self._prepare_train_batch_d(raw, data, pp_l)
         self.train_batch_results.append(self.batch_d)
         self._wandb_log_training_step()
@@ -230,22 +211,28 @@ class Trainer:
 
     def _batch_for_opt_step(self): return self.acc_num == (self._cfg.acc_steps - 1)
 
-    def _add_batch_vars_to_batch_d(self, raw, data, pp_l):
-        # Add basics. (results are already added elsewhere)
+#     def _add_batch_vars_to_batch_d(self, raw, data, pp_l):
+#         # Add basics. (results are already added elsewhere)
+#         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
+#             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
+#             'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
+#             "orig": raw['text'],
+#             "label": data['label'].cpu().tolist(),
+#             "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
+#             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
+#             "pp": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
+#         })
+
+    def _prepare_train_batch_d(self, raw, data, pp_l):
         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
             'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
-            "orig": raw['text'],
-            "label": data['label'].cpu().tolist(),
+            "orig": raw['text'], "label": data['label'].cpu().tolist(),
             "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
             "pp": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
         })
-
-    def _prepare_train_batch_d(self, raw, data, pp_l):
-        self._add_batch_vars_to_batch_d(raw, data, pp_l)
-        # Add times (only for training, not eval)
-        for k, v in self.batch_time_d.items(): self.batch_time_d[k] = v.t  # extract time from timecode object
+        for k, v in self.batch_time_d.items(): self.batch_time_d[k] = v.t  # extract times from timecode object
         self.batch_d = merge_dicts(self.batch_d, self.batch_time_d)
 
     def _wandb_log_training_step(self):
@@ -305,13 +292,11 @@ class Trainer:
 #         df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
 #         return df_expanded
 
-    def _update_batch_size_and_length_variables(self, orig_ids, pp_ids):
-        # Update variables
-        # for greedy search self.pp_length is equal to self.orig_batch_size but this won't be for beam search
-        self.orig_batch_size     = orig_ids.shape[0]
-        self.orig_length         = orig_ids.shape[1]
-        self.pp_batch_size       = pp_ids.shape[0]
-        self.pp_length           = pp_ids.shape[1]
+#     def _update_batch_size_and_length_variables(self, orig_ids, pp_ids):
+#         self.orig_batch_size     = orig_ids.shape[0]
+#         self.orig_length         = orig_ids.shape[1]
+#         self.pp_batch_size       = pp_ids.shape[0]
+#         self.pp_length           = pp_ids.shape[1]
 
     def _loss_fn(self, data, raw, pp_output, pp_l):
         with timecode() as self.batch_time_d['time_pp_logp']:        pp_logp = self._get_pp_logp(pp_output)
@@ -330,13 +315,6 @@ class Trainer:
         loss       = -reward_pp_minus_baseline_with_penalty * pp_logp
         loss_sum   = torch.sum(loss)  # we scale it later
         loss_batch = loss_sum / self.acc_current_n_examples  # for gradient accumulation
-
-#         print("Paraphrase rewards:", reward_pp, torch.mean(reward_pp))
-#         print("Baselines:", baselines, torch.mean(baselines))
-#         print("Paraphrase rewards minus baseline:", reward_pp_minus_baseline, torch.mean(reward_pp_minus_baseline))
-#         print("Reward penalty:",reward_penalty )
-#         print("Paraphrase rewards minus baseline with penalty:", reward_pp_minus_baseline_with_penalty, torch.mean(reward_pp_minus_baseline_with_penalty))
-
 
         self.batch_d['pp_logp']     =                      pp_logp.detach().cpu().tolist()
         self.batch_d['ref_logp']    =                     ref_logp.detach().cpu().tolist()
@@ -442,7 +420,6 @@ class Trainer:
         # and has no probability attached to it, so we remove it.
         seq_without_first_tkn = pp_output.sequences[:, 1:]
         assert seq_without_first_tkn.shape == torch.Size([self.orig_batch_size, self.pp_length - 1])
-
         ### Convert from tuple of scores to one big tensor of scores
         scores_stacked = torch.stack(pp_output.scores, 1)
         ### TESTS
@@ -451,18 +428,26 @@ class Trainer:
         assert scores_stacked.shape == torch.Size([self.orig_batch_size, (self.pp_length - 1), self._cfg.vocab_size])
         assert torch.all(~torch.isnan(scores_stacked))
         assert torch.all(~torch.isposinf(scores_stacked))
-
         ### Take log softmax of scores and then extract those that correspond
         # to the generated sequences
         scores_log_softmax = scores_stacked.log_softmax(2)
         seq_token_log_probs = torch.gather(scores_log_softmax,2,seq_without_first_tkn[:,:,None]).squeeze(-1)
+
         ### TESTS
         # -inf is possible in scores_log_softmax and seq_token_log_probs before the attention mask is added.
         assert torch.all(~torch.isnan(   scores_log_softmax))
         assert torch.all(~torch.isposinf(scores_log_softmax))
-        self._check_scores_log_softmax_sums(scores_log_softmax)
-        # probs should be 1-1 with the filtered tkns: check shape to confirm
-        assert seq_token_log_probs.shape == seq_without_first_tkn.shape
+        def _check_scores_log_softmax_sums(scores_log_softmax):
+            sums = scores_log_softmax.exp().sum(2)
+            # check that the axes is right
+            # we want to sum over token probabilities at each generation step, so we
+            # should end up with a shape [self.orig_batch_size, self.pp_length]
+            assert sums.shape[0] == self.orig_batch_size
+            assert sums.shape[1] == self.pp_length - 1
+            # check that they sum to 1 along the self.pp_length axis (or close enough at least)
+            assert torch.allclose(sums, torch.ones(sums.size(), device=self._cfg.device), atol = 5e-2)
+        _check_scores_log_softmax_sums(scores_log_softmax)
+        assert seq_token_log_probs.shape == seq_without_first_tkn.shape  # probs should be 1-1 with the filtered tkns: check shape to confirm
 
         ### Generate attention mask to identify padding tokens. Then apply it to the
         # sequence probabilities so that we don't consider probability of padding tokens
@@ -480,16 +465,12 @@ class Trainer:
         # check attention mask only has 0 for padding tokens and not eos tokens or anything else
         assert all(seq_without_first_tkn[attention_mask == 0] == self.pp_tokenizer.pad_token_id)
         check_no_nans_or_infs(seq_token_log_probs)
-
         ### Get sequence probabilities by summing up token log probabilities
         seq_log_prob = seq_token_log_probs.sum(-1)
-        ## TESTS
         assert seq_log_prob.shape == torch.Size([self.pp_batch_size])
         check_no_nans_or_infs(seq_log_prob)
-
         # normalise for length
         logprobs_normalised = seq_log_prob / attention_mask.sum(1)  # normalise for length of generated sequence
-
         if self.pp_model.training:  # don't bother logging or calculate entropy, token_probs in eval mode
             if self._cfg.wandb['log_token_entropy']:
                 with timecode() as self.batch_time_d['time_log_entropy']:
@@ -518,16 +499,6 @@ class Trainer:
         logprobs_sum = logprobs.sum(1)
         logprobs_normalised = logprobs_sum / attention_mask.sum(1)  # normalise for length of generated sequence
         return logprobs_normalised
-
-    def _check_scores_log_softmax_sums(self, scores_log_softmax):
-        sums = scores_log_softmax.exp().sum(2)
-        # check that the axes is right
-        # we want to sum over token probabilities at each generation step, so we
-        # should end up with a shape [self.orig_batch_size, self.pp_length]
-        assert sums.shape[0] == self.orig_batch_size
-        assert sums.shape[1] == self.pp_length - 1
-        # check that they sum to 1 along the self.pp_length axis (or close enough at least)
-        assert torch.allclose(sums, torch.ones(sums.size(), device=self._cfg.device), atol = 5e-2)
 
     def _get_entropy_hist(self, scores_stacked, attention_mask):
         ent = Categorical(logits = scores_stacked).entropy().detach()
@@ -589,7 +560,8 @@ class Trainer:
         ## Loop through batches in eval set
         for eval_batch_num, (data, raw) in enumerate(zip(dl_tkn, dl_raw)):
             pp_output = self.pp_model.generate(input_ids=data['input_ids'].to(self._cfg.device), attention_mask=data['attention_mask'].to(self._cfg.device),
-                                          **self._cfg.gen_params_eval,   remove_invalid_values=False,
+                                          **self._cfg.gen_params_eval,   min_length=self._cfg.min_pp_length, max_length=self._cfg.max_pp_length,
+                                        remove_invalid_values=False,
                                           pad_token_id = self.pp_tokenizer.pad_token_id,eos_token_id = self.pp_tokenizer.eos_token_id)
             pp_l = self.pp_tokenizer.batch_decode(pp_output, skip_special_tokens=True)
             pp_l_nested = [pp_l[i:i+self._cfg.n_eval_seq] for i in range(0, len(pp_l), self._cfg.n_eval_seq)]  # put paraphrases in nested lists
@@ -609,7 +581,7 @@ class Trainer:
         scalar_cols = [o for o in df1.columns if o not in ['pp', 'pp_idx']]
         df_expanded = unpack_nested_lists_in_df(df1, scalar_cols=scalar_cols) # This dataframe has one row per paraphrase
 
-        ## Add vm_scores, sts_scores, pp_letter_diff, contradiction scores
+        ## Add reward component scores
         ds_expanded = Dataset.from_pandas(df_expanded)
         def add_vm_scores_eval(batch):
             output = self._get_vm_scores(pp_l=batch['pp'], labels=torch.tensor(batch['label'], device = self._cfg.device),
@@ -663,7 +635,7 @@ class Trainer:
         eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward_pp', 'vm_scores', 'sts_scores',  'pp_letter_diff', 'contradiction_scores', 'acceptability_scores']
         agg_metrics = ['mean','std']  # using mean in favour of median
         ## avg across each orig
-        df_grp_stats = df_expanded[['idx'] + eval_metric_cols].groupby('idx').agg(agg_metrics)
+        df_grp_stats = df_expanded[['idx'] + eval_metric_cols].groupby('idx').agg(agg_metrics).fillna(0) # if there is one example, std is NaN, so we just replace with 0
         df_grp_stats.columns = df_grp_stats.columns = ["-".join(a) for a in df_grp_stats.columns.to_flat_index()]
         df_grp_stats = df_grp_stats.merge(df_expanded.groupby('idx').size().rename('n_pp').to_frame(), how='left', left_index=True, right_index=True)
         # For training set save mean reward as the REINFORCE baseline
@@ -734,7 +706,7 @@ class Trainer:
             for k in mean_and_std:
                 name = k + "-std"
                 wandb_eval_d[name + "-" + split + "-hist"] = Histogram(df_grp_stats[name].tolist())
-            wandb_eval_d['n_pp-hist'] = Histogram(df_grp_stats['n_pp'].tolist())
+            wandb_eval_d['n_pp-' + split + '-hist'] = Histogram(df_grp_stats['n_pp'].tolist())
             wandb_eval_d = merge_dicts(overall_metrics_d_split, wandb_eval_d)
             wandb.log(wandb_eval_d, commit=True)
         elif split == "test":
@@ -747,17 +719,6 @@ class Trainer:
         df_expanded = self._set_df_colorder(df_expanded, is_eval=True)
         fname = f"{self._cfg.path_run}{split}.csv"
         append_df_to_csv(df_expanded, path = fname)
-
-    def _add_batch_vars_to_batch_d_eval(self,  raw, data, pp_l):
-        self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
-            'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
-            'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
-            "orig": raw['text'],
-            "label": data['label'].cpu().tolist(),
-            "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
-            'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
-            "pp": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
-        })
 
     def _set_df_colorder(self, df, is_eval=False):
         if is_eval:

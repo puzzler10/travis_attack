@@ -1,0 +1,247 @@
+06-08 10:05 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-08 10:06 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+06-08 10:06 travis_attack.data DEBUG    Dataset lengths: {'train': 7, 'valid': 1, 'test': 1}
+06-08 10:06 travis_attack.data DEBUG    Total training epochs:4
+06-08 10:06 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 7, 'valid': 1, 'test': 1, 'train_eval': 7}
+06-08 10:06 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [7], 'valid': [1], 'test': [1], 'train_eval': [7]}
+06-08 10:06 wandb.jupyter ERROR    Failed to detect the name of this notebook, you can set it manually with the WANDB_NOTEBOOK_NAME environment variable to enable code saving.
+06-08 10:06 wandb        DEBUG    no default config file found in config-defaults.yaml
+06-08 10:06 travis_attack.trainer INFO     Launching initial eval run: train
+06-08 10:13 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-08 10:13 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+06-08 10:14 travis_attack.data DEBUG    Dataset lengths: {'train': 7, 'valid': 1, 'test': 1}
+06-08 10:14 travis_attack.data DEBUG    Total training epochs:4
+06-08 10:14 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 7, 'valid': 1, 'test': 1, 'train_eval': 7}
+06-08 10:14 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [7], 'valid': [1], 'test': [1], 'train_eval': [7]}
+06-08 10:14 wandb        DEBUG    no default config file found in config-defaults.yaml
+06-08 10:14 travis_attack.trainer INFO     Launching initial eval run: train
+06-08 10:14 travis_attack.trainer INFO     Launching initial eval run: valid
+06-08 10:14 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-08 10:14 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 10:14 travis_attack.trainer INFO     Launching initial eval run: test
+06-08 10:14 travis_attack.trainer INFO     Now on epoch 1 of 4
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  42.5% (9790 out of 23040)
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  44.7% (10304 out of 23040)
+06-08 10:14 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 10
+06-08 10:14 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 10:14 travis_attack.trainer INFO     Now on epoch 2 of 4
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  34.7% (7998 out of 23040)
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  39.9% (9200 out of 23040)
+06-08 10:14 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 10
+06-08 10:14 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 10:14 travis_attack.trainer INFO     Now on epoch 3 of 4
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  42.3% (9742 out of 23040)
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  46.9% (10810 out of 23040)
+06-08 10:14 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 10
+06-08 10:14 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 10:14 travis_attack.trainer INFO     Now on epoch 4 of 4
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after forward pass:  42.6% (9816 out of 23040)
+06-08 10:14 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after backwards pass:  47.3% (10888 out of 23040)
+06-08 10:14 travis_attack.trainer INFO     Epoch: 4. Min epochs before early stopping activated: 10
+06-08 10:14 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 10:14 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/dummy-kYBrZsn7CxgZ2p6zygawVM/model_0.pt
+06-08 11:19 travis_attack.insights INFO     Dataframes have shapes ['training_step: (28, 52)', 'train: (596, 21)', 'valid: (138, 21)', 'test: (53, 21)']
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 11:19 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 11:19 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 11:19 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 11:19 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 11:19 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 11:19 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 11:19 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 11:19 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 11:19 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 11:30 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-08 11:31 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+06-08 11:31 travis_attack.data DEBUG    Dataset lengths: {'train': 7, 'valid': 1, 'test': 1}
+06-08 11:31 travis_attack.data DEBUG    Total training epochs:4
+06-08 11:31 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 7, 'valid': 1, 'test': 1, 'train_eval': 7}
+06-08 11:31 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [7], 'valid': [1], 'test': [1], 'train_eval': [7]}
+06-08 11:32 travis_attack.trainer INFO     Launching initial eval run: train
+06-08 11:32 travis_attack.trainer INFO     Launching initial eval run: valid
+06-08 11:32 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-08 11:32 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 11:32 travis_attack.trainer INFO     Launching initial eval run: test
+06-08 11:32 travis_attack.trainer INFO     Now on epoch 1 of 4
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  55.4% (12774 out of 23040)
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  57.6% (13276 out of 23040)
+06-08 11:32 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 10
+06-08 11:32 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 11:32 travis_attack.trainer INFO     Now on epoch 2 of 4
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  36.9% (8496 out of 23040)
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  41.0% (9446 out of 23040)
+06-08 11:32 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 10
+06-08 11:32 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 11:32 travis_attack.trainer INFO     Now on epoch 3 of 4
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  44.4% (10240 out of 23040)
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  48.0% (11050 out of 23040)
+06-08 11:32 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 10
+06-08 11:32 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 11:32 travis_attack.trainer INFO     Now on epoch 4 of 4
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after forward pass:  44.8% (10314 out of 23040)
+06-08 11:32 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after backwards pass:  48.3% (11124 out of 23040)
+06-08 11:32 travis_attack.trainer INFO     Epoch: 4. Min epochs before early stopping activated: 10
+06-08 11:32 travis_attack.trainer INFO     Eval metric: 0.000 | Running median: 0.000
+06-08 11:32 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/curious-night-175/model_0.pt
+06-08 11:33 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-08 11:34 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+06-08 11:34 travis_attack.data DEBUG    Dataset lengths: {'train': 22, 'valid': 4, 'test': 3}
+06-08 11:34 travis_attack.data DEBUG    Total training epochs:20
+06-08 11:34 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 6, 'valid': 4, 'test': 3, 'train_eval': 22}
+06-08 11:34 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [16, 6], 'valid': [4], 'test': [3], 'train_eval': [22]}
+06-08 11:34 travis_attack.trainer INFO     Launching initial eval run: train
+06-08 11:34 travis_attack.trainer INFO     Launching initial eval run: valid
+06-08 11:34 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-08 11:34 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:34 travis_attack.trainer INFO     Launching initial eval run: test
+06-08 11:34 travis_attack.trainer INFO     Now on epoch 1 of 10
+06-08 11:34 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after forward pass:  89.0% (20498 out of 23040)
+06-08 11:34 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 0, GPU memory usage after backwards pass:  91.0% (20958 out of 23040)
+06-08 11:34 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after forward pass:  91.0% (20958 out of 23040)
+06-08 11:34 travis_attack.trainer DEBUG    TRAIN, epoch 1, batch 1, GPU memory usage after backwards pass:  91.0% (20958 out of 23040)
+06-08 11:35 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 10
+06-08 11:35 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:35 travis_attack.trainer INFO     Now on epoch 2 of 10
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after forward pass:  47.7% (10994 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 0, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after forward pass:  58.6% (13502 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 2, batch 1, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:35 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 10
+06-08 11:35 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:35 travis_attack.trainer INFO     Now on epoch 3 of 10
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after forward pass:  48.9% (11260 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 0, GPU memory usage after backwards pass:  60.7% (13980 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after forward pass:  60.7% (13980 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 3, batch 1, GPU memory usage after backwards pass:  60.7% (13980 out of 23040)
+06-08 11:35 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 10
+06-08 11:35 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:35 travis_attack.trainer INFO     Now on epoch 4 of 10
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after forward pass:  49.3% (11354 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 0, GPU memory usage after backwards pass:  61.4% (14148 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 1, GPU memory usage after forward pass:  61.4% (14148 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 4, batch 1, GPU memory usage after backwards pass:  61.4% (14148 out of 23040)
+06-08 11:35 travis_attack.trainer INFO     Epoch: 4. Min epochs before early stopping activated: 10
+06-08 11:35 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:35 travis_attack.trainer INFO     Now on epoch 5 of 10
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after forward pass:  46.9% (10802 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 0, GPU memory usage after backwards pass:  57.3% (13196 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 1, GPU memory usage after forward pass:  57.3% (13196 out of 23040)
+06-08 11:35 travis_attack.trainer DEBUG    TRAIN, epoch 5, batch 1, GPU memory usage after backwards pass:  57.3% (13196 out of 23040)
+06-08 11:36 travis_attack.trainer INFO     Epoch: 5. Min epochs before early stopping activated: 10
+06-08 11:36 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:36 travis_attack.trainer INFO     Now on epoch 6 of 10
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 0, GPU memory usage after forward pass:  46.5% (10708 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 0, GPU memory usage after backwards pass:  56.6% (13032 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 1, GPU memory usage after forward pass:  56.6% (13032 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 6, batch 1, GPU memory usage after backwards pass:  56.6% (13032 out of 23040)
+06-08 11:36 travis_attack.trainer INFO     Epoch: 6. Min epochs before early stopping activated: 10
+06-08 11:36 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:36 travis_attack.trainer INFO     Now on epoch 7 of 10
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 0, GPU memory usage after forward pass:  47.7% (10994 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 0, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 1, GPU memory usage after forward pass:  58.6% (13502 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 7, batch 1, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:36 travis_attack.trainer INFO     Epoch: 7. Min epochs before early stopping activated: 10
+06-08 11:36 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:36 travis_attack.trainer INFO     Now on epoch 8 of 10
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 0, GPU memory usage after forward pass:  47.7% (10994 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 0, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 1, GPU memory usage after forward pass:  58.6% (13502 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 8, batch 1, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:36 travis_attack.trainer INFO     Epoch: 8. Min epochs before early stopping activated: 10
+06-08 11:36 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:36 travis_attack.trainer INFO     Now on epoch 9 of 10
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 9, batch 0, GPU memory usage after forward pass:  47.7% (10994 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 9, batch 0, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:36 travis_attack.trainer DEBUG    TRAIN, epoch 9, batch 1, GPU memory usage after forward pass:  58.6% (13502 out of 23040)
+06-08 11:37 travis_attack.trainer DEBUG    TRAIN, epoch 9, batch 1, GPU memory usage after backwards pass:  58.6% (13502 out of 23040)
+06-08 11:37 travis_attack.trainer INFO     Epoch: 9. Min epochs before early stopping activated: 10
+06-08 11:37 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:37 travis_attack.trainer INFO     Now on epoch 10 of 10
+06-08 11:37 travis_attack.trainer DEBUG    TRAIN, epoch 10, batch 0, GPU memory usage after forward pass:  48.5% (11164 out of 23040)
+06-08 11:37 travis_attack.trainer DEBUG    TRAIN, epoch 10, batch 0, GPU memory usage after backwards pass:  60.0% (13822 out of 23040)
+06-08 11:37 travis_attack.trainer DEBUG    TRAIN, epoch 10, batch 1, GPU memory usage after forward pass:  60.0% (13822 out of 23040)
+06-08 11:37 travis_attack.trainer DEBUG    TRAIN, epoch 10, batch 1, GPU memory usage after backwards pass:  60.0% (13822 out of 23040)
+06-08 11:37 travis_attack.trainer INFO     Epoch: 10. Min epochs before early stopping activated: 10
+06-08 11:37 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 11:37 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/clear-shape-176/model_0.pt
+06-08 12:02 travis_attack.insights INFO     Dataframes have shapes ['training_step: (220, 52)', 'train: (3840, 21)', 'valid: (904, 21)', 'test: (114, 21)']
+06-08 12:02 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 12:02 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 12:02 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 12:02 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 12:02 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 12:02 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 12:02 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 12:02 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 12:03 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 12:03 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 12:03 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 12:03 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 12:04 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 12:04 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 12:04 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 12:04 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 12:45 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-08 12:46 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+06-08 12:46 travis_attack.data DEBUG    Dataset lengths: {'train': 22, 'valid': 4, 'test': 3}
+06-08 12:46 travis_attack.data DEBUG    Total training epochs:20
+06-08 12:46 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 6, 'valid': 4, 'test': 3, 'train_eval': 22}
+06-08 12:46 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [16, 6], 'valid': [4], 'test': [3], 'train_eval': [22]}
+06-08 12:49 travis_attack.trainer INFO     Launching initial eval run: train
+06-08 12:49 travis_attack.trainer INFO     Launching initial eval run: valid
+06-08 12:49 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-08 12:49 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:49 travis_attack.trainer INFO     Launching initial eval run: test
+06-08 12:49 travis_attack.trainer INFO     Now on epoch 1 of 10
+06-08 12:56 travis_attack.trainer INFO     Launching initial eval run: train
+06-08 12:56 travis_attack.trainer INFO     Launching initial eval run: valid
+06-08 12:56 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-08 12:56 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:56 travis_attack.trainer INFO     Launching initial eval run: test
+06-08 12:56 travis_attack.trainer INFO     Now on epoch 1 of 10
+06-08 12:57 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 10
+06-08 12:57 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:57 travis_attack.trainer INFO     Now on epoch 2 of 10
+06-08 12:57 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 10
+06-08 12:57 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:57 travis_attack.trainer INFO     Now on epoch 3 of 10
+06-08 12:57 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 10
+06-08 12:57 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:57 travis_attack.trainer INFO     Now on epoch 4 of 10
+06-08 12:57 travis_attack.trainer INFO     Epoch: 4. Min epochs before early stopping activated: 10
+06-08 12:57 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:57 travis_attack.trainer INFO     Now on epoch 5 of 10
+06-08 12:58 travis_attack.trainer INFO     Epoch: 5. Min epochs before early stopping activated: 10
+06-08 12:58 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:58 travis_attack.trainer INFO     Now on epoch 6 of 10
+06-08 12:58 travis_attack.trainer INFO     Epoch: 6. Min epochs before early stopping activated: 10
+06-08 12:58 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:58 travis_attack.trainer INFO     Now on epoch 7 of 10
+06-08 12:58 travis_attack.trainer INFO     Epoch: 7. Min epochs before early stopping activated: 10
+06-08 12:58 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:58 travis_attack.trainer INFO     Now on epoch 8 of 10
+06-08 12:58 travis_attack.trainer INFO     Epoch: 8. Min epochs before early stopping activated: 10
+06-08 12:58 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:58 travis_attack.trainer INFO     Now on epoch 9 of 10
+06-08 12:58 travis_attack.trainer INFO     Epoch: 9. Min epochs before early stopping activated: 10
+06-08 12:58 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:58 travis_attack.trainer INFO     Now on epoch 10 of 10
+06-08 12:59 travis_attack.trainer INFO     Epoch: 10. Min epochs before early stopping activated: 10
+06-08 12:59 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-08 12:59 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/summer-cosmos-178/model_0.pt
+06-08 12:59 travis_attack.insights INFO     Dataframes have shapes ['training_step: (220, 52)', 'train: (4875, 21)', 'valid: (1071, 21)', 'test: (122, 21)']
+06-08 12:59 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 12:59 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 12:59 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 12:59 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 13:00 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 13:00 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 13:00 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 13:00 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
