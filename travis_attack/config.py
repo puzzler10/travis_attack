@@ -32,9 +32,17 @@ class Config:
 
 
         ### Important parameters
-        self.seed = 421
+        self.seed = 420
         self.use_small_ds = True
-        self.lr = 4e-5
+        self.lr = 8e-5
+
+        self.batch_size_train = 32
+        self.batch_size_eval = 16
+        self.acc_steps = 2
+        self.n_train_epochs = 2
+        self.eval_freq = 1
+
+
         self.reward_fn = "reward_fn_contradiction_and_letter_diff"
         self.reward_clip_max = 4
         self.reward_clip_min = 0
@@ -51,12 +59,12 @@ class Config:
 
         self.min_pp_length = 2
         self.max_pp_length = 48
-        self.n_eval_seq = 48
+        self.n_eval_seq = 32
         self.decode_method_train = "sample"  # "sample" or "greedy"
         self.decode_method_eval = "sample"
         self.gen_params_train = {
             "do_sample": True        if self.decode_method_train == "sample" else False,
-            "temperature": 1.1       if self.decode_method_train == "sample" else None,
+            "temperature": 1         if self.decode_method_train == "sample" else None,
             "top_p": 0.95            if self.decode_method_train == "sample" else None,
         }
         self.gen_params_eval = self._get_gen_params_eval()
@@ -64,7 +72,7 @@ class Config:
 
         # Early stopping (determined during eval on valid set)
         self.early_stopping = True
-        self.early_stopping_min_epochs = 10
+        self.early_stopping_min_epochs =10
         self.early_stopping_metric = "any_adv_example_proportion"   # don't add -valid to the end of this.
 
         # Other parameters (usually left untouched)
@@ -130,7 +138,7 @@ class Config:
                                        top_p=None, temperature=None,
                                        diversity_penalty=1., num_beam_groups=self.n_eval_seq),
             sample              = dict(**common_params, do_sample=True,  num_beams=1,
-                                       top_p=0.95, temperature=0.8,
+                                       top_p=0.95, temperature=1,
                                        diversity_penalty=None, num_beam_groups=None)
         )
         return gen_params_eval[self.decode_method_eval]
@@ -148,7 +156,7 @@ class Config:
         self.batch_size_train = 4
         self.batch_size_eval = 4
         self.acc_steps = 2
-        self.n_train_epochs = 6
+        self.n_train_epochs = 4
         self.eval_freq = 1
         self._select_vm_model()
         return self
@@ -158,11 +166,6 @@ class Config:
         self.dataset_name = "rotten_tomatoes"
         self.orig_cname = "text"
         self.label_cname = 'label'
-        self.batch_size_train = 32
-        self.batch_size_eval = 8
-        self.acc_steps = 2
-        self.n_train_epochs = 100
-        self.eval_freq = 1
         self._select_vm_model()
         return self
 
@@ -171,11 +174,6 @@ class Config:
         self.dataset_name = "financial"
         self.orig_cname = "sentence"
         self.label_cname = 'label'
-        self.batch_size_train = 16
-        self.batch_size_eval = 32
-        self.acc_steps = 2
-        self.n_train_epochs = 10
-        self.eval_freq = 1
         self._select_vm_model()
         return self
 
@@ -185,7 +183,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 50
+        self.n_shards = 100
         self.shard_contiguous = False
         return self
 

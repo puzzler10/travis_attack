@@ -1,0 +1,63 @@
+06-15 07:14 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-15 07:15 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to False
+06-15 07:15 travis_attack.data DEBUG    Dataset lengths: {'train': 2972, 'test': 359, 'valid': 367}
+06-15 07:15 travis_attack.data DEBUG    Total training epochs:9300
+06-15 07:15 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 28, 'test': 7, 'valid': 7, 'train_eval': 4}
+06-15 07:15 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 28], 'test': [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7], 'valid': [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7], 'train_eval': [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4]}
+06-15 07:16 travis_attack.trainer INFO     Launching initial eval run: train
+06-15 07:23 travis_attack.trainer INFO     Launching initial eval run: valid
+06-15 07:24 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-15 07:24 travis_attack.trainer INFO     Eval metric: 0.123 | Running median: 0.123
+06-15 07:24 travis_attack.trainer INFO     Launching initial eval run: test
+06-15 07:25 travis_attack.trainer INFO     Now on epoch 1 of 100
+06-15 07:36 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 10
+06-15 07:36 travis_attack.trainer INFO     Eval metric: 0.128 | Running median: 0.125
+06-15 07:36 travis_attack.trainer INFO     Now on epoch 2 of 100
+06-15 07:48 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 10
+06-15 07:48 travis_attack.trainer INFO     Eval metric: 0.136 | Running median: 0.128
+06-15 07:48 travis_attack.trainer INFO     Now on epoch 3 of 100
+06-15 07:59 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 10
+06-15 07:59 travis_attack.trainer INFO     Eval metric: 0.134 | Running median: 0.131
+06-15 07:59 travis_attack.trainer INFO     Now on epoch 4 of 100
+06-15 08:11 travis_attack.trainer INFO     Epoch: 4. Min epochs before early stopping activated: 10
+06-15 08:11 travis_attack.trainer INFO     Eval metric: 0.136 | Running median: 0.134
+06-15 08:11 travis_attack.trainer INFO     Now on epoch 5 of 100
+06-15 08:22 travis_attack.trainer INFO     Epoch: 5. Min epochs before early stopping activated: 10
+06-15 08:22 travis_attack.trainer INFO     Eval metric: 0.134 | Running median: 0.134
+06-15 08:22 travis_attack.trainer INFO     Now on epoch 6 of 100
+06-15 08:34 travis_attack.trainer INFO     Epoch: 6. Min epochs before early stopping activated: 10
+06-15 08:34 travis_attack.trainer INFO     Eval metric: 0.142 | Running median: 0.134
+06-15 08:34 travis_attack.trainer INFO     Now on epoch 7 of 100
+06-15 08:45 travis_attack.trainer INFO     Epoch: 7. Min epochs before early stopping activated: 10
+06-15 08:45 travis_attack.trainer INFO     Eval metric: 0.136 | Running median: 0.135
+06-15 08:45 travis_attack.trainer INFO     Now on epoch 8 of 100
+06-15 08:57 travis_attack.trainer INFO     Epoch: 8. Min epochs before early stopping activated: 10
+06-15 08:57 travis_attack.trainer INFO     Eval metric: 0.139 | Running median: 0.136
+06-15 08:57 travis_attack.trainer INFO     Now on epoch 9 of 100
+06-15 09:08 travis_attack.trainer INFO     Epoch: 9. Min epochs before early stopping activated: 10
+06-15 09:08 travis_attack.trainer INFO     Eval metric: 0.136 | Running median: 0.136
+06-15 09:08 travis_attack.trainer INFO     Now on epoch 10 of 100
+06-15 09:20 travis_attack.trainer INFO     Epoch: 10. Min epochs before early stopping activated: 10
+06-15 09:20 travis_attack.trainer INFO     Eval metric: 0.131 | Running median: 0.136
+06-15 09:20 travis_attack.trainer INFO     Now on epoch 11 of 100
+06-15 09:31 travis_attack.trainer INFO     Epoch: 11. Min epochs before early stopping activated: 10
+06-15 09:31 travis_attack.trainer INFO     Eval metric: 0.128 | Running median: 0.135
+06-15 09:31 travis_attack.trainer INFO     Early stopping activated.
+06-15 09:31 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/young-sweep-6/model_6.pt
+06-15 09:32 travis_attack.insights INFO     Dataframes have shapes ['training_step: (32692, 52)', 'train: (946369, 21)', 'valid: (117340, 21)', 'test: (18959, 21)']
+06-15 09:32 travis_attack.insights INFO     Adding text metrics for column orig
+06-15 09:32 travis_attack.insights INFO     Adding text metrics for column pp
+06-15 09:32 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-15 09:32 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-15 09:42 travis_attack.insights INFO     Adding text metrics for column orig
+06-15 09:42 travis_attack.insights INFO     Adding text metrics for column pp
+06-15 09:42 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-15 09:42 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-15 10:21 travis_attack.insights INFO     Adding text metrics for column orig
+06-15 10:21 travis_attack.insights INFO     Adding text metrics for column pp
+06-15 10:21 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-15 10:21 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-15 10:25 travis_attack.insights INFO     Adding text metrics for column orig
+06-15 10:25 travis_attack.insights INFO     Adding text metrics for column pp
+06-15 10:25 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-15 10:25 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs

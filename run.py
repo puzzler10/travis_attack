@@ -6,7 +6,7 @@
 
 ## Imports and environment variables 
 import torch, wandb, os, pandas as pd 
-from travis_attack.utils import set_seed, set_session_options, setup_logging, setup_parser, resume_wandb_run, display_all, print_important_cfg_vars
+from travis_attack.utils import set_seed, set_session_options, setup_logging, setup_parser, update_config_with_parsed_arguments, resume_wandb_run, display_all, print_important_cfg_vars
 from travis_attack.config import Config
 from travis_attack.models import prepare_models, get_optimizer
 from travis_attack.data import ProcessedDataset
@@ -21,36 +21,14 @@ import warnings
 warnings.filterwarnings("ignore", message="Passing `max_length` to BeamSearchScorer is deprecated")  # we ignore the warning because it works anyway for diverse beam search 
 
 
-# In[21]:
-
-
-"gen_train-temperature".split('-')[1]
-
-
-# In[19]:
+# In[ ]:
 
 
 cfg = Config()  # default values
 if not in_jupyter():  # override with any -- options when running with command line
     parser = setup_parser()
     newargs = vars(parser.parse_args())
-    for k,v in newargs.items(): 
-        if v is not None:
-            if "gen_train" in k: cfg.gen_params_train[k.split('-')[1]] = v
-                
-            if k == "decode_method_eval": 
-                setattr(cfg, k, v) 
-                cfg.gen_params_eval = cfg._get_gen_params_eval()
-                
-            if "gen_eval"  in k: cfg.gen_params_eval[ k.split('-')[1]] = v
-            
-            else:                   setattr(cfg, k, v)
-                
-    if   k == "decode_method_train" and v == "greedy": 
-                setattr(cfg, k, v) 
-                cfg.gen_params_train["do_sample"] = False 
-                cfg.gen_params_train['temperature'] = None
-                cfg.gen_params_train['top_p'] = None
+    cfg = update_config_with_parsed_arguments(cfg, newargs)
 if cfg.use_small_ds:  cfg = cfg.small_ds()
 set_seed(cfg.seed)
 set_session_options()
@@ -60,24 +38,24 @@ optimizer = get_optimizer(cfg, pp_model)
 ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=False)
 
 
-# In[20]:
+# In[ ]:
 
 
 cfg.wandb['mode'] = 'disabled'
 trainer = Trainer(cfg, vm_tokenizer,vm_model,pp_tokenizer,pp_model,ref_pp_model,sts_model,nli_tokenizer,nli_model,cola_tokenizer,cola_model, optimizer,
-         ds, initial_eval=True)
+         ds)
 print_important_cfg_vars(cfg)
 trainer.train()
 
 
-# In[7]:
+# In[30]:
 
 
 #df = pd.read_csv(cfg.path_results + "run_results.csv")
 #display_all(df)
 
 
-# In[8]:
+# In[31]:
 
 
 # df = pd.read_csv(f'{cfg.path_run}training_step.csv')
@@ -85,26 +63,20 @@ trainer.train()
 # df.columns
 
 
-# In[9]:
+# In[32]:
 
 
 #trainer.run.finish()
 
 
-# In[11]:
+# In[41]:
 
 
-#cfg.path_run
-
-
-# In[12]:
-
-
-df_d = get_training_dfs(cfg.path_run, postprocessed=False)
-for k, df in df_d.items(): 
-    df_d[k] = postprocess_df(df, filter_idx=None, num_proc=1)
-    df_d[k].to_pickle(f"{cfg.path_run}{k}_postprocessed.pkl")    
-create_and_log_wandb_postrun_plots(df_d)
+# df_d = get_training_dfs(cfg.path_run, postprocessed=False)
+# for k, df in df_d.items(): 
+#     df_d[k] = postprocess_df(df, filter_idx=None, num_proc=1)
+#     df_d[k].to_pickle(f"{cfg.path_run}{k}_postprocessed.pkl")    
+# create_and_log_wandb_postrun_plots(df_d)
 trainer.run.finish()
 #run.finish()
 

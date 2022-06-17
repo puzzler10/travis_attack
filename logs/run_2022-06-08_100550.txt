@@ -245,3 +245,11 @@
 06-08 13:00 travis_attack.insights INFO     Adding text metrics for column pp
 06-08 13:00 travis_attack.insights INFO     Calculating metric differences between orig and pp
 06-08 13:00 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 13:01 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 13:01 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 13:01 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 13:01 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-08 13:01 travis_attack.insights INFO     Adding text metrics for column orig
+06-08 13:01 travis_attack.insights INFO     Adding text metrics for column pp
+06-08 13:01 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-08 13:01 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs

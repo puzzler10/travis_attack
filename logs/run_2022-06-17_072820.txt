@@ -1,0 +1,162 @@
+06-17 07:28 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-17 07:29 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to True
+06-17 07:29 travis_attack.data DEBUG    Dataset lengths: {'train': 981, 'test': 131, 'valid': 138}
+06-17 07:29 travis_attack.data DEBUG    Total training epochs:1550
+06-17 07:29 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 21, 'test': 3, 'valid': 10, 'train_eval': 5}
+06-17 07:29 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21], 'test': [16, 16, 16, 16, 16, 16, 16, 16, 3], 'valid': [16, 16, 16, 16, 16, 16, 16, 16, 10], 'train_eval': [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 5]}
+06-17 07:29 travis_attack.trainer INFO     Launching initial eval run: train
+06-17 07:32 travis_attack.trainer INFO     Launching initial eval run: valid
+06-17 07:33 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 8
+06-17 07:33 travis_attack.trainer INFO     Eval metric: 0.109 | Running median: 0.109
+06-17 07:33 travis_attack.trainer INFO     Launching initial eval run: test
+06-17 07:34 travis_attack.trainer INFO     Now on epoch 1 of 50
+06-17 07:39 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 8
+06-17 07:39 travis_attack.trainer INFO     Eval metric: 0.116 | Running median: 0.112
+06-17 07:39 travis_attack.trainer INFO     Now on epoch 2 of 50
+06-17 07:44 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 8
+06-17 07:44 travis_attack.trainer INFO     Eval metric: 0.152 | Running median: 0.116
+06-17 07:44 travis_attack.trainer INFO     Now on epoch 3 of 50
+06-17 07:50 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 8
+06-17 07:50 travis_attack.trainer INFO     Eval metric: 0.145 | Running median: 0.130
+06-17 07:50 travis_attack.trainer INFO     Now on epoch 4 of 50
+06-17 07:55 travis_attack.trainer INFO     Epoch: 4. Min epochs before early stopping activated: 8
+06-17 07:55 travis_attack.trainer INFO     Eval metric: 0.145 | Running median: 0.145
+06-17 07:55 travis_attack.trainer INFO     Now on epoch 5 of 50
+06-17 08:00 travis_attack.trainer INFO     Epoch: 5. Min epochs before early stopping activated: 8
+06-17 08:00 travis_attack.trainer INFO     Eval metric: 0.196 | Running median: 0.145
+06-17 08:00 travis_attack.trainer INFO     Now on epoch 6 of 50
+06-17 08:05 travis_attack.trainer INFO     Epoch: 6. Min epochs before early stopping activated: 8
+06-17 08:05 travis_attack.trainer INFO     Eval metric: 0.167 | Running median: 0.145
+06-17 08:05 travis_attack.trainer INFO     Now on epoch 7 of 50
+06-17 08:10 travis_attack.trainer INFO     Epoch: 7. Min epochs before early stopping activated: 8
+06-17 08:10 travis_attack.trainer INFO     Eval metric: 0.167 | Running median: 0.149
+06-17 08:10 travis_attack.trainer INFO     Now on epoch 8 of 50
+06-17 08:15 travis_attack.trainer INFO     Epoch: 8. Min epochs before early stopping activated: 8
+06-17 08:15 travis_attack.trainer INFO     Eval metric: 0.210 | Running median: 0.152
+06-17 08:15 travis_attack.trainer INFO     Now on epoch 9 of 50
+06-17 08:20 travis_attack.trainer INFO     Epoch: 9. Min epochs before early stopping activated: 8
+06-17 08:20 travis_attack.trainer INFO     Eval metric: 0.167 | Running median: 0.159
+06-17 08:20 travis_attack.trainer INFO     Now on epoch 10 of 50
+06-17 08:25 travis_attack.trainer INFO     Epoch: 10. Min epochs before early stopping activated: 8
+06-17 08:25 travis_attack.trainer INFO     Eval metric: 0.188 | Running median: 0.167
+06-17 08:25 travis_attack.trainer INFO     Now on epoch 11 of 50
+06-17 08:30 travis_attack.trainer INFO     Epoch: 11. Min epochs before early stopping activated: 8
+06-17 08:30 travis_attack.trainer INFO     Eval metric: 0.188 | Running median: 0.167
+06-17 08:30 travis_attack.trainer INFO     Now on epoch 12 of 50
+06-17 08:35 travis_attack.trainer INFO     Epoch: 12. Min epochs before early stopping activated: 8
+06-17 08:35 travis_attack.trainer INFO     Eval metric: 0.196 | Running median: 0.167
+06-17 08:35 travis_attack.trainer INFO     Now on epoch 13 of 50
+06-17 08:41 travis_attack.trainer INFO     Epoch: 13. Min epochs before early stopping activated: 8
+06-17 08:41 travis_attack.trainer INFO     Eval metric: 0.239 | Running median: 0.167
+06-17 08:41 travis_attack.trainer INFO     Now on epoch 14 of 50
+06-17 08:46 travis_attack.trainer INFO     Epoch: 14. Min epochs before early stopping activated: 8
+06-17 08:46 travis_attack.trainer INFO     Eval metric: 0.254 | Running median: 0.167
+06-17 08:46 travis_attack.trainer INFO     Now on epoch 15 of 50
+06-17 08:51 travis_attack.trainer INFO     Epoch: 15. Min epochs before early stopping activated: 8
+06-17 08:51 travis_attack.trainer INFO     Eval metric: 0.232 | Running median: 0.178
+06-17 08:51 travis_attack.trainer INFO     Now on epoch 16 of 50
+06-17 08:56 travis_attack.trainer INFO     Epoch: 16. Min epochs before early stopping activated: 8
+06-17 08:56 travis_attack.trainer INFO     Eval metric: 0.304 | Running median: 0.188
+06-17 08:56 travis_attack.trainer INFO     Now on epoch 17 of 50
+06-17 09:01 travis_attack.trainer INFO     Epoch: 17. Min epochs before early stopping activated: 8
+06-17 09:01 travis_attack.trainer INFO     Eval metric: 0.239 | Running median: 0.188
+06-17 09:01 travis_attack.trainer INFO     Now on epoch 18 of 50
+06-17 09:06 travis_attack.trainer INFO     Epoch: 18. Min epochs before early stopping activated: 8
+06-17 09:06 travis_attack.trainer INFO     Eval metric: 0.290 | Running median: 0.188
+06-17 09:06 travis_attack.trainer INFO     Now on epoch 19 of 50
+06-17 09:11 travis_attack.trainer INFO     Epoch: 19. Min epochs before early stopping activated: 8
+06-17 09:11 travis_attack.trainer INFO     Eval metric: 0.326 | Running median: 0.192
+06-17 09:11 travis_attack.trainer INFO     Now on epoch 20 of 50
+06-17 09:16 travis_attack.trainer INFO     Epoch: 20. Min epochs before early stopping activated: 8
+06-17 09:16 travis_attack.trainer INFO     Eval metric: 0.312 | Running median: 0.196
+06-17 09:16 travis_attack.trainer INFO     Now on epoch 21 of 50
+06-17 09:21 travis_attack.trainer INFO     Epoch: 21. Min epochs before early stopping activated: 8
+06-17 09:21 travis_attack.trainer INFO     Eval metric: 0.370 | Running median: 0.196
+06-17 09:21 travis_attack.trainer INFO     Now on epoch 22 of 50
+06-17 09:26 travis_attack.trainer INFO     Epoch: 22. Min epochs before early stopping activated: 8
+06-17 09:26 travis_attack.trainer INFO     Eval metric: 0.442 | Running median: 0.196
+06-17 09:26 travis_attack.trainer INFO     Now on epoch 23 of 50
+06-17 09:32 travis_attack.trainer INFO     Epoch: 23. Min epochs before early stopping activated: 8
+06-17 09:32 travis_attack.trainer INFO     Eval metric: 0.406 | Running median: 0.203
+06-17 09:32 travis_attack.trainer INFO     Now on epoch 24 of 50
+06-17 09:36 travis_attack.trainer INFO     Epoch: 24. Min epochs before early stopping activated: 8
+06-17 09:36 travis_attack.trainer INFO     Eval metric: 0.326 | Running median: 0.210
+06-17 09:36 travis_attack.trainer INFO     Now on epoch 25 of 50
+06-17 09:41 travis_attack.trainer INFO     Epoch: 25. Min epochs before early stopping activated: 8
+06-17 09:41 travis_attack.trainer INFO     Eval metric: 0.370 | Running median: 0.221
+06-17 09:41 travis_attack.trainer INFO     Now on epoch 26 of 50
+06-17 09:46 travis_attack.trainer INFO     Epoch: 26. Min epochs before early stopping activated: 8
+06-17 09:46 travis_attack.trainer INFO     Eval metric: 0.449 | Running median: 0.232
+06-17 09:46 travis_attack.trainer INFO     Now on epoch 27 of 50
+06-17 09:51 travis_attack.trainer INFO     Epoch: 27. Min epochs before early stopping activated: 8
+06-17 09:51 travis_attack.trainer INFO     Eval metric: 0.486 | Running median: 0.236
+06-17 09:52 travis_attack.trainer INFO     Now on epoch 28 of 50
+06-17 09:57 travis_attack.trainer INFO     Epoch: 28. Min epochs before early stopping activated: 8
+06-17 09:57 travis_attack.trainer INFO     Eval metric: 0.543 | Running median: 0.239
+06-17 09:57 travis_attack.trainer INFO     Now on epoch 29 of 50
+06-17 10:02 travis_attack.trainer INFO     Epoch: 29. Min epochs before early stopping activated: 8
+06-17 10:02 travis_attack.trainer INFO     Eval metric: 0.601 | Running median: 0.239
+06-17 10:02 travis_attack.trainer INFO     Now on epoch 30 of 50
+06-17 10:07 travis_attack.trainer INFO     Epoch: 30. Min epochs before early stopping activated: 8
+06-17 10:07 travis_attack.trainer INFO     Eval metric: 0.572 | Running median: 0.239
+06-17 10:07 travis_attack.trainer INFO     Now on epoch 31 of 50
+06-17 10:12 travis_attack.trainer INFO     Epoch: 31. Min epochs before early stopping activated: 8
+06-17 10:12 travis_attack.trainer INFO     Eval metric: 0.507 | Running median: 0.246
+06-17 10:12 travis_attack.trainer INFO     Now on epoch 32 of 50
+06-17 10:17 travis_attack.trainer INFO     Epoch: 32. Min epochs before early stopping activated: 8
+06-17 10:17 travis_attack.trainer INFO     Eval metric: 0.601 | Running median: 0.254
+06-17 10:17 travis_attack.trainer INFO     Now on epoch 33 of 50
+06-17 10:23 travis_attack.trainer INFO     Epoch: 33. Min epochs before early stopping activated: 8
+06-17 10:23 travis_attack.trainer INFO     Eval metric: 0.580 | Running median: 0.272
+06-17 10:23 travis_attack.trainer INFO     Now on epoch 34 of 50
+06-17 10:28 travis_attack.trainer INFO     Epoch: 34. Min epochs before early stopping activated: 8
+06-17 10:28 travis_attack.trainer INFO     Eval metric: 0.580 | Running median: 0.290
+06-17 10:28 travis_attack.trainer INFO     Now on epoch 35 of 50
+06-17 10:33 travis_attack.trainer INFO     Epoch: 35. Min epochs before early stopping activated: 8
+06-17 10:33 travis_attack.trainer INFO     Eval metric: 0.587 | Running median: 0.297
+06-17 10:33 travis_attack.trainer INFO     Now on epoch 36 of 50
+06-17 10:38 travis_attack.trainer INFO     Epoch: 36. Min epochs before early stopping activated: 8
+06-17 10:38 travis_attack.trainer INFO     Eval metric: 0.572 | Running median: 0.304
+06-17 10:38 travis_attack.trainer INFO     Now on epoch 37 of 50
+06-17 10:43 travis_attack.trainer INFO     Epoch: 37. Min epochs before early stopping activated: 8
+06-17 10:43 travis_attack.trainer INFO     Eval metric: 0.630 | Running median: 0.308
+06-17 10:43 travis_attack.trainer INFO     Now on epoch 38 of 50
+06-17 10:48 travis_attack.trainer INFO     Epoch: 38. Min epochs before early stopping activated: 8
+06-17 10:48 travis_attack.trainer INFO     Eval metric: 0.551 | Running median: 0.312
+06-17 10:48 travis_attack.trainer INFO     Now on epoch 39 of 50
+06-17 10:53 travis_attack.trainer INFO     Epoch: 39. Min epochs before early stopping activated: 8
+06-17 10:53 travis_attack.trainer INFO     Eval metric: 0.609 | Running median: 0.319
+06-17 10:53 travis_attack.trainer INFO     Now on epoch 40 of 50
+06-17 10:59 travis_attack.trainer INFO     Epoch: 40. Min epochs before early stopping activated: 8
+06-17 10:59 travis_attack.trainer INFO     Eval metric: 0.645 | Running median: 0.326
+06-17 10:59 travis_attack.trainer INFO     Now on epoch 41 of 50
+06-17 11:04 travis_attack.trainer INFO     Epoch: 41. Min epochs before early stopping activated: 8
+06-17 11:04 travis_attack.trainer INFO     Eval metric: 0.630 | Running median: 0.326
+06-17 11:04 travis_attack.trainer INFO     Now on epoch 42 of 50
+06-17 11:09 travis_attack.trainer INFO     Epoch: 42. Min epochs before early stopping activated: 8
+06-17 11:09 travis_attack.trainer INFO     Eval metric: 0.609 | Running median: 0.326
+06-17 11:09 travis_attack.trainer INFO     Now on epoch 43 of 50
+06-17 11:14 travis_attack.trainer INFO     Epoch: 43. Min epochs before early stopping activated: 8
+06-17 11:14 travis_attack.trainer INFO     Eval metric: 0.630 | Running median: 0.348
+06-17 11:14 travis_attack.trainer INFO     Now on epoch 44 of 50
+06-17 11:19 travis_attack.trainer INFO     Epoch: 44. Min epochs before early stopping activated: 8
+06-17 11:19 travis_attack.trainer INFO     Eval metric: 0.529 | Running median: 0.370
+06-17 11:19 travis_attack.trainer INFO     Now on epoch 45 of 50
+06-17 11:25 travis_attack.trainer INFO     Epoch: 45. Min epochs before early stopping activated: 8
+06-17 11:25 travis_attack.trainer INFO     Eval metric: 0.580 | Running median: 0.370
+06-17 11:25 travis_attack.trainer INFO     Now on epoch 46 of 50
+06-17 11:30 travis_attack.trainer INFO     Epoch: 46. Min epochs before early stopping activated: 8
+06-17 11:30 travis_attack.trainer INFO     Eval metric: 0.609 | Running median: 0.370
+06-17 11:30 travis_attack.trainer INFO     Now on epoch 47 of 50
+06-17 11:35 travis_attack.trainer INFO     Epoch: 47. Min epochs before early stopping activated: 8
+06-17 11:35 travis_attack.trainer INFO     Eval metric: 0.739 | Running median: 0.388
+06-17 11:35 travis_attack.trainer INFO     Now on epoch 48 of 50
+06-17 11:41 travis_attack.trainer INFO     Epoch: 48. Min epochs before early stopping activated: 8
+06-17 11:41 travis_attack.trainer INFO     Eval metric: 0.804 | Running median: 0.406
+06-17 11:41 travis_attack.trainer INFO     Now on epoch 49 of 50
+06-17 11:46 travis_attack.trainer INFO     Epoch: 49. Min epochs before early stopping activated: 8
+06-17 11:46 travis_attack.trainer INFO     Eval metric: 0.833 | Running median: 0.424
+06-17 11:46 travis_attack.trainer INFO     Now on epoch 50 of 50
+06-17 11:52 travis_attack.trainer INFO     Epoch: 50. Min epochs before early stopping activated: 8
+06-17 11:52 travis_attack.trainer INFO     Eval metric: 0.790 | Running median: 0.442
+06-17 11:52 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/amber-sweep-46/model_49.pt

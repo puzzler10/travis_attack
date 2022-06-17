@@ -1,0 +1,6 @@
+06-09 09:22 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-09 09:23 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+06-09 09:23 travis_attack.data DEBUG    Dataset lengths: {'train': 22, 'valid': 4, 'test': 3}
+06-09 09:23 travis_attack.data DEBUG    Total training epochs:20
+06-09 09:23 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 6, 'valid': 4, 'test': 3, 'train_eval': 22}
+06-09 09:23 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [16, 6], 'valid': [4], 'test': [3], 'train_eval': [22]}

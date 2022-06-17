@@ -13,7 +13,7 @@ from .models import save_pp_model, resume_pp_model, get_vm_probs, get_nli_probs,
 
 
 # Cell
-import torch, numpy as np, pandas as pd, gc,sys, warnings
+import torch, numpy as np, pandas as pd, gc,sys, warnings, string
 from torch.utils.data import DataLoader, RandomSampler
 from datasets import load_dataset, load_metric, load_from_disk, DatasetDict, Dataset
 from transformers import (AutoModelForSeq2SeqLM, AutoModelForSequenceClassification,
@@ -50,6 +50,8 @@ class Trainer:
         self._setup_gradient_accumulation_variables()
        # self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
         self.early_stopping_flag = False
+        self.linking_contrast_phrases = [o.strip() for o in open("./linking_contrast_phrases.txt").readlines()]
+
 
     def train(self):
         self._setup_wandb_run()
@@ -57,11 +59,6 @@ class Trainer:
         self._training_function()
 
     def _is_last_epoch(self): return (self.early_stopping_flag and self._cfg.early_stopping) or (self.epoch == self._cfg.n_train_epochs)
-
- #   def _reset_batch_dicts(self):
-        ## batch_d holds all info during training step to write to csv, time_d has times, wandb_d has everything to log to wandb
-        ## there will be overlap between them.
-        #self.batch_d,self.batch_time_d,self.batch_wandb_d = dict(),dict(),dict()
 
     def _setup_wandb_run(self):
         """Init wandb run, set up paths, create dir for model artifacts if needed, """
@@ -134,10 +131,6 @@ class Trainer:
                 wandb.log({"gradient flow": wandb.Image(plt)})  # doesn't work as a non-image (i.e. plotly)
                 del plt
 
-            ## Save training step examples to csv
-#             df1 = self._convert_batch_list_to_df(self.train_batch_results)
-#             df1 = self._set_df_colorder(df1)
-#             append_df_to_csv(df1, path = f"{self._cfg.path_run}training_step.csv")
             df = pd.DataFrame(self.train_batch_results)
             df = df.apply(pd.Series.explode).reset_index(drop=True)
             df = self._set_df_colorder(df, is_eval=False)
@@ -155,7 +148,6 @@ class Trainer:
                            'time/eval_gc_collect': time_eval_gc_collect.t,
                            'time/eval_empty_cache': time_eval_empty_cache.t,
                            'epoch': self.epoch}, commit=True)
-           # print(self._is_last_epoch(), self.early_stopping_flag, (self.early_stopping_flag and self._cfg.early_stopping), self.epoch == self._cfg.n_train_epochs)
             if self._is_last_epoch():
                 logger.info(f"Evaluating test set with best model at path : {self.best_model_path}")
                 self.pp_model, self.optimizer = resume_pp_model(self.pp_model, self.optimizer, self.best_model_path)
@@ -209,19 +201,16 @@ class Trainer:
             self.param_norm += (p_new - p_init).data.norm(2).item() ** 2
         self.param_norm = self.grad_norm ** 0.5
 
-    def _batch_for_opt_step(self): return self.acc_num == (self._cfg.acc_steps - 1)
+    def _get_gradient_update_norm(self):
+        total_norm = 0
+        for p in [o for o in self.pp_model.parameters() if o[1].requires_grad]:
+            if p.grad is not None:  # the embed_position layers on encoder/decoder dont keep grad ()
+                param_norm = p.grad.detach().data.norm(2)
+                total_norm += param_norm.item() ** 2
+        total_norm = total_norm ** 0.5
+        return total_norm
 
-#     def _add_batch_vars_to_batch_d(self, raw, data, pp_l):
-#         # Add basics. (results are already added elsewhere)
-#         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
-#             'epoch': self.epoch, 'batch_num': self.batch_num, 'global_step': self.global_step,
-#             'acc_num': self.acc_num, "acc_batch_n_examples": self.acc_current_n_examples,
-#             "orig": raw['text'],
-#             "label": data['label'].cpu().tolist(),
-#             "orig_truelabel_probs": data['orig_truelabel_probs'].cpu().tolist(),
-#             'orig_length': self.orig_length, 'orig_batch_size': self.orig_batch_size,
-#             "pp": pp_l, 'pp_length': self.pp_length, 'pp_batch_size': self.pp_batch_size
-#         })
+    def _batch_for_opt_step(self): return self.acc_num == (self._cfg.acc_steps - 1)
 
     def _prepare_train_batch_d(self, raw, data, pp_l):
         self.batch_d = merge_dicts(self.batch_d, { 'idx': raw['idx'],
@@ -261,6 +250,7 @@ class Trainer:
             'contradiction_scores_mean':     np.mean(  self.batch_d['contradiction_scores']),
             'acceptability_scores_hist':     Histogram(self.batch_d['acceptability_scores']),
             'acceptability_scores_mean':     np.mean(  self.batch_d['acceptability_scores']),
+            'lcp_conditions_mean':     np.mean(  self.batch_d['lcp_conditions']),
             'acc_batch_sizes':      Histogram(self.acc_current_l),
             "gradient_norm":        self.grad_norm,
             "parameter_norm":       self.param_norm
@@ -268,35 +258,11 @@ class Trainer:
         self.batch_wandb_d = merge_dicts(self.batch_wandb_d, self.batch_d)
         not_for_wandb_keys = ['orig', 'label','orig_truelabel_probs', 'pp', 'loss', 'pp_logp','ref_logp','diff_logp',
                               'reward_pp_minus_baseline_with_penalty', 'reward_pp_minus_baseline',
-                              'reward_pp', 'sts_scores', 'vm_scores', 'pp_letter_diff', 'pp_letter_percent','contradiction_scores', 'acceptability_scores',
+                              'reward_pp', 'sts_scores', 'vm_scores', 'pp_letter_diff', 'pp_letter_percent',
+                              'contradiction_scores', 'acceptability_scores', 'lcp_conditions',
                               'pp_predclass_probs', 'label_flip', 'pp_predclass', 'pp_truelabel_probs']
         for k in not_for_wandb_keys:  self.batch_wandb_d.pop(k, None)
         wandb.log(self.batch_wandb_d, commit=True)
-
-#     def _convert_batch_list_to_df(self, batch_list):
-#         df = pd.DataFrame(batch_list)
-#         ### Check all lists have the same number of elements in their row
-#         # last batch will have different number of elements to the batch size
-#         nonscalar_cols = df.columns[[o == np.dtype('object') for o in df.head(1).dtypes]].tolist()
-#         df_nonscalar_cols = df[nonscalar_cols]
-#         # sometimes if we have one element in the last batch, the tolist() function returns a scalar instead of a list
-#         # so we handle that case here
-#         def scalar2list(x): return x if type(x) == list else [x]
-#         if len(df_nonscalar_cols.iloc[-1]["idx"]) == 1: df_nonscalar_cols.iloc[-1] = df_nonscalar_cols.iloc[-1].apply(scalar2list)
-#         df_lengths = df_nonscalar_cols.applymap(len)
-#         assert df_lengths.eq(df_lengths.iloc[:,0], axis=0).all(None)
-
-#         ### Put in dataframes
-#         # expand lists and broadcast scalars
-#         scalar_cols = df.columns[[o != np.dtype('object') for o in df.head(1).dtypes]].tolist()
-#         df_expanded = unpack_nested_lists_in_df(df, scalar_cols)
-#         return df_expanded
-
-#     def _update_batch_size_and_length_variables(self, orig_ids, pp_ids):
-#         self.orig_batch_size     = orig_ids.shape[0]
-#         self.orig_length         = orig_ids.shape[1]
-#         self.pp_batch_size       = pp_ids.shape[0]
-#         self.pp_length           = pp_ids.shape[1]
 
     def _loss_fn(self, data, raw, pp_output, pp_l):
         with timecode() as self.batch_time_d['time_pp_logp']:        pp_logp = self._get_pp_logp(pp_output)
@@ -363,26 +329,41 @@ class Trainer:
         acceptability_scores = get_cola_probs(pp_l, self._cfg, self.cola_tokenizer, self.cola_model)[:, self._cfg.cola_positive_label]   # acceptable class
         return acceptability_scores
 
-    def _is_valid_pp(self, sts_score, pp_letter_diff, contradiction_score, acceptability_score):
+    def _get_linking_contrast_phrase_conditions(self, orig_l, pp_l):
+        """True: ok, False: fail. Logic: it's ok to include a linking contrast phrase if there is
+        one in the original to start with, but not if there isn't """
+        def clean_sen_l(sen_l): return [sen.strip(string.punctuation).strip().lower() for sen in sen_l]
+        def has_linking_contrast_phrase(sen):
+            return any([sen.startswith(phrase + " ") or sen.endswith(" " + phrase) for phrase in self.linking_contrast_phrases])
+        orig_l_cleaned,pp_l_cleaned = clean_sen_l(orig_l),clean_sen_l(pp_l)
+        phrase_present_orig_l = [has_linking_contrast_phrase(sen=orig) for orig in orig_l_cleaned]
+        phrase_present_pp_l   = [has_linking_contrast_phrase(sen=pp)   for pp   in pp_l_cleaned]
+        return [True if phrase_present_orig else not phrase_present_pp
+            for phrase_present_orig, phrase_present_pp in zip(phrase_present_orig_l, phrase_present_pp_l)]
+
+
+    def _is_valid_pp(self, sts_score, pp_letter_diff, contradiction_score, acceptability_score, lcp_condition):
         if sts_score           < self._cfg.sts_threshold:                              return False
         if acceptability_score < self._cfg.acceptability_threshold:                    return False
         if contradiction_score > self._cfg.contradiction_threshold:                    return False
         if pp_letter_diff >   self._cfg.pp_letter_diff_threshold:                      return False
         if pp_letter_diff < - self._cfg.pp_letter_diff_threshold:                      return False
+        if not lcp_condition:                                                          return False
         return True
 
-    def _get_reward(self, vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores):
-        def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score, acceptability_score):
-            if not self._is_valid_pp(sts_score, pp_letter_diff, contradiction_score, acceptability_score): return 0.
+    def _get_reward(self, vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores, lcp_conditions):
+        def reward_fn_contradiction_and_letter_diff(vm_score, sts_score, pp_letter_diff, contradiction_score, acceptability_score, lcp_condition):
+            if not self._is_valid_pp(sts_score, pp_letter_diff, contradiction_score, acceptability_score, lcp_condition): return 0.
             reward = self._cfg.reward_base + vm_score * self._cfg.reward_vm_multiplier
             return min(max(self._cfg.reward_clip_min, reward), self._cfg.reward_clip_max)
 
-        def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores):
+        def calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores, lcp_conditions):
             if self._cfg.reward_fn == "reward_fn_contradiction_and_letter_diff": reward_fn = reward_fn_contradiction_and_letter_diff
             return torch.tensor([
-                reward_fn(vm, sts, ldiff, contra, acpt) for vm,sts,ldiff,contra,acpt in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores)
+                reward_fn(vm, sts, ldiff, contra, acpt, lcp) for vm,sts,ldiff,contra,acpt,lcp
+                    in zip(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores, lcp_conditions)
             ], device=self._cfg.device)
-        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores)
+        rewards = calc_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores, lcp_conditions)
         return rewards
 
     def _reward_fn(self, data, raw, pp_l):
@@ -396,8 +377,8 @@ class Trainer:
             pp_letter_diff = pp_diff_d['pp_letter_diff']
         with timecode() as self.batch_time_d['time_contradiction_scores']:  contradiction_scores = self._get_contradiction_scores(raw['text'], pp_l)
         with timecode() as self.batch_time_d['time_acceptability_scores']:  acceptability_scores = self._get_acceptability_scores(pp_l)
-
-        rewards = self._get_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores)
+        with timecode() as self.batch_time_d['time_lcp_conditions']      :  lcp_conditions = self._get_linking_contrast_phrase_conditions(raw['text'], pp_l)
+        rewards = self._get_reward(vm_scores, sts_scores, pp_letter_diff, contradiction_scores, acceptability_scores, lcp_conditions)
 
         self.batch_d['pp_truelabel_probs']  = vm_d['pp_truelabel_probs'].detach().cpu().tolist()
         self.batch_d['pp_predclass']        = vm_d['pp_predclass'].detach().cpu().tolist()
@@ -411,6 +392,7 @@ class Trainer:
         self.batch_d['pp_letter_percent']   = pp_diff_d['pp_letter_percent'].tolist()
         self.batch_d['contradiction_scores'] = contradiction_scores.cpu().tolist()
         self.batch_d['acceptability_scores'] = acceptability_scores.cpu().tolist()
+        self.batch_d['lcp_conditions']      = lcp_conditions
         return rewards
 
     def _get_pp_logp(self, pp_output):
@@ -598,11 +580,15 @@ class Trainer:
         def add_acceptability_score(batch):
             batch['acceptability_scores'] = self._get_acceptability_scores(pp_l=batch['pp']).cpu().tolist()
             return batch
+        def add_lcp_condition(batch):
+            batch['lcp_conditions'] = self._get_linking_contrast_phrase_conditions(orig_l=batch['orig'], pp_l=batch['pp'])
+            return batch
 
         ds_expanded = ds_expanded.map(add_vm_scores_eval,        batched=True)
         ds_expanded = ds_expanded.map(add_pp_letter_diff,        batched=True)
         ds_expanded = ds_expanded.map(add_contradiction_score,   batched=True)
         ds_expanded = ds_expanded.map(add_acceptability_score,   batched=True)
+        ds_expanded = ds_expanded.map(add_lcp_condition,         batched=True)
         def add_sts_scores_eval(row):  return self._get_sts_scores(row['pp'], row['orig_sts_embeddings'], eval_mode=True)[0]
         df_sts['sts_scores'] = df_sts.apply(add_sts_scores_eval, axis=1)
 
@@ -615,12 +601,13 @@ class Trainer:
         def add_reward(batch):
             batch['reward_pp'] = self._get_reward(vm_scores=batch['vm_scores'], sts_scores=batch['sts_scores'],
                     pp_letter_diff=batch['pp_letter_diff'], contradiction_scores=batch['contradiction_scores'],
-                    acceptability_scores=batch['acceptability_scores']).cpu().tolist()
+                    acceptability_scores=batch['acceptability_scores'], lcp_conditions=batch['lcp_conditions']).cpu().tolist()
             return batch
         ds_expanded = ds_expanded.map(add_reward,   batched=True)
         def add_is_valid_pp(example):
             example['is_valid_pp'] = self._is_valid_pp(sts_score=example['sts_scores'], pp_letter_diff=example['pp_letter_diff'],
-                contradiction_score=example['contradiction_scores'], acceptability_score=example['acceptability_scores'])*1
+                contradiction_score=example['contradiction_scores'], acceptability_score=example['acceptability_scores'],
+                lcp_condition=example['lcp_conditions'])*1
             return example
         ds_expanded = ds_expanded.map(add_is_valid_pp,   batched=False)
         def add_is_adv_example(batch):
@@ -632,7 +619,8 @@ class Trainer:
         df_expanded = ds_expanded.to_pandas()
         # Remove duplicate paraphrases
         df_expanded = df_expanded.drop_duplicates(subset=df_expanded.columns.difference(['pp_idx', 'sts_scores'])) # sts scores sometimes has rounding errors
-        eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward_pp', 'vm_scores', 'sts_scores',  'pp_letter_diff', 'contradiction_scores', 'acceptability_scores']
+        eval_metric_cols = ['label_flip', 'is_valid_pp', 'is_adv_example', 'reward_pp', 'vm_scores', 'sts_scores',  'pp_letter_diff',
+                            'contradiction_scores', 'acceptability_scores', 'lcp_conditions']
         agg_metrics = ['mean','std']  # using mean in favour of median
         ## avg across each orig
         df_grp_stats = df_expanded[['idx'] + eval_metric_cols].groupby('idx').agg(agg_metrics).fillna(0) # if there is one example, std is NaN, so we just replace with 0
@@ -671,7 +659,7 @@ class Trainer:
                 self.best_model_path = path
 
             if self.epoch > self._cfg.early_stopping_min_epochs:  # don't test for early stopping too early because otherwise it stops too soon
-                if this_metric < np.median(self.eval_valid_metrics):
+                if this_metric <= np.median(self.eval_valid_metrics):
                     logger.info(f"Early stopping activated.")
                     self.early_stopping_flag = True
 
@@ -692,13 +680,13 @@ class Trainer:
             results_df.insert(3, 'split', results_df.pop('split'))
             results_df.insert(4, 'epoch', results_df.pop('epoch'))
             results_df.insert(1, 'run_name', results_df.pop('run_name'))
-            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results.csv")
+            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results_tmp.csv")
 
         ## For train and eval we calc + log histograms to wandb. We dont need that for test.
         if split in ['train', 'valid']:
             ## Log histograms to wandb
             wandb_eval_d = dict()
-            mean_only = ['label_flip', 'is_valid_pp', 'is_adv_example']
+            mean_only = ['label_flip', 'is_valid_pp', 'is_adv_example', 'lcp_conditions']
             mean_and_std = ['reward_pp', 'vm_scores', 'sts_scores', 'pp_letter_diff', 'contradiction_scores', 'acceptability_scores']
             for k in mean_only + mean_and_std:
                 name = k + "-mean"
@@ -750,15 +738,6 @@ class Trainer:
             self.run.summary['change_'  + split] = dict()
             for k,initial_value in self.initial_metric_d[split].items():
                 self.run.summary['change_'+ split][k] = self.run.summary[k + "-" + split] - initial_value
-
-    def _get_gradient_update_norm(self):
-        total_norm = 0
-        for p in [o for o in self.pp_model.parameters() if o[1].requires_grad]:
-            if p.grad is not None:  # the embed_position layers on encoder/decoder dont keep grad ()
-                param_norm = p.grad.detach().data.norm(2)
-                total_norm += param_norm.item() ** 2
-        total_norm = total_norm ** 0.5
-        return total_norm
 
     def _plot_grad_flow(self, named_parameters):
         '''Plots the gradients flowing through different layers in the net during training.

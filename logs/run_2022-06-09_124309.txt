@@ -1,0 +1,38 @@
+06-09 12:43 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-09 12:43 travis_attack.data INFO     Will load dataset financial with use_small_ds set to True
+06-09 12:44 travis_attack.data DEBUG    Dataset lengths: {'train': 29, 'valid': 4, 'test': 2}
+06-09 12:44 travis_attack.data DEBUG    Total training epochs:3
+06-09 12:44 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 29, 'valid': 4, 'test': 2, 'train_eval': 5}
+06-09 12:44 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [29], 'valid': [4], 'test': [2], 'train_eval': [8, 8, 8, 5]}
+06-09 12:44 travis_attack.trainer INFO     Launching initial eval run: train
+06-09 12:44 travis_attack.trainer INFO     Launching initial eval run: valid
+06-09 12:45 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-09 12:45 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-09 12:45 travis_attack.trainer INFO     Launching initial eval run: test
+06-09 12:45 travis_attack.trainer INFO     Now on epoch 1 of 3
+06-09 12:46 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 10
+06-09 12:46 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-09 12:46 travis_attack.trainer INFO     Now on epoch 2 of 3
+06-09 12:48 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 10
+06-09 12:48 travis_attack.trainer INFO     Eval metric: 0.250 | Running median: 0.250
+06-09 12:48 travis_attack.trainer INFO     Now on epoch 3 of 3
+06-09 12:50 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 10
+06-09 12:50 travis_attack.trainer INFO     Eval metric: 0.500 | Running median: 0.250
+06-09 12:50 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/avid-sweep-18/model_3.pt
+06-09 12:51 travis_attack.insights INFO     Dataframes have shapes ['training_step: (87, 52)', 'train: (4134, 21)', 'valid: (507, 21)', 'test: (119, 21)']
+06-09 12:51 travis_attack.insights INFO     Adding text metrics for column orig
+06-09 12:51 travis_attack.insights INFO     Adding text metrics for column pp
+06-09 12:51 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-09 12:51 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-09 12:51 travis_attack.insights INFO     Adding text metrics for column orig
+06-09 12:51 travis_attack.insights INFO     Adding text metrics for column pp
+06-09 12:51 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-09 12:51 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-09 12:53 travis_attack.insights INFO     Adding text metrics for column orig
+06-09 12:53 travis_attack.insights INFO     Adding text metrics for column pp
+06-09 12:53 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-09 12:53 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs
+06-09 12:53 travis_attack.insights INFO     Adding text metrics for column orig
+06-09 12:53 travis_attack.insights INFO     Adding text metrics for column pp
+06-09 12:53 travis_attack.insights INFO     Calculating metric differences between orig and pp
+06-09 12:53 travis_attack.insights INFO     Calculating text pair statistics for (orig, pp) unique pairs

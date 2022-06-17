@@ -74,20 +74,20 @@ def setup_parser():
     parser.add_argument("--max_pp_length", type=int)
     # Train
     parser.add_argument("--decode_method_train", choices=['sample', 'greedy'])
-    parser.add_argument("--gen_train-temperature", type=float)
-    parser.add_argument("--gen_train-top_p", type=float)
+    parser.add_argument("--gen_train_temperature", type=float)
+    parser.add_argument("--gen_train_top_p", type=float)
     # Eval
     parser.add_argument("--n_eval_seq", type=int)
-    parser.add_argument("--decode_method_eval", choices=['sample', 'beam_search', 'diverse_beam_search'])
-    parser.add_argument("--gen_eval-temperature", type=float)
-    parser.add_argument("--gen_eval-top_p", type=float)
-    parser.add_argument("--gen_eval-num_beam_groups", type=int)
-    parser.add_argument("--gen_eval-diversity_penalty", type=float)
+    parser.add_argument("--decode_method_eval", choices=['sample', 'beam_search', 'diverse_beam_search',  "diverse_beam_search_low_diversity", "diverse_beam_search_high_diversity"])
+    parser.add_argument("--gen_eval_temperature", type=float)
+    parser.add_argument("--gen_eval_top_p", type=float)
+    parser.add_argument("--gen_eval_num_beam_groups", type=int)
+    parser.add_argument("--gen_eval_diversity_penalty", type=float)
 
     # Paraphrase reward terms
     parser.add_argument("--reward_fn")
     parser.add_argument("--reward_clip_max", type=int)
-    parser.add_argument("--reward_vm_multiplier", type=int)
+    parser.add_argument("--reward_vm_multiplier", type=float)
     parser.add_argument("--sts_threshold", type=float)
     parser.add_argument("--acceptability_threshold", type=float)
     parser.add_argument("--contradiction_threshold", type=float)
@@ -106,25 +106,25 @@ def update_config_with_parsed_arguments(cfg, newargs):
     """newargs: dict of values from the parser"""
     for k,v in newargs.items():
         if v is not None:
-            if "gen_train" in k: cfg.gen_params_train[k.split('-')[1]] = v
-            if "gen_eval"  in k: cfg.gen_params_eval[ k.split('-')[1]] = v
-            else:                   setattr(cfg, k, v)
+            if   k.startswith("gen_train"): cfg.gen_params_train[k.split('gen_train_')[1]] = v
+            elif k.startswith("gen_eval") : cfg.gen_params_eval[ k.split('gen_eval_' )[1]] = v
+            else:     setattr(cfg, k, v)
     if newargs["decode_method_train"] == "greedy":
         cfg.gen_params_train["do_sample"] = False
         cfg.gen_params_train['temperature'] = None
         cfg.gen_params_train['top_p'] = None
-        if newargs["gen_train-temperature"] is not None or newargs["gen_train-top_p"] is not None:
+        if newargs["gen_train_temperature"] is not None or newargs["gen_train_top_p"] is not None:
             warnings.warn("Generation parameters for training specified but will be ignored because train decode method set to greedy.")
     if newargs["decode_method_eval"] == "sample":
-        if newargs["gen_eval-num_beam_groups"] is not None or newargs["gen_eval-diversity_penalty"] is not None:
+        if newargs["gen_eval_num_beam_groups"] is not None or newargs["gen_eval_diversity_penalty"] is not None:
             warnings.warn("Some generation parameters for eval ignored because eval decode method set to sample.")
         cfg.gen_params_eval["do_sample"] = True
         cfg.gen_params_eval["num_beams"] = 1
         cfg.gen_params_eval['diversity_penalty'] = None
         cfg.gen_params_eval['num_beam_groups'] = None
     if newargs["decode_method_eval"] == "beam_search":
-        if newargs["gen_eval-num_beam_groups"] is not None or newargs["gen_eval-diversity_penalty"] is not None or \
-           newargs["gen_eval-top_p"] is not None or newargs["gen_eval-temperature"] is not None:
+        if newargs["gen_eval_num_beam_groups"] is not None or newargs["gen_eval_diversity_penalty"] is not None or \
+           newargs["gen_eval_top_p"] is not None or newargs["gen_eval_temperature"] is not None:
             warnings.warn("Some generation parameters for eval ignored because eval decode method set to beam_search.")
         cfg.gen_params_eval["do_sample"] = False
         cfg.gen_params_eval["num_beams"] = cfg.n_eval_seq
@@ -133,8 +133,25 @@ def update_config_with_parsed_arguments(cfg, newargs):
         cfg.gen_params_eval['temperature'] = None
         cfg.gen_params_eval['num_beam_groups'] = None
     if newargs["decode_method_eval"] == "diverse_beam_search":
-        if newargs["gen_eval-top_p"] is not None or newargs["gen_eval-temperature"] is not None:
+        if newargs["gen_eval_top_p"] is not None or newargs["gen_eval_temperature"] is not None:
             warnings.warn("Some generation parameters for eval ignored because eval decode method set to diverse beam search.")
+        cfg.gen_params_eval["do_sample"] = False
+        cfg.gen_params_eval["num_beams"] = cfg.n_eval_seq
+        cfg.gen_params_eval['top_p'] = None
+        cfg.gen_params_eval['temperature'] = None
+    if newargs["decode_method_eval"] == "diverse_beam_search_low_diversity":
+        num_beam_groups =  max(int(cfg.n_eval_seq / 8), 1)
+        logger.info(f"Setting num_beam_groups to {num_beam_groups}")
+        cfg.gen_params_eval["num_beam_groups"] = num_beam_groups
+        cfg.gen_params_eval["diversity_penalty"] = 1.
+        cfg.gen_params_eval["do_sample"] = False
+        cfg.gen_params_eval["num_beams"] = cfg.n_eval_seq
+        cfg.gen_params_eval['top_p'] = None
+        cfg.gen_params_eval['temperature'] = None
+    if newargs["decode_method_eval"] == "diverse_beam_search_high_diversity":
+        logger.info(f"Setting num_beam_groups to {cfg.n_eval_seq}")
+        cfg.gen_params_eval["num_beam_groups"] = cfg.n_eval_seq
+        cfg.gen_params_eval["diversity_penalty"] = 1.
         cfg.gen_params_eval["do_sample"] = False
         cfg.gen_params_eval["num_beams"] = cfg.n_eval_seq
         cfg.gen_params_eval['top_p'] = None
