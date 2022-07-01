@@ -18,7 +18,7 @@ class Config:
         # 2. prithivida/parrot_paraphraser_on_T5 (850 MB)
         # 3. ramsrigouthamg/t5-large-paraphraser-diverse-high-quality (2.75 GB)
         self.pp_name = "prithivida/parrot_paraphraser_on_T5"
-        self.dataset_name = "financial"
+        self.dataset_name = "rotten_tomatoes"
         # STS options
         # 1. sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
         # 2. sentence-transformers/paraphrase-MiniLM-L12-v2
@@ -33,13 +33,13 @@ class Config:
 
         ### Important parameters
         self.seed = 420
-        self.use_small_ds = True
+        self.use_small_ds = False
         self.lr = 8e-5
 
         self.batch_size_train = 32
-        self.batch_size_eval = 16
+        self.batch_size_eval = 8
         self.acc_steps = 2
-        self.n_train_epochs = 2
+        self.n_train_epochs = 100
         self.eval_freq = 1
 
 
@@ -57,9 +57,9 @@ class Config:
         self.kl_coef = 0.25        if self.reward_penalty_type == "kl_div"   else None
         self.ref_logp_coef = 0.05  if self.reward_penalty_type == "ref_logp" else None
 
-        self.min_pp_length = 2
+        self.min_pp_length = 3
         self.max_pp_length = 48
-        self.n_eval_seq = 32
+        self.n_eval_seq = 48
         self.decode_method_train = "sample"  # "sample" or "greedy"
         self.decode_method_eval = "sample"
         self.gen_params_train = {
@@ -72,7 +72,7 @@ class Config:
 
         # Early stopping (determined during eval on valid set)
         self.early_stopping = True
-        self.early_stopping_min_epochs =10
+        self.early_stopping_min_epochs = 12
         self.early_stopping_metric = "any_adv_example_proportion"   # don't add -valid to the end of this.
 
         # Other parameters (usually left untouched)
@@ -183,7 +183,7 @@ class Config:
         if self.dataset_name == "simple":
             raise Exception("Don't shard when using the simple dataset (no need)")
         self.use_small_ds = True  # for testing purposes
-        self.n_shards = 100
+        self.n_shards = 3
         self.shard_contiguous = False
         return self
 

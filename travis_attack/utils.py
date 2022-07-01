@@ -86,7 +86,7 @@ def setup_parser():
 
     # Paraphrase reward terms
     parser.add_argument("--reward_fn")
-    parser.add_argument("--reward_clip_max", type=int)
+    parser.add_argument("--reward_clip_max", type=float)
     parser.add_argument("--reward_vm_multiplier", type=float)
     parser.add_argument("--sts_threshold", type=float)
     parser.add_argument("--acceptability_threshold", type=float)
@@ -156,6 +156,11 @@ def update_config_with_parsed_arguments(cfg, newargs):
         cfg.gen_params_eval["num_beams"] = cfg.n_eval_seq
         cfg.gen_params_eval['top_p'] = None
         cfg.gen_params_eval['temperature'] = None
+
+    if   cfg.dataset_name == "simple":           cfg.adjust_config_for_simple_dataset()
+    elif cfg.dataset_name == "rotten_tomatoes":  cfg.adjust_config_for_rotten_tomatoes_dataset()
+    elif cfg.dataset_name == "financial":        cfg.adjust_config_for_financial_dataset()
+    cfg._validate_n_epochs()
     return cfg
 
 # Cell

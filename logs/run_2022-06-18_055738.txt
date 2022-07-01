@@ -1,0 +1,12 @@
+06-18 05:57 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-18 05:58 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to True
+06-18 05:58 travis_attack.data DEBUG    Dataset lengths: {'train': 556, 'test': 69, 'valid': 76}
+06-18 05:58 travis_attack.data DEBUG    Total training epochs:720
+06-18 05:58 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 12, 'test': 5, 'valid': 12, 'train_eval': 12}
+06-18 05:58 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 12], 'test': [16, 16, 16, 16, 5], 'valid': [16, 16, 16, 16, 12], 'train_eval': [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 12]}
+06-18 05:58 travis_attack.trainer INFO     Launching initial eval run: train
+06-18 06:00 travis_attack.trainer INFO     Launching initial eval run: valid
+06-18 06:00 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 10
+06-18 06:00 travis_attack.trainer INFO     Eval metric: 0.184 | Running median: 0.184
+06-18 06:00 travis_attack.trainer INFO     Launching initial eval run: test
+06-18 06:00 travis_attack.trainer INFO     Now on epoch 1 of 40

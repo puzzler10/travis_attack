@@ -46,7 +46,14 @@ index = {"logger": "25_insights.ipynb",
          "nlp": "25_insights.ipynb",
          "get_training_dfs": "25_insights.ipynb",
          "postprocess_df": "25_insights.ipynb",
-         "create_and_log_wandb_postrun_plots": "25_insights.ipynb"}
+         "create_and_log_wandb_postrun_plots": "25_insights.ipynb",
+         "setup_baselines_parser": "50_baseline_attacks.ipynb",
+         "StsScoreConstraint": "50_baseline_attacks.ipynb",
+         "ContradictionScoreConstraint": "50_baseline_attacks.ipynb",
+         "AcceptabilityScoreConstraint": "50_baseline_attacks.ipynb",
+         "PpLetterDiffConstraint": "50_baseline_attacks.ipynb",
+         "LCPConstraint": "50_baseline_attacks.ipynb",
+         "AttackRecipes": "50_baseline_attacks.ipynb"}
 
 modules = ["utils.py",
            "tests.py",
@@ -54,7 +61,8 @@ modules = ["utils.py",
            "models.py",
            "data.py",
            "trainer.py",
-           "insights.py"]
+           "insights.py",
+           "baseline_attacks.py"]
 
 doc_url = "https://puzzler10.github.io/travis_attack/"
 

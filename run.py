@@ -21,7 +21,7 @@ import warnings
 warnings.filterwarnings("ignore", message="Passing `max_length` to BeamSearchScorer is deprecated")  # we ignore the warning because it works anyway for diverse beam search 
 
 
-# In[ ]:
+# In[16]:
 
 
 cfg = Config()  # default values
@@ -38,10 +38,10 @@ optimizer = get_optimizer(cfg, pp_model)
 ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=False)
 
 
-# In[ ]:
+# In[17]:
 
 
-cfg.wandb['mode'] = 'disabled'
+cfg.wandb['mode'] = 'online'
 trainer = Trainer(cfg, vm_tokenizer,vm_model,pp_tokenizer,pp_model,ref_pp_model,sts_model,nli_tokenizer,nli_model,cola_tokenizer,cola_model, optimizer,
          ds)
 print_important_cfg_vars(cfg)
@@ -69,7 +69,7 @@ trainer.train()
 #trainer.run.finish()
 
 
-# In[41]:
+# In[18]:
 
 
 # df_d = get_training_dfs(cfg.path_run, postprocessed=False)

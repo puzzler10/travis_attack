@@ -1,0 +1,40 @@
+06-22 01:39 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+06-22 01:40 travis_attack.data INFO     Will load dataset rotten_tomatoes with use_small_ds set to True
+06-22 01:40 travis_attack.data DEBUG    Dataset lengths: {'train': 981, 'test': 131, 'valid': 138}
+06-22 01:40 travis_attack.data DEBUG    Total training epochs:1240
+06-22 01:40 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 21, 'test': 3, 'valid': 10, 'train_eval': 5}
+06-22 01:40 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21], 'test': [16, 16, 16, 16, 16, 16, 16, 16, 3], 'valid': [16, 16, 16, 16, 16, 16, 16, 16, 10], 'train_eval': [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 5]}
+06-22 01:40 travis_attack.trainer INFO     Launching initial eval run: train
+06-22 01:42 travis_attack.trainer INFO     Launching initial eval run: valid
+06-22 01:43 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 8
+06-22 01:43 travis_attack.trainer INFO     Eval metric: 0.101 | Running median: 0.101
+06-22 01:43 travis_attack.trainer INFO     Launching initial eval run: test
+06-22 01:43 travis_attack.trainer INFO     Now on epoch 1 of 40
+06-22 01:47 travis_attack.trainer INFO     Epoch: 1. Min epochs before early stopping activated: 8
+06-22 01:47 travis_attack.trainer INFO     Eval metric: 0.145 | Running median: 0.123
+06-22 01:47 travis_attack.trainer INFO     Now on epoch 2 of 40
+06-22 01:51 travis_attack.trainer INFO     Epoch: 2. Min epochs before early stopping activated: 8
+06-22 01:51 travis_attack.trainer INFO     Eval metric: 0.130 | Running median: 0.130
+06-22 01:51 travis_attack.trainer INFO     Now on epoch 3 of 40
+06-22 01:55 travis_attack.trainer INFO     Epoch: 3. Min epochs before early stopping activated: 8
+06-22 01:55 travis_attack.trainer INFO     Eval metric: 0.159 | Running median: 0.138
+06-22 01:55 travis_attack.trainer INFO     Now on epoch 4 of 40
+06-22 02:00 travis_attack.trainer INFO     Epoch: 4. Min epochs before early stopping activated: 8
+06-22 02:00 travis_attack.trainer INFO     Eval metric: 0.116 | Running median: 0.130
+06-22 02:00 travis_attack.trainer INFO     Now on epoch 5 of 40
+06-22 02:04 travis_attack.trainer INFO     Epoch: 5. Min epochs before early stopping activated: 8
+06-22 02:04 travis_attack.trainer INFO     Eval metric: 0.094 | Running median: 0.123
+06-22 02:04 travis_attack.trainer INFO     Now on epoch 6 of 40
+06-22 02:08 travis_attack.trainer INFO     Epoch: 6. Min epochs before early stopping activated: 8
+06-22 02:08 travis_attack.trainer INFO     Eval metric: 0.116 | Running median: 0.116
+06-22 02:08 travis_attack.trainer INFO     Now on epoch 7 of 40
+06-22 02:12 travis_attack.trainer INFO     Epoch: 7. Min epochs before early stopping activated: 8
+06-22 02:12 travis_attack.trainer INFO     Eval metric: 0.109 | Running median: 0.116
+06-22 02:12 travis_attack.trainer INFO     Now on epoch 8 of 40
+06-22 02:15 travis_attack.trainer INFO     Epoch: 8. Min epochs before early stopping activated: 8
+06-22 02:15 travis_attack.trainer INFO     Eval metric: 0.116 | Running median: 0.116
+06-22 02:15 travis_attack.trainer INFO     Now on epoch 9 of 40
+06-22 02:18 travis_attack.trainer INFO     Epoch: 9. Min epochs before early stopping activated: 8
+06-22 02:18 travis_attack.trainer INFO     Eval metric: 0.080 | Running median: 0.116
+06-22 02:18 travis_attack.trainer INFO     Early stopping activated.
+06-22 02:18 travis_attack.trainer INFO     Evaluating test set with best model at path : ../model_checkpoints/travis_attack/lively-sweep-41/model_3.pt

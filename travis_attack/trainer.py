@@ -45,10 +45,8 @@ class Trainer:
         store_attr()
         self._cfg = self.cfg; del self.cfg;
         self.epoch,self.acc_num,self.global_step,self.param_norm = 0,0,0,0
-       # self._reset_batch_dicts()
         self._setup_data_stores()
         self._setup_gradient_accumulation_variables()
-       # self.start_end_token_d = get_start_end_special_token_ids(self.pp_tokenizer)
         self.early_stopping_flag = False
         self.linking_contrast_phrases = [o.strip() for o in open("./linking_contrast_phrases.txt").readlines()]
 
@@ -680,7 +678,7 @@ class Trainer:
             results_df.insert(3, 'split', results_df.pop('split'))
             results_df.insert(4, 'epoch', results_df.pop('epoch'))
             results_df.insert(1, 'run_name', results_df.pop('run_name'))
-            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results_tmp.csv")
+            append_df_to_csv(results_df, f"{self._cfg.path_results}run_results_final.csv")
 
         ## For train and eval we calc + log histograms to wandb. We dont need that for test.
         if split in ['train', 'valid']:
