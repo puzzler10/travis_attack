@@ -4,7 +4,7 @@ __all__ = ['setup_baselines_parser', 'StsScoreConstraint', 'ContradictionScoreCo
            'AcceptabilityScoreConstraint', 'PpLetterDiffConstraint', 'LCPConstraint', 'AttackRecipes']
 
 # Cell
-import functools, string, nltk, torch, numpy as np, pandas as pd
+import functools, string, nltk, torch, numpy as np, pandas as pd, transformers
 from sentence_transformers.util import pytorch_cos_sim
 
 from textattack.constraints import Constraint
