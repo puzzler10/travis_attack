@@ -52,8 +52,8 @@ def _prepare_nli_tokenizer_and_model(cfg):
     return nli_tokenizer, nli_model
 
 def _prepare_cola_tokenizer_and_model(cfg):
-    cola_tokenizer = AutoTokenizer.from_pretrained(cfg.cola_model)
-    cola_model = AutoModelForSequenceClassification.from_pretrained(cfg.cola_model, local_files_only=True).to(cfg.device)
+    cola_tokenizer = AutoTokenizer.from_pretrained(cfg.cola_name)
+    cola_model = AutoModelForSequenceClassification.from_pretrained(cfg.cola_name, local_files_only=True).to(cfg.device)
     cola_model.eval()
     return cola_tokenizer, cola_model
 
@@ -74,7 +74,7 @@ def _update_config(cfg, vm_model, pp_model):
     cfg.vocab_size = pp_model.get_input_embeddings().num_embeddings   # unlike pp_tokenizer.vocab_size this includes the padding
     if   cfg.nli_name  == "microsoft/deberta-base-mnli"     :   cfg.contra_label = 0
     elif cfg.nli_name  == "howey/electra-small-mnli"        :   cfg.contra_label = 2
-    if   cfg.cola_name == "textattack/albert-base-v2-CoLA"  :   cfg.cola_positive_label   = 1
+    if   cfg.cola_name == "textattack/albert-base-v2-CoLA"  :   cfg.cola_positive_label = 1
     return cfg
 
 def prepare_models(cfg):
@@ -87,7 +87,7 @@ def prepare_models(cfg):
     ref_pp_model = _load_pp_model(cfg).eval()
     sts_model = _prepare_sts_model(cfg)
     nli_tokenizer, nli_model   = _prepare_nli_tokenizer_and_model(cfg)
-    cola_tokenizer, cola_model = _prepare_nli_tokenizer_and_model(cfg)
+    cola_tokenizer, cola_model = _prepare_cola_tokenizer_and_model(cfg)
  #   if cfg.pad_token_embeddings:  _pad_model_token_embeddings(cfg, pp_model, vm_model, sts_model)
     cfg = _update_config(cfg, vm_model, pp_model)
     return vm_tokenizer, vm_model, pp_tokenizer, pp_model, ref_pp_model, sts_model, nli_tokenizer, nli_model, cola_tokenizer, cola_model, cfg

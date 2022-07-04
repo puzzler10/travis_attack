@@ -5,6 +5,9 @@ __all__ = ['setup_baselines_parser', 'StsScoreConstraint', 'ContradictionScoreCo
 
 # Cell
 import functools, string, nltk, torch, numpy as np, pandas as pd, transformers
+from functools import partial
+import argparse
+
 from sentence_transformers.util import pytorch_cos_sim
 
 from textattack.constraints import Constraint
@@ -18,8 +21,11 @@ from textattack.attack_recipes import AttackRecipe
 from textattack.search_methods import BeamSearch, ImprovedGeneticAlgorithm
 from textattack.constraints import Constraint
 from textattack.constraints.pre_transformation import RepeatModification, StopwordModification
-from textattack.transformations import CompositeTransformation, WordSwapEmbedding, WordSwapMaskedLM, WordMergeMaskedLM
+from textattack.transformations import CompositeTransformation, WordSwapEmbedding, WordSwapMaskedLM
 from textattack.goal_functions import UntargetedClassification
+
+from textattack.transformations.word_insertions import WordInsertionMaskedLM
+from textattack.transformations.word_merges import  WordMergeMaskedLM
 
 from fastcore.basics import store_attr
 
@@ -133,10 +139,11 @@ class LCPConstraint(Constraint):
 class AttackRecipes:
     def __init__(self, param_d):
         store_attr()
-        if   param_d['ds_name'] == "financial_phrasebank":   cfg = Config().adjust_config_for_financial_dataset()
+        if   param_d['ds_name'] == "financial":              cfg = Config().adjust_config_for_financial_dataset()
         elif param_d['ds_name'] == "rotten_tomatoes":        cfg = Config().adjust_config_for_rotten_tomatoes_dataset()
         elif param_d['ds_name'] == "simple":                 cfg = Config().adjust_config_for_simple_dataset()
         vm_tokenizer,vm_model,pp_tokenizer,_,_,sts_model,nli_tokenizer,nli_model,cola_tokenizer,cola_model,cfg = prepare_models(cfg)
+        vm_tokenizer, vm_model, pp_tokenizer, _, _, sts_model, nli_tokenizer, nli_model, cola_tokenizer, cola_model, cfg
         self.ds = ProcessedDataset(cfg, vm_tokenizer, vm_model, pp_tokenizer, sts_model, load_processed_from_file=False)
         model_wrapper = HuggingFaceModelWrapper(vm_model, vm_tokenizer)
         self.goal_function =  UntargetedClassification(model_wrapper)
@@ -151,40 +158,72 @@ class AttackRecipes:
         ]
         self.masked_lm           = transformers.AutoModelForCausalLM.from_pretrained("distilroberta-base")
         self.masked_lm_tokenizer = transformers.AutoTokenizer.from_pretrained("distilroberta-base")
+        self.WordSwapLM = partial(WordSwapMaskedLM, method="bae", masked_language_model=self.masked_lm,tokenizer=self.masked_lm_tokenizer)
 
     class CFEmbeddingWordReplaceBeamSearchAttack(AttackRecipe):
         @staticmethod
-        def build(beam_sz, max_candidates):
+        def build(common_class, beam_sz, max_candidates):
             transformation = WordSwapEmbedding(max_candidates=max_candidates)
             search_method = BeamSearch(beam_width=beam_sz)
-            attack = Attack(self.goal_function, self.constraints, transformation, search_method)
+            attack = Attack(common_class.goal_function, common_class.constraints, transformation, search_method)
             return attack
 
     class LMWordReplaceBeamSearchAttack(AttackRecipe):
         @staticmethod
-        def build(beam_sz, max_candidates):
-            transformation = WordSwapMaskedLM(method='bae', masked_language_model=self.masked_lm, tokenizer=shared_tokenizer, max_candidates=max_candidates)
+        def build(common_class, beam_sz, max_candidates):
+            transformation = common_class.WordSwapLM(max_candidates=max_candidates)
             search_method = BeamSearch(beam_width=beam_sz)
-            attack = Attack(self.goal_function, self.constraints, transformation, search_method)
+            attack = Attack(common_class.goal_function, common_class.constraints, transformation, search_method)
             return attack
 
     class LMWordAddDeleteReplaceBeamSearchAttack(AttackRecipe):
         @staticmethod
-        def build(beam_sz, max_candidates):
+        def build(common_class, beam_sz, max_candidates):
             transformation = CompositeTransformation(
-                [WordSwapMaskedLM(method="bae",masked_language_model=self.masked_lm,tokenizer=shared_tokenizer,max_candidates=max_candidates),
-                 WordInsertionMaskedLM(        masked_language_model=self.masked_lm,tokenizer=shared_tokenizer,max_candidates=max_candidates),
-                 WordMergeMaskedLM(            masked_language_model=self.masked_lm,tokenizer=shared_tokenizer,max_candidates=max_candidates)]
+                [common_class.WordSwapLM(max_candidates=max_candidates),
+                 WordInsertionMaskedLM(        masked_language_model=common_class.masked_lm,tokenizer=common_class.masked_lm_tokenizer,max_candidates=max_candidates),
+                 WordMergeMaskedLM(            masked_language_model=common_class.masked_lm,tokenizer=common_class.masked_lm_tokenizer,max_candidates=max_candidates)]
             )
             search_method = BeamSearch(beam_width=beam_sz)
-            attack = Attack(self.goal_function, self.constraints, transformation, search_method)
+            attack = Attack(common_class.goal_function, common_class.constraints, transformation, search_method)
             return attack
 
     class LMWordReplaceGeneticAlgorithmAttack(AttackRecipe):
         @staticmethod
-        def build(max_candidates, pop_size, max_iters, max_replace_times_per_index):
-            transformation = WordSwapMaskedLM(method='bae', masked_language_model=self.masked_lm, tokenizer=shared_tokenizer, max_candidates=max_candidates)
+        def build(common_class, max_candidates, pop_size, max_iters, max_replace_times_per_index):
+            transformation = common_class.WordSwapLM(max_candidates=max_candidates)
             search_method = ImprovedGeneticAlgorithm(pop_size=pop_size, max_iters=max_iters,
                                                      max_replace_times_per_index=max_replace_times_per_index, post_crossover_check=False)
-            attack = Attack(self.goal_function, self.constraints, transformation, search_method)
+            attack = Attack(common_class.goal_function, common_class.constraints, transformation, search_method)
             return attack
+
+
+    def get_attack_list(self):
+        common_class = self
+        attack_list = [
+            {
+                "attack_num": 1,
+                "attack_code": "LM-WR-BS-b2m5",
+                "attack_recipe": self.LMWordReplaceBeamSearchAttack.build(common_class, beam_sz=2, max_candidates=5)
+            }, {
+                "attack_num": 2,
+                "attack_code": "LM-WR-BS-b5m25",
+                "attack_recipe": self.LMWordReplaceBeamSearchAttack.build(common_class, beam_sz=5, max_candidates=25)
+            }, {
+                "attack_num": 3,
+                "attack_code": "LM-WR-BS-b10m50",
+                "attack_recipe": self.LMWordReplaceBeamSearchAttack.build(common_class, beam_sz=10, max_candidates=50)
+            }, {
+                "attack_num": 4,
+                "attack_code": "LM-WADR-BS-b5m25",
+                "attack_recipe": self.LMWordAddDeleteReplaceBeamSearchAttack.build(common_class, beam_sz=5, max_candidates=25)
+            }, {
+                "attack_num": 5,
+                "attack_code": "CF-WR-BS-b5m25",
+                "attack_recipe": self.CFEmbeddingWordReplaceBeamSearchAttack.build(common_class, beam_sz=5, max_candidates=25)
+            }, {
+                "attack_num": 6,
+                "attack_code": "LM-WR-GA-m25p60mi20mr5",
+                "attack_recipe": self.LMWordReplaceGeneticAlgorithmAttack.build(common_class, max_candidates=25, pop_size=60, max_iters=20, max_replace_times_per_index=5)
+            }]
+        return attack_list

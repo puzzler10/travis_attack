@@ -39,6 +39,7 @@ def prep_dsd_financial(cfg):
     """Load the financial dataset and package it up in a DatasetDict (dsd)
     with splits for train, valid, test."""
     dsd = load_dataset("financial_phrasebank", "sentences_50agree")
+   # dsd = dsd.filter(lambda x: x['label'] != 1)  # drop netural examples
     dsd = get_train_valid_test_split(dsd)
     dsd = dsd.rename_column('sentence', 'text')
    # for _,ds in dsd.items(): assert ds.features[cfg.label_cname].num_classes == cfg.vm_num_labels
@@ -53,8 +54,8 @@ def prep_dsd_raw_snli(cfg):
     raise NotImplementedError("SNLI not implemented yet.")
 
 def get_train_valid_test_split(dsd, train_size=0.8):
-        dsd1 = dsd['train'].train_test_split(train_size=train_size)
-        dsd2 = dsd1['test'].train_test_split(train_size=0.5)
+        dsd1 = dsd['train'].train_test_split(train_size=train_size, shuffle=True, seed=0)
+        dsd2 = dsd1['test'].train_test_split(train_size=0.5, shuffle=True, seed=0)
         return DatasetDict({
             'train': dsd1['train'],
             'valid': dsd2['train'],
