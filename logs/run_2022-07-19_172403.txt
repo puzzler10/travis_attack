@@ -1,0 +1,12 @@
+07-19 17:24 travis_attack.utils DEBUG    Disabling all loggers except those from the following libraries: ['travis_attack', 'wandb']
+07-19 17:24 travis_attack.data INFO     Will load dataset financial with use_small_ds set to False
+07-19 17:25 travis_attack.data DEBUG    Dataset lengths: {'train': 1370, 'valid': 167, 'test': 159}
+07-19 17:25 travis_attack.data DEBUG    Total training epochs:8600
+07-19 17:25 travis_attack.data DEBUG    Last batch size in each epoch is: {'train': 26, 'valid': 7, 'test': 7, 'train_eval': 2}
+07-19 17:25 travis_attack.data DEBUG    Dataloader batch sizes are: {'train': [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 26], 'valid': [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7], 'test': [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7], 'train_eval': [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 2]}
+07-19 17:25 travis_attack.trainer INFO     Launching initial eval run: train
+07-19 17:39 travis_attack.trainer INFO     Launching initial eval run: valid
+07-19 17:41 travis_attack.trainer INFO     Epoch: 0. Min epochs before early stopping activated: 32
+07-19 17:41 travis_attack.trainer INFO     Eval metric: 0.162 | Running median: 0.162
+07-19 17:41 travis_attack.trainer INFO     Launching initial eval run: test
+07-19 17:43 travis_attack.trainer INFO     Now on epoch 1 of 200

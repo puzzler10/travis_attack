@@ -39,7 +39,6 @@ class Config:
         self.batch_size_train = 32
         self.batch_size_eval = 8
         self.acc_steps = 2
-        self.n_train_epochs = 150
         self.eval_freq = 1
 
 
@@ -72,7 +71,6 @@ class Config:
 
         # Early stopping (determined during eval on valid set)
         self.early_stopping = True
-        self.early_stopping_min_epochs = 18
         self.early_stopping_metric = "any_adv_example_proportion"   # don't add -valid to the end of this.
 
         # Other parameters (usually left untouched)
@@ -167,6 +165,8 @@ class Config:
         self.orig_cname = "text"
         self.label_cname = 'label'
         self._select_vm_model()
+        self.early_stopping_min_epochs = 16
+        self.n_train_epochs = 100
         return self
 
     def adjust_config_for_financial_dataset(self):
@@ -174,6 +174,8 @@ class Config:
         self.dataset_name = "financial"
         self.orig_cname = "sentence"
         self.label_cname = 'label'
+        self.early_stopping_min_epochs = 32
+        self.n_train_epochs = 200
         self._select_vm_model()
         return self
 
